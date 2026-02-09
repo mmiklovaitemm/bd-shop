@@ -98,8 +98,8 @@ export default function ProductCard({
         {/* Hover dark overlay */}
         <div className="pointer-events-none absolute inset-0 bg-black/55 opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100" />
 
-        {/* CENTER title on hover */}
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-6 text-center">
+        {/* CENTER (Desktop/Tablet): title only */}
+        <div className="pointer-events-none absolute inset-0 hidden md:flex items-center justify-center px-6 text-center">
           <p
             className="
               opacity-0 translate-y-2
@@ -117,6 +117,34 @@ export default function ProductCard({
           >
             {product.name}
           </p>
+        </div>
+
+        {/* CENTER (Mobile): title + price */}
+        <div className="pointer-events-none absolute inset-0 flex md:hidden items-center justify-center px-6 text-center">
+          <div
+            className="
+              opacity-0 translate-y-2
+              group-hover:opacity-100 group-hover:translate-y-0
+              transition-all duration-200 ease-out
+              text-white
+              max-w-[90%]
+            "
+          >
+            <p
+              className="font-display text-[20px] leading-tight"
+              style={{
+                display: "-webkit-box",
+                WebkitLineClamp: 3,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+              }}
+            >
+              {product.name}
+            </p>
+            <p className="mt-2 font-ui text-[14px] text-white/90">
+              {product.price}
+            </p>
+          </div>
         </div>
 
         <IconButton
@@ -150,8 +178,8 @@ export default function ProductCard({
             </div>
           </div>
 
-          {/* HOVER */}
-          <div className="pointer-events-none absolute inset-0 flex items-center bg-black px-6 h-16 opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100">
+          {/* HOVER - Desktop/Tablet */}
+          <div className="pointer-events-none absolute inset-0 hidden md:flex items-center bg-black px-6 h-16 opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100">
             <div className="flex w-full items-center justify-between gap-6">
               <p className="font-ui font-normal text-[14px] leading-none whitespace-nowrap text-white">
                 {product.price}
@@ -163,6 +191,17 @@ export default function ProductCard({
                   ariaLabel={`Add ${product.name} to bag`}
                 />
               </div>
+            </div>
+          </div>
+
+          {/* HOVER - Mobile */}
+          <div className="pointer-events-none absolute inset-0 flex md:hidden items-center justify-center bg-black px-6 h-16 opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100">
+            <div className="pointer-events-auto">
+              <AddToBagButton
+                onClick={onAddToCart}
+                icon={bagIcon}
+                ariaLabel={`Add ${product.name} to bag`}
+              />
             </div>
           </div>
         </div>
