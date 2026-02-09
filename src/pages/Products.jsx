@@ -338,7 +338,7 @@ export default function Products() {
 
           <div
             className={[
-              "grid grid-cols-1 min-[460px]:grid-cols-2 md:grid-cols-3 gap-x-3 gap-y-5 md:gap-x-4 md:gap-y-6",
+              "grid grid-cols-2 min-[460px]:grid-cols-2 md:grid-cols-3 gap-x-3 gap-y-5 md:gap-x-4 md:gap-y-6",
               desktopColsClass,
             ].join(" ")}
           >
