@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import filterIcon from "@/assets/ui/filter-icon.svg";
 import { HiChevronDown } from "react-icons/hi";
-
+import ProductsSortPanel from "@/components/sections/ProductsSortPanel";
 const SORT_OPTIONS = [
   { value: "price_desc", label: "Price, high to low" },
   { value: "price_asc", label: "Price, low to high" },
@@ -12,21 +12,16 @@ const SORT_OPTIONS = [
 
 export default function ProductsToolbar({
   title = "Collections",
-
-  // CATEGORY
-  categories = [], // [{label, value}]
+  categories = [],
   activeCategoryValue = "rings",
   activeCategoryLabel = "Rings",
   onCategoryChange,
-
-  // FILTER
   onOpenFilter,
-
-  // SORT
   sortValue = "price_desc",
   onSortChange,
 }) {
   const [isSortOpen, setIsSortOpen] = useState(false);
+  const [isSortDrawerOpen, setIsSortDrawerOpen] = useState(false);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
 
   const categoryWrapRef = useRef(null);
@@ -53,6 +48,7 @@ export default function ProductsToolbar({
       if (e.key === "Escape") {
         setIsCategoryOpen(false);
         setIsSortOpen(false);
+        setIsSortDrawerOpen(false);
       }
     };
 
@@ -68,12 +64,25 @@ export default function ProductsToolbar({
   const toggleCategory = () => {
     setIsCategoryOpen((p) => {
       const next = !p;
-      if (next) setIsSortOpen(false);
+      if (next) {
+        setIsSortOpen(false);
+        setIsSortDrawerOpen(false);
+      }
       return next;
     });
   };
 
   const toggleSort = () => {
+    // mobile: drawer, desktop: dropdown
+    const isMobile = window.matchMedia("(max-width: 1023px)").matches; // lg breakpoint
+
+    if (isMobile) {
+      setIsSortDrawerOpen(true);
+      setIsCategoryOpen(false);
+      setIsSortOpen(false);
+      return;
+    }
+
     setIsSortOpen((p) => {
       const next = !p;
       if (next) setIsCategoryOpen(false);
@@ -90,7 +99,7 @@ export default function ProductsToolbar({
         </h1>
       </div>
 
-      {/* Category row (dropdown) */}
+      {/* Category row */}
       <div
         ref={categoryWrapRef}
         className="border-b border-black px-6 py-4 relative"
@@ -145,7 +154,6 @@ export default function ProductsToolbar({
           className="h-10 px-4 border border-black font-ui text-[14px] flex items-center gap-3 transition-all duration-300 ease-out hover:-translate-y-[2px]"
         >
           <span>Filter</span>
-
           <img src={filterIcon} alt="Filter" className="w-4 h-4 opacity-70" />
         </button>
 
@@ -165,8 +173,9 @@ export default function ProductsToolbar({
               <span className="truncate">{activeSortLabel}</span>
             </button>
 
+            {/* desktop dropdown only */}
             {isSortOpen && (
-              <div className="absolute left-0 top-full -mt-px w-full border border-black bg-white shadow-sm z-50">
+              <div className="absolute left-0 top-full -mt-px w-full border border-black bg-white shadow-sm z-50 hidden lg:block">
                 <ul role="listbox" className="py-2">
                   {SORT_OPTIONS.map((opt) => (
                     <li key={opt.value}>
@@ -192,6 +201,15 @@ export default function ProductsToolbar({
           </div>
         </div>
       </div>
+
+      {/* mobile sort drawer */}
+      <ProductsSortPanel
+        isOpen={isSortDrawerOpen}
+        onClose={() => setIsSortDrawerOpen(false)}
+        sortValue={sortValue}
+        onSortChange={onSortChange}
+        options={SORT_OPTIONS}
+      />
     </section>
   );
 }

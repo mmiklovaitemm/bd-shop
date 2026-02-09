@@ -32,9 +32,6 @@ export default function BestSellersSlider({ items = BEST_SELLERS }) {
     [navigate],
   );
 
-  console.log(items);
-  console.log(items?.[0]?.image);
-
   return (
     <HorizontalSliderSection
       title="Best sellers"
@@ -46,13 +43,14 @@ export default function BestSellersSlider({ items = BEST_SELLERS }) {
         </div>
       }
     >
-      {items.map((product) => (
+      {items.map((product, idx) => (
         <div
           key={product.id}
           className="shrink-0 w-[260px] md:w-[280px] lg:w-[300px]"
         >
           <ProductCard
             product={product}
+            priority={idx < 2}
             onMediaReady={() => {}}
             onAddToCart={() => console.log(`Add to cart: ${product.id}`)}
             onAddToFavorites={() =>

@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Children,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import IconButton from "@/components/ui/IconButton";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
@@ -9,6 +16,10 @@ import arrowRight from "@/assets/ui/arrow-right.svg";
 const NAV_BUTTON_CLASS = `h-10 w-10 bg-[#F5F5F5] flex items-center justify-center transition-all duration-300 ease-out hover:-translate-y-0.5 hover:scale-105 disabled:opacity-40 disabled:transition-none disabled:hover:transform-none`;
 
 const GAP_PX = 16;
+
+const INITIAL_RENDER_COUNT = 10;
+const RENDER_BATCH = 8;
+const LOAD_AHEAD_PX = 900;
 
 function clamp(n, min, max) {
   return Math.max(min, Math.min(max, n));
@@ -45,7 +56,14 @@ export default function HorizontalSliderSection({
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(false);
 
-  const isEmpty = !children;
+  const childArray = useMemo(() => Children.toArray(children), [children]);
+  const isEmpty = childArray.length === 0;
+
+  const [renderCount, setRenderCount] = useState(INITIAL_RENDER_COUNT);
+
+  const visibleChildren = useMemo(() => {
+    return childArray.slice(0, Math.min(renderCount, childArray.length));
+  }, [childArray, renderCount]);
 
   const getEndPaddingPx = useCallback(() => {
     const el = scrollerRef.current;
@@ -154,6 +172,25 @@ export default function HorizontalSliderSection({
   const handlePrev = useCallback(() => scrollByStep(-1), [scrollByStep]);
   const handleNext = useCallback(() => scrollByStep(1), [scrollByStep]);
 
+  const maybeLoadMore = useCallback(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+
+    if (renderCount >= childArray.length) return;
+
+    const endPad = getEndPaddingPx();
+    const max = Math.max(0, el.scrollWidth - el.clientWidth - endPad);
+    const left = el.scrollLeft;
+
+    const distanceToEnd = max - left;
+
+    if (distanceToEnd < LOAD_AHEAD_PX) {
+      setRenderCount((prev) =>
+        Math.min(prev + RENDER_BATCH, childArray.length),
+      );
+    }
+  }, [renderCount, childArray.length, getEndPaddingPx]);
+
   useEffect(() => {
     if (isEmpty) return;
 
@@ -164,7 +201,9 @@ export default function HorizontalSliderSection({
 
     const onScroll = () => {
       if (!isAnimatingRef.current) calcButtons();
+      maybeLoadMore();
     };
+
     el.addEventListener("scroll", onScroll, { passive: true });
 
     const ro = new ResizeObserver(() => recalcAll());
@@ -173,13 +212,15 @@ export default function HorizontalSliderSection({
 
     window.addEventListener("resize", recalcAll);
 
+    requestAnimationFrame(() => maybeLoadMore());
+
     return () => {
       el.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", recalcAll);
       ro.disconnect();
       cancelAnimation();
     };
-  }, [isEmpty, recalcAll, calcButtons, cancelAnimation]);
+  }, [isEmpty, recalcAll, calcButtons, cancelAnimation, maybeLoadMore]);
 
   if (isEmpty) {
     return (
@@ -281,7 +322,7 @@ export default function HorizontalSliderSection({
                   ref={trackRef}
                   className={["w-max", trackClassName].join(" ")}
                 >
-                  {children}
+                  {visibleChildren}
                 </div>
               </div>
 

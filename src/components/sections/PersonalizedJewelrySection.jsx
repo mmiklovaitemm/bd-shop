@@ -30,7 +30,9 @@ export default function PersonalizedJewelrySection({
                 src={heroMobile}
                 alt="Personalized jewellery"
                 className="absolute inset-0 h-full w-full object-cover"
-                loading="lazy"
+                loading="eager"
+                decoding="async"
+                fetchpriority="high"
               />
             </picture>
 
@@ -79,6 +81,8 @@ export default function PersonalizedJewelrySection({
                     alt=""
                     aria-hidden="true"
                     className="h-3 w-3 lg:h-4 lg:w-4 invert transition-transform duration-300 ease-out will-change-transform group-hover:translate-x-1 group-hover:-translate-y-1"
+                    loading="lazy"
+                    decoding="async"
                   />
                 </button>
               </div>

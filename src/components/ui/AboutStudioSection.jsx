@@ -32,6 +32,8 @@ love, beauty, and timeless elegance. Crafted with exquisite detail and the fines
                   src={heroTablet}
                   alt="About our studio"
                   className="absolute inset-0 w-full h-full object-cover"
+                  loading="lazy"
+                  decoding="async"
                 />
               </picture>
 
@@ -69,6 +71,8 @@ love, beauty, and timeless elegance. Crafted with exquisite detail and the fines
                   max-w-none
                   select-none
                 "
+                loading="lazy"
+                decoding="async"
               />
             </picture>
 
@@ -90,6 +94,8 @@ love, beauty, and timeless elegance. Crafted with exquisite detail and the fines
                   max-w-none
                   select-none
                 "
+                loading="lazy"
+                decoding="async"
               />
             </picture>
           </div>
@@ -103,6 +109,7 @@ love, beauty, and timeless elegance. Crafted with exquisite detail and the fines
                 alt="About our studio"
                 className="block w-full h-[22rem] object-cover"
                 loading="lazy"
+                decoding="async"
               />
 
               {/* Gradient on picture */}
@@ -119,6 +126,8 @@ love, beauty, and timeless elegance. Crafted with exquisite detail and the fines
                 src={logoMobile}
                 alt="Studio logo"
                 className="absolute left-0 -top-[3.5rem] z-10 w-full"
+                loading="lazy"
+                decoding="async"
               />
 
               <div className="max-w-[420px] ml-auto text-right">

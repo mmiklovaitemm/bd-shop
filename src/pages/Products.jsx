@@ -1,5 +1,3 @@
-// src/pages/Products.jsx
-
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
@@ -258,7 +256,7 @@ export default function Products() {
     });
   };
 
-  // ✅ CLEAR ALL
+  // CLEAR ALL
   const handleClearAll = () => {
     setSelectedMaterial(null);
     setSelectedAppearance([]);
@@ -266,28 +264,6 @@ export default function Products() {
     setSelectedSize(null);
     setPriceRange({ min: priceBounds.min, max: priceBounds.max });
   };
-
-  const isClearDisabled = useMemo(() => {
-    const priceChanged =
-      priceRange.min !== priceBounds.min || priceRange.max !== priceBounds.max;
-
-    return (
-      !selectedMaterial &&
-      selectedAppearance.length === 0 &&
-      selectedGems.length === 0 &&
-      selectedSize == null &&
-      !priceChanged
-    );
-  }, [
-    selectedMaterial,
-    selectedAppearance.length,
-    selectedGems.length,
-    selectedSize,
-    priceRange.min,
-    priceRange.max,
-    priceBounds.min,
-    priceBounds.max,
-  ]);
 
   const desktopColsClass = isFilterOpen ? "lg:grid-cols-3" : "lg:grid-cols-4";
 
@@ -330,7 +306,7 @@ export default function Products() {
       <div className="mx-auto w-full max-w-[1200px] px-4 md:px-6 lg:px-1 py-8 md:py-10">
         <div
           className={
-            isFilterOpen ? "lg:grid lg:grid-cols-[260px_1fr]" : "lg:block"
+            isFilterOpen ? "lg:grid lg:grid-cols-[260px_1fr] gap-6" : "lg:block"
           }
         >
           {isFilterOpen ? (
@@ -355,7 +331,7 @@ export default function Products() {
                 selectedSize={selectedSize}
                 onSizeChange={setSelectedSize}
                 onClearAll={handleClearAll}
-                clearDisabled={isClearDisabled}
+                clearDisabled={false}
               />
             </div>
           ) : null}
@@ -366,15 +342,16 @@ export default function Products() {
               desktopColsClass,
             ].join(" ")}
           >
-            {filteredAndSortedProducts.map((product) => (
+            {filteredAndSortedProducts.map((product, idx) => (
               <ProductCard
                 key={product.id}
                 product={{ ...product, image: product.thumbnail }}
+                priority={idx < 4}
                 onAddToCart={() => {}}
                 onAddToFavorites={() => {}}
                 onMediaReady={() => {}}
                 onImageError={(e) => {
-                  e.target.src = "/products/fallback.png";
+                  e.currentTarget.src = `${import.meta.env.BASE_URL}products/fallback.png`;
                 }}
               />
             ))}

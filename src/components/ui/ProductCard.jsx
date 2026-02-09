@@ -1,3 +1,4 @@
+import { useCallback, useRef, useState } from "react";
 import IconButton from "@/components/ui/IconButton";
 import AddToBagButton from "@/components/ui/AddToBagButton";
 
@@ -10,30 +11,113 @@ export default function ProductCard({
   onAddToFavorites,
   onImageError,
   onMediaReady,
+  priority = false,
 }) {
+  const [loadedMain, setLoadedMain] = useState(false);
+  const [loadedHover, setLoadedHover] = useState(false);
+
+  // MAIN image
+  const imgSrc =
+    typeof product.image === "string" ? product.image : product.image?.src;
+  const imgSrcSet =
+    typeof product.image === "string" ? undefined : product.image?.srcSet;
+  const imgSizes =
+    typeof product.image === "string" ? undefined : product.image?.sizes;
+
+  // HOVER image (…-2.png)
+  const hoverSrc = product?.variants?.silver?.[1];
+
+  // Hover preload
+  const preloadedRef = useRef(false);
+  const preloadHover = useCallback(() => {
+    if (!hoverSrc) return;
+    if (preloadedRef.current || loadedHover) return;
+
+    preloadedRef.current = true;
+
+    const img = new Image();
+    img.src = hoverSrc;
+    img.onload = () => setLoadedHover(true);
+  }, [hoverSrc, loadedHover]);
+
   return (
     <article
       data-card
+      onPointerEnter={preloadHover}
       className="
-        group bg-white
-        w-full h-full
+        group bg-white w-full h-full
         transition-transform duration-200 ease-out
         will-change-transform
         hover:scale-[1.02]
       "
     >
-      <div className="relative w-full h-[340px] overflow-hidden">
+      <div className="relative w-full h-[340px] overflow-hidden bg-black/5">
+        {!loadedMain && (
+          <div className="absolute inset-0 animate-pulse bg-black/10" />
+        )}
+
+        {/* MAIN image */}
         <img
-          src={product.image}
+          src={imgSrc}
+          srcSet={imgSrcSet}
+          sizes={imgSizes}
           alt={product.name}
-          className="absolute inset-0 h-full w-full object-cover"
+          className={[
+            "absolute inset-0 h-full w-full object-cover transition-all duration-300 ease-out",
+            loadedMain ? "opacity-100" : "opacity-0",
+            hoverSrc ? "group-hover:opacity-0 group-hover:scale-[1.02]" : "",
+          ].join(" ")}
           onError={onImageError}
-          onLoad={onMediaReady}
-          loading="lazy"
+          onLoad={(e) => {
+            setLoadedMain(true);
+            onMediaReady?.(e);
+          }}
+          loading={priority ? "eager" : "lazy"}
+          decoding="async"
+          fetchpriority={priority ? "high" : "auto"}
         />
+
+        {/* HOVER image */}
+        {hoverSrc ? (
+          <img
+            src={hoverSrc}
+            alt={`${product.name} - hover`}
+            className={[
+              "absolute inset-0 h-full w-full object-cover transition-all duration-300 ease-out",
+              "opacity-0 group-hover:opacity-100",
+              "scale-100 group-hover:scale-[1.04]",
+              loadedHover ? "" : "group-hover:opacity-0",
+            ].join(" ")}
+            onLoad={() => setLoadedHover(true)}
+            onError={onImageError}
+            loading="lazy"
+            decoding="async"
+          />
+        ) : null}
 
         {/* Hover dark overlay */}
         <div className="pointer-events-none absolute inset-0 bg-black/55 opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100" />
+
+        {/* CENTER title on hover */}
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-6 text-center">
+          <p
+            className="
+              opacity-0 translate-y-2
+              group-hover:opacity-100 group-hover:translate-y-0
+              transition-all duration-200 ease-out
+              text-white font-display text-[20px] leading-tight
+              max-w-[90%]
+            "
+            style={{
+              display: "-webkit-box",
+              WebkitLineClamp: 3,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+            }}
+          >
+            {product.name}
+          </p>
+        </div>
 
         <IconButton
           variant="overlay"

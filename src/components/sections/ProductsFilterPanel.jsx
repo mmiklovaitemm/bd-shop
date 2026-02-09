@@ -1,5 +1,3 @@
-// src/components/sections/ProductsFilterPanel.jsx
-
 import Box from "@mui/material/Box";
 import Slider from "@mui/material/Slider";
 
@@ -27,9 +25,7 @@ function PriceRange({ priceBounds, priceRange, onPriceChange }) {
     const a = Math.min(nMin, nMax);
     const b = Math.max(nMin, nMax);
 
-    // mažiau lag'o: neupdate'inam jei niekas nepasikeitė
     if (a === priceRange.min && b === priceRange.max) return;
-
     onPriceChange?.({ min: a, max: b });
   };
 
@@ -70,7 +66,6 @@ function PriceRange({ priceBounds, priceRange, onPriceChange }) {
         />
       </Box>
 
-      {/* Inputai kaip dizaine */}
       <div className="flex items-center gap-3">
         <div className="flex-1 border border-black h-12 px-3 flex items-center gap-2">
           <span className="text-black/70">€</span>
@@ -108,46 +103,216 @@ function PriceRange({ priceBounds, priceRange, onPriceChange }) {
   );
 }
 
+function toggleInArray(arr, value) {
+  return arr.includes(value) ? arr.filter((x) => x !== value) : [...arr, value];
+}
+
+function FiltersContent({
+  materialOptions,
+  selectedMaterial,
+  onMaterialChange,
+
+  priceBounds,
+  priceRange,
+  onPriceChange,
+
+  appearanceOptions,
+  selectedAppearance,
+  onAppearanceChange,
+
+  gemOptions,
+  selectedGems,
+  onGemsChange,
+
+  sizeOptions,
+  selectedSize,
+  onSizeChange,
+}) {
+  return (
+    <>
+      {/* MATERIAL */}
+      <FilterAccordion title="Material">
+        <div className="flex gap-3 flex-wrap">
+          {materialOptions.map((opt) => {
+            const active = selectedMaterial === opt.value;
+            const isGold = opt.value === "gold";
+
+            const activeCls = isGold
+              ? "bg-white text-[#c58a2a] border-[#c58a2a]"
+              : "bg-black/60 text-white border-black/60";
+
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => onMaterialChange?.(active ? null : opt.value)}
+                className={[
+                  "h-10 px-4 border font-ui text-[13px] transition-colors",
+                  active
+                    ? activeCls
+                    : "bg-white text-black border-black/40 hover:bg-black/5",
+                ].join(" ")}
+              >
+                {opt.label} ({opt.count})
+              </button>
+            );
+          })}
+        </div>
+      </FilterAccordion>
+
+      {/* PRICE */}
+      <FilterAccordion title="Price">
+        <PriceRange
+          priceBounds={priceBounds}
+          priceRange={priceRange}
+          onPriceChange={onPriceChange}
+        />
+      </FilterAccordion>
+
+      {/* APPEARANCE */}
+      <FilterAccordion title="Appearance">
+        <div className="space-y-3">
+          {appearanceOptions.map((opt) => {
+            const checked = selectedAppearance.includes(opt.value);
+
+            return (
+              <label
+                key={opt.value}
+                className="flex items-center gap-3 font-ui text-[14px]"
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() =>
+                    onAppearanceChange?.(
+                      toggleInArray(selectedAppearance, opt.value),
+                    )
+                  }
+                  className="h-5 w-5 accent-black"
+                />
+                <span>
+                  {opt.label} ({opt.count})
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      </FilterAccordion>
+
+      {/* GEMS */}
+      <FilterAccordion title="Brangakmeniai">
+        <div className="space-y-3">
+          {gemOptions.map((opt) => {
+            const checked = selectedGems.includes(opt.value);
+
+            return (
+              <label
+                key={opt.value}
+                className="flex items-center gap-3 font-ui text-[14px]"
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() =>
+                    onGemsChange?.(toggleInArray(selectedGems, opt.value))
+                  }
+                  className="h-5 w-5 accent-black"
+                />
+                <span>
+                  {opt.label} ({opt.count})
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      </FilterAccordion>
+
+      {/* SIZE */}
+      <FilterAccordion title="Size">
+        <div className="flex gap-3 flex-wrap">
+          {sizeOptions.map((opt) => {
+            const active = selectedSize === opt.value;
+            const disabled = opt.count === 0;
+
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                disabled={disabled}
+                onClick={() => onSizeChange?.(active ? null : opt.value)}
+                className={[
+                  "relative h-10 w-14 border font-ui text-[13px] transition-colors",
+                  active
+                    ? "bg-black text-white border-black"
+                    : "bg-white text-black border-black/40",
+                  disabled
+                    ? "opacity-45 cursor-not-allowed"
+                    : "hover:bg-black/5",
+                ].join(" ")}
+              >
+                {opt.label}
+                {disabled ? (
+                  <span className="pointer-events-none absolute left-1 right-1 top-1/2 h-px bg-black/50 rotate-[-25deg]" />
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+      </FilterAccordion>
+    </>
+  );
+}
+
 export default function ProductsFilterPanel({
   isOpen,
   onClose,
   variant = "auto",
 
-  // Material
   materialOptions = [],
   selectedMaterial,
   onMaterialChange,
 
-  // Price
   priceBounds,
   priceRange,
   onPriceChange,
 
-  // Appearance
   appearanceOptions = [],
   selectedAppearance = [],
   onAppearanceChange,
 
-  // Gems
   gemOptions = [],
   selectedGems = [],
   onGemsChange,
 
-  // Size
   sizeOptions = [],
   selectedSize,
   onSizeChange,
 
-  // Clear
   onClearAll,
   clearDisabled = false,
 }) {
   if (!isOpen) return null;
 
-  const toggleInArray = (arr, value) => {
-    return arr.includes(value)
-      ? arr.filter((x) => x !== value)
-      : [...arr, value];
+  const contentProps = {
+    materialOptions,
+    selectedMaterial,
+    onMaterialChange,
+
+    priceBounds,
+    priceRange,
+    onPriceChange,
+
+    appearanceOptions,
+    selectedAppearance,
+    onAppearanceChange,
+
+    gemOptions,
+    selectedGems,
+    onGemsChange,
+
+    sizeOptions,
+    selectedSize,
+    onSizeChange,
   };
 
   return (
@@ -163,7 +328,6 @@ export default function ProductsFilterPanel({
           />
 
           <aside className="absolute right-0 top-0 h-full w-[92%] max-w-[380px] bg-white border-l border-black flex flex-col">
-            {/* Header */}
             <div className="h-12 px-4 flex items-center justify-between border-b border-black shrink-0">
               <span className="font-ui text-[14px]">Filter</span>
 
@@ -177,145 +341,9 @@ export default function ProductsFilterPanel({
               </button>
             </div>
 
-            {/* Scroll content */}
             <div className="flex-1 overflow-y-auto">
-              {/* MATERIAL */}
-              <FilterAccordion title="Material">
-                <div className="flex gap-3 flex-wrap">
-                  {materialOptions.map((opt) => {
-                    const active = selectedMaterial === opt.value;
-                    const isGold = opt.value === "gold";
+              <FiltersContent {...contentProps} />
 
-                    const activeCls = isGold
-                      ? "bg-white text-[#c58a2a] border-[#c58a2a]"
-                      : "bg-black/60 text-white border-black/60";
-
-                    return (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() =>
-                          onMaterialChange?.(active ? null : opt.value)
-                        }
-                        className={[
-                          "h-10 px-4 border font-ui text-[13px] transition-colors",
-                          active
-                            ? activeCls
-                            : "bg-white text-black border-black/40 hover:bg-black/5",
-                        ].join(" ")}
-                      >
-                        {opt.label} ({opt.count})
-                      </button>
-                    );
-                  })}
-                </div>
-              </FilterAccordion>
-
-              {/* PRICE */}
-              <FilterAccordion title="Price">
-                <PriceRange
-                  priceBounds={priceBounds}
-                  priceRange={priceRange}
-                  onPriceChange={onPriceChange}
-                />
-              </FilterAccordion>
-
-              {/* APPEARANCE */}
-              <FilterAccordion title="Appearance">
-                <div className="space-y-3">
-                  {appearanceOptions.map((opt) => {
-                    const checked = selectedAppearance.includes(opt.value);
-
-                    return (
-                      <label
-                        key={opt.value}
-                        className="flex items-center gap-3 font-ui text-[14px]"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() =>
-                            onAppearanceChange?.(
-                              toggleInArray(selectedAppearance, opt.value),
-                            )
-                          }
-                          className="h-5 w-5 accent-black"
-                        />
-                        <span>
-                          {opt.label} ({opt.count})
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </FilterAccordion>
-
-              {/* GEMS */}
-              <FilterAccordion title="Brangakmeniai">
-                <div className="space-y-3">
-                  {gemOptions.map((opt) => {
-                    const checked = selectedGems.includes(opt.value);
-
-                    return (
-                      <label
-                        key={opt.value}
-                        className="flex items-center gap-3 font-ui text-[14px]"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() =>
-                            onGemsChange?.(
-                              toggleInArray(selectedGems, opt.value),
-                            )
-                          }
-                          className="h-5 w-5 accent-black"
-                        />
-                        <span>
-                          {opt.label} ({opt.count})
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </FilterAccordion>
-
-              {/* SIZE */}
-              <FilterAccordion title="Size">
-                <div className="flex gap-3 flex-wrap">
-                  {sizeOptions.map((opt) => {
-                    const active = selectedSize === opt.value;
-                    const disabled = opt.count === 0;
-
-                    return (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        disabled={disabled}
-                        onClick={() =>
-                          onSizeChange?.(active ? null : opt.value)
-                        }
-                        className={[
-                          "relative h-10 w-14 border font-ui text-[13px] transition-colors",
-                          active
-                            ? "bg-black text-white border-black"
-                            : "bg-white text-black border-black/40",
-                          disabled
-                            ? "opacity-45 cursor-not-allowed"
-                            : "hover:bg-black/5",
-                        ].join(" ")}
-                      >
-                        {opt.label}
-                        {disabled ? (
-                          <span className="pointer-events-none absolute left-1 right-1 top-1/2 h-px bg-black/50 rotate-[-25deg]" />
-                        ) : null}
-                      </button>
-                    );
-                  })}
-                </div>
-              </FilterAccordion>
-
-              {/* CLEAR ALL (bottom like design) */}
               <div className="p-4">
                 <ClearAllButton onClick={onClearAll} disabled={clearDisabled} />
               </div>
@@ -326,8 +354,8 @@ export default function ProductsFilterPanel({
 
       {/* Desktop inline */}
       {(variant === "auto" || variant === "desktop") && (
-        <aside className="hidden lg:block w-[240px] bg-white border border-black h-fit sticky top-6">
-          <div className="h-12 px-4 flex items-center justify-between border-b border-black bg-black text-white">
+        <aside className="hidden lg:flex w-[260px] bg-white border border-black h-fit sticky top-6 flex-col">
+          <div className="h-12 px-4 flex items-center justify-between border-b border-black bg-black text-white shrink-0">
             <span className="font-ui text-[14px]">Filter</span>
 
             <button
@@ -340,9 +368,14 @@ export default function ProductsFilterPanel({
             </button>
           </div>
 
-          {/* Jei nori, desktop'e vėliau sudėsim visą filter UI, dabar bent Clear */}
-          <div className="p-4">
-            <ClearAllButton onClick={onClearAll} disabled={clearDisabled} />
+          <div className="max-h-[calc(100vh-120px)] overflow-y-auto">
+            <div className="p-4">
+              <FiltersContent {...contentProps} />
+            </div>
+
+            <div className="p-4 pt-0">
+              <ClearAllButton onClick={onClearAll} disabled={clearDisabled} />
+            </div>
           </div>
         </aside>
       )}

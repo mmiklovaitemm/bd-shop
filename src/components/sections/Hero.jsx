@@ -14,11 +14,7 @@ import desk3 from "@/assets/images/hero/hero-desktop-3.jpg";
 
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 
-const BREAKPOINTS = {
-  desktop: 1024,
-  tablet: 768,
-};
-
+const BREAKPOINTS = { desktop: 1024, tablet: 768 };
 const SLIDE_INTERVAL = 4000;
 
 const IMAGES = {
@@ -58,7 +54,7 @@ export default function Hero() {
   const images = IMAGES[mode];
 
   useEffect(() => {
-    if (images.length === 0) return;
+    if (!images?.length) return;
     const id = setInterval(() => {
       setCurrent((p) => (p + 1) % images.length);
     }, SLIDE_INTERVAL);
@@ -66,11 +62,31 @@ export default function Hero() {
   }, [images]);
 
   useEffect(() => {
-    images.forEach((src) => {
+    if (!images?.length) return;
+
+    const preload = (src) => {
+      if (!src) return;
       const img = new Image();
+      img.decoding = "async";
       img.src = src;
-    });
-  }, [images]);
+    };
+
+    const t = setTimeout(() => {
+      preload(images[1]);
+    }, 600);
+
+    return () => clearTimeout(t);
+  }, [images, mode]);
+
+  useEffect(() => {
+    if (!images?.length) return;
+
+    const nextIndex = (current + 1) % images.length;
+    const nextSrc = images[nextIndex];
+    const img = new Image();
+    img.decoding = "async";
+    img.src = nextSrc;
+  }, [current, images]);
 
   const handleImageError = useCallback((index) => {
     setImageErrors((prev) => ({ ...prev, [index]: true }));
@@ -78,8 +94,10 @@ export default function Hero() {
 
   return (
     <section className="w-full">
-      {/* FULL WIDTH hero */}
-      <div className="relative w-screen left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] overflow-hidden">
+      <div
+        key={mode}
+        className="relative w-screen left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] overflow-hidden"
+      >
         <div className="relative h-[520px] sm:h-[600px] lg:h-[560px] xl:h-[620px]">
           {images.map(
             (img, i) =>
@@ -87,26 +105,26 @@ export default function Hero() {
                 <img
                   key={`${mode}-${i}`}
                   src={img}
-                  alt={`Hero image ${i + 1} for ${mode} view`}
+                  alt=""
                   className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-1000 ${
                     i === current ? "opacity-100" : "opacity-0"
                   }`}
                   onError={() => handleImageError(i)}
+                  loading={i === 0 ? "eager" : "lazy"}
+                  decoding="async"
+                  fetchpriority={i === 0 ? "high" : "auto"}
                 />
               ),
           )}
 
-          {/* TEXT CONTAINER (max width) */}
           <div className="pointer-events-none absolute inset-0">
             <div className="mx-auto h-full max-w-[1320px] px-4 md:px-6 relative">
-              {/* MOBILE + TABLET */}
               <h1 className="absolute left-7 bottom-7 font-display text-[60px] leading-[74px] text-white tracking-wider lg:hidden">
                 Discover <br />
                 Timeless <br />
                 Elegance
               </h1>
 
-              {/* DESKTOP */}
               <div className="hidden lg:flex absolute left-10 right-10 bottom-10 items-end gap-8">
                 <h1 className="font-display text-white text-[72px] xl:text-[88px] leading-none whitespace-nowrap">
                   Discover Timeless Elegance

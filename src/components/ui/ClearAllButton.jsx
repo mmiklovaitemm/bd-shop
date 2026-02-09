@@ -1,18 +1,19 @@
-export default function ClearAllButton({
-  onClick,
-  disabled = false,
-  className = "",
-}) {
+// src/components/ui/ClearAllButton.jsx
+
+export default function ClearAllButton({ onClick, disabled = false }) {
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={() => {
+        if (disabled) return;
+        onClick?.();
+      }}
       disabled={disabled}
       className={[
-        "h-12 w-full bg-black text-white font-ui text-[14px]",
-        "transition-all duration-300 ease-out hover:-translate-y-[2px] hover:scale-[1.01]",
-        "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:scale-100",
-        className,
+        "w-full h-12 border border-black font-ui text-[14px] transition-all duration-300 ease-out",
+        disabled
+          ? "bg-black/40 text-white/80 cursor-not-allowed"
+          : "bg-black text-white hover:-translate-y-[2px]",
       ].join(" ")}
     >
       Clear all

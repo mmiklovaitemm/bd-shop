@@ -25,7 +25,7 @@ const makeProduct = ({
   surface = "smooth", // "smooth" | "rough"
   gemstones = [], // ["kristolas","cirkonis","deimantas","perlas"]
 
-  // ✅ Size (pvz žiedams)
+  // Size for rings
   sizes = [], // [15.5, 16, 17.5, 18]
 }) => {
   const variants = {
@@ -76,7 +76,7 @@ export const PRODUCTS = [
     hasGem: true,
     surface: "smooth",
     gemstones: ["deimantas"],
-    sizes: [15.5, 16, 17.5, 18], // 18.5 nėra
+    sizes: [15.5, 16, 17.5, 18], // 18.5 not there
   }),
   makeProduct({
     id: "drift-ring",
@@ -135,7 +135,7 @@ export const PRODUCTS = [
     hasGem: false,
     surface: "rough",
     gemstones: [],
-    sizes: [15.5, 16, 17.5, 18], // 18.5 nėra
+    sizes: [15.5, 16, 17.5, 18], // 18.5 not there
   }),
   makeProduct({
     id: "pure-ring",
@@ -146,7 +146,7 @@ export const PRODUCTS = [
     hasGem: true,
     surface: "smooth",
     gemstones: ["perlas"],
-    sizes: [15.5, 16, 17.5, 18], // 18.5 nėra
+    sizes: [15.5, 16, 17.5, 18], // 18.5 not there
   }),
   makeProduct({
     id: "ridge-ring",
@@ -191,7 +191,7 @@ export const PRODUCTS = [
     hasGem: true,
     surface: "smooth",
     gemstones: ["kristolas"],
-    sizes: [15.5, 16, 17.5, 18], // 18.5 nėra
+    sizes: [15.5, 16, 17.5, 18], // 18.5 not there
   }),
   makeProduct({
     id: "wave-ring",
