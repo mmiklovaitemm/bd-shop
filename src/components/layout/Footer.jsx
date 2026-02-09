@@ -6,7 +6,7 @@ import tiktokIcon from "@/assets/ui/tiktok.svg";
 import instagramIcon from "@/assets/ui/instagram.svg";
 
 const linkClass =
-  "block font-ui text-[14px] text-black/80 transition-all duration-300 ease-out hover:text-black hover:-translate-y-[2px]";
+  "inline-block w-fit font-ui text-[14px] text-black/80 transition-all duration-300 ease-out hover:text-black hover:-translate-y-[2px]";
 
 const iconBtnHover =
   "transition-transform duration-300 ease-out hover:-translate-y-[2px] hover:scale-105";

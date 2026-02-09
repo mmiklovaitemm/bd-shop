@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import filterIcon from "@/assets/ui/filter-icon.svg";
+import { HiChevronDown } from "react-icons/hi";
 
 const SORT_OPTIONS = [
   { value: "price_desc", label: "Price, high to low" },
@@ -103,7 +104,11 @@ export default function ProductsToolbar({
           aria-expanded={isCategoryOpen}
         >
           <span className="font-medium">{activeCategoryLabel}</span>
-          <span className="text-black/60">˅</span>
+          <HiChevronDown
+            className={`text-black/70 w-5 h-5 md:w-4 md:h-4 transition-transform duration-200 ${
+              isCategoryOpen ? "rotate-180" : "rotate-0"
+            }`}
+          />
         </button>
 
         {isCategoryOpen && (

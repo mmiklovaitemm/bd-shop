@@ -6,42 +6,60 @@ const makeTitle = (id) =>
     .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
     .join(" ");
 
+// (local: "/" | GH Pages: "/bd-shop/")
+const withBase = (path) =>
+  `${import.meta.env.BASE_URL}${path.replace(/^\/+/, "")}`;
+
 const makeProduct = ({
   id,
   category,
   silver = [],
   gold = [],
-  extraVariants = {}, // pvz. soft-blue / soft-green
+  extraVariants = {}, // soft-blue / soft-green
   priceValue = 120,
   isBestSeller = false,
   createdAt = "2026-01-01",
+
+  // Appearance + Brangakmeniai
+  hasGem = false,
+  surface = "smooth", // "smooth" | "rough"
+  gemstones = [], // ["kristolas","cirkonis","deimantas","perlas"]
+
+  // ✅ Size (pvz žiedams)
+  sizes = [], // [15.5, 16, 17.5, 18]
 }) => {
   const variants = {
-    silver: silver.map((p) => `/products/${category}/${p}`),
+    silver: silver.map((p) => withBase(`products/${category}/${p}`)),
     ...(gold.length
-      ? { gold: gold.map((p) => `/products/${category}/${p}`) }
+      ? { gold: gold.map((p) => withBase(`products/${category}/${p}`)) }
       : {}),
     ...Object.fromEntries(
       Object.entries(extraVariants).map(([k, arr]) => [
         k,
-        arr.map((p) => `/products/${category}/${p}`),
+        arr.map((p) => withBase(`products/${category}/${p}`)),
       ]),
     ),
   };
 
-  const colors = Object.keys(variants); // pvz ["silver","gold"] arba ["silver","soft-blue","soft-green"]
+  const colors = Object.keys(variants);
 
   return {
     id,
     name: makeTitle(id),
-    category, // rings | earrings | necklaces | bracelets
-    priceValue, // sortingui
-    price: `€${priceValue}`, // UI
-    createdAt, // sortingui pagal date
+    category,
+    priceValue,
+    price: `€${priceValue}`,
+    createdAt,
     isBestSeller,
     colors,
     variants,
     thumbnail: variants.silver?.[0] ?? Object.values(variants)[0]?.[0] ?? "",
+
+    hasGem,
+    surface,
+    gemstones,
+
+    sizes,
   };
 };
 
@@ -55,6 +73,10 @@ export const PRODUCTS = [
     silver: ["cut-ring-1.png", "cut-ring-2.png"],
     priceValue: 58,
     createdAt: "2026-01-10",
+    hasGem: true,
+    surface: "smooth",
+    gemstones: ["deimantas"],
+    sizes: [15.5, 16, 17.5, 18], // 18.5 nėra
   }),
   makeProduct({
     id: "drift-ring",
@@ -62,6 +84,10 @@ export const PRODUCTS = [
     silver: ["drift-ring-1.png", "drift-ring-2.png"],
     priceValue: 75,
     createdAt: "2026-01-12",
+    hasGem: false,
+    surface: "rough",
+    gemstones: [],
+    sizes: [16, 17.5, 18, 18.5],
   }),
   makeProduct({
     id: "earth-ring",
@@ -71,6 +97,10 @@ export const PRODUCTS = [
     priceValue: 95,
     isBestSeller: true,
     createdAt: "2026-01-05",
+    hasGem: false,
+    surface: "rough",
+    gemstones: [],
+    sizes: [15.5, 16, 17.5, 18],
   }),
   makeProduct({
     id: "echo-ring",
@@ -78,6 +108,10 @@ export const PRODUCTS = [
     silver: ["echo-ring-1.png", "echo-ring-2.png"],
     priceValue: 70,
     createdAt: "2026-01-18",
+    hasGem: false,
+    surface: "smooth",
+    gemstones: [],
+    sizes: [15.5, 16, 17.5, 18, 18.5],
   }),
   makeProduct({
     id: "fluid-ring",
@@ -86,6 +120,10 @@ export const PRODUCTS = [
     gold: ["fluid-ring-gold.png"],
     priceValue: 115,
     createdAt: "2026-01-08",
+    hasGem: false,
+    surface: "smooth",
+    gemstones: [],
+    sizes: [16, 17.5, 18, 18.5],
   }),
   makeProduct({
     id: "fold-ring",
@@ -94,6 +132,10 @@ export const PRODUCTS = [
     gold: ["fold-ring-gold.png"],
     priceValue: 105,
     createdAt: "2026-01-15",
+    hasGem: false,
+    surface: "rough",
+    gemstones: [],
+    sizes: [15.5, 16, 17.5, 18], // 18.5 nėra
   }),
   makeProduct({
     id: "pure-ring",
@@ -101,6 +143,10 @@ export const PRODUCTS = [
     silver: ["pure-ring-1.png", "pure-ring-2.png"],
     priceValue: 65,
     createdAt: "2026-01-20",
+    hasGem: true,
+    surface: "smooth",
+    gemstones: ["perlas"],
+    sizes: [15.5, 16, 17.5, 18], // 18.5 nėra
   }),
   makeProduct({
     id: "ridge-ring",
@@ -108,6 +154,10 @@ export const PRODUCTS = [
     silver: ["ridge-ring-1.png", "ridge-ring-2.png"],
     priceValue: 80,
     createdAt: "2026-01-22",
+    hasGem: false,
+    surface: "rough",
+    gemstones: [],
+    sizes: [16, 17.5, 18, 18.5],
   }),
   makeProduct({
     id: "stack-ring",
@@ -115,6 +165,10 @@ export const PRODUCTS = [
     silver: ["stack-ring-1.png", "stack-ring-2.png"],
     priceValue: 75,
     createdAt: "2026-01-25",
+    hasGem: false,
+    surface: "smooth",
+    gemstones: [],
+    sizes: [15.5, 16, 17.5, 18, 18.5],
   }),
   makeProduct({
     id: "still-ring",
@@ -123,6 +177,10 @@ export const PRODUCTS = [
     gold: ["still-ring-gold.png"],
     priceValue: 105,
     createdAt: "2026-01-28",
+    hasGem: false,
+    surface: "smooth",
+    gemstones: [],
+    sizes: [16, 17.5, 18, 18.5],
   }),
   makeProduct({
     id: "true-ring",
@@ -130,6 +188,10 @@ export const PRODUCTS = [
     silver: ["true-ring-1.png", "true-ring-2.png"],
     priceValue: 65,
     createdAt: "2026-01-30",
+    hasGem: true,
+    surface: "smooth",
+    gemstones: ["kristolas"],
+    sizes: [15.5, 16, 17.5, 18], // 18.5 nėra
   }),
   makeProduct({
     id: "wave-ring",
@@ -138,6 +200,10 @@ export const PRODUCTS = [
     gold: ["wave-ring-gold.png"],
     priceValue: 90,
     createdAt: "2026-02-01",
+    hasGem: false,
+    surface: "smooth",
+    gemstones: [],
+    sizes: [15.5, 16, 17.5, 18, 18.5],
   }),
 
   // ======================
@@ -163,6 +229,10 @@ export const PRODUCTS = [
     },
     priceValue: 70,
     createdAt: "2026-01-06",
+    hasGem: true,
+    surface: "smooth",
+    gemstones: ["kristolas", "cirkonis", "perlas"],
+    sizes: [],
   }),
   makeProduct({
     id: "loop-earrings",
@@ -174,6 +244,10 @@ export const PRODUCTS = [
     ],
     priceValue: 80,
     createdAt: "2026-01-14",
+    hasGem: false,
+    surface: "smooth",
+    gemstones: [],
+    sizes: [],
   }),
   makeProduct({
     id: "point-earrings",
@@ -187,6 +261,10 @@ export const PRODUCTS = [
     priceValue: 85,
     createdAt: "2026-01-09",
     isBestSeller: true,
+    hasGem: false,
+    surface: "smooth",
+    gemstones: [],
+    sizes: [],
   }),
   makeProduct({
     id: "pure-earrings",
@@ -199,6 +277,10 @@ export const PRODUCTS = [
     gold: ["pure-earrings-gold.png"],
     priceValue: 90,
     createdAt: "2026-01-16",
+    hasGem: false,
+    surface: "smooth",
+    gemstones: [],
+    sizes: [],
   }),
   makeProduct({
     id: "sol-earrings",
@@ -206,6 +288,10 @@ export const PRODUCTS = [
     silver: ["sol-earrings-1.png", "sol-earrings-2.png", "sol-earrings-3.png"],
     priceValue: 75,
     createdAt: "2026-01-19",
+    hasGem: false,
+    surface: "smooth",
+    gemstones: [],
+    sizes: [],
   }),
 
   // ======================
@@ -217,6 +303,10 @@ export const PRODUCTS = [
     silver: ["dot-1.png", "dot-2.png"],
     priceValue: 95,
     createdAt: "2026-01-07",
+    hasGem: true,
+    surface: "rough",
+    gemstones: ["cirkonis"],
+    sizes: [],
   }),
   makeProduct({
     id: "fall-necklace",
@@ -224,6 +314,10 @@ export const PRODUCTS = [
     silver: ["fall-necklace-1.png", "fall-necklace-2.png"],
     priceValue: 110,
     createdAt: "2026-01-11",
+    hasGem: false,
+    surface: "smooth",
+    gemstones: [],
+    sizes: [],
   }),
 
   // ======================
@@ -236,6 +330,10 @@ export const PRODUCTS = [
     gold: ["bond-bracelet-gold.png"],
     priceValue: 100,
     createdAt: "2026-01-13",
+    hasGem: false,
+    surface: "smooth",
+    gemstones: [],
+    sizes: [],
   }),
   makeProduct({
     id: "core-bracelet",
@@ -243,5 +341,9 @@ export const PRODUCTS = [
     silver: ["core-bracelet-1.png", "core-bracelet-2.png"],
     priceValue: 105,
     createdAt: "2026-01-17",
+    hasGem: false,
+    surface: "smooth",
+    gemstones: [],
+    sizes: [],
   }),
 ];
