@@ -9,6 +9,10 @@ body {
   overflow-x: clip;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 @supports not (overflow: clip) {
   html,
   body {

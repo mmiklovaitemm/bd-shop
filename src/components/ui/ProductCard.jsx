@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import IconButton from "@/components/ui/IconButton";
 import AddToBagButton from "@/components/ui/AddToBagButton";
@@ -25,12 +25,34 @@ export default function ProductCard({
   const imgSizes =
     typeof product.image === "string" ? undefined : product.image?.sizes;
 
-  // HOVER image (…-2.png)
+  // HOVER image (currently only silver variant)
   const hoverSrc = product?.variants?.silver?.[1];
 
   // Hover preload
   const preloadedRef = useRef(false);
+  const cardRef = useRef(null);
+  const [isInView, setIsInView] = useState(false);
+
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el) return;
+
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsInView(true);
+          obs.disconnect();
+        }
+      },
+      { rootMargin: "300px" },
+    );
+
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
   const preloadHover = useCallback(() => {
+    if (!isInView) return;
     if (!hoverSrc) return;
     if (preloadedRef.current || loadedHover) return;
 
@@ -39,10 +61,11 @@ export default function ProductCard({
     const img = new Image();
     img.src = hoverSrc;
     img.onload = () => setLoadedHover(true);
-  }, [hoverSrc, loadedHover]);
+  }, [hoverSrc, loadedHover, isInView]);
 
   return (
     <article
+      ref={cardRef}
       data-card
       onPointerEnter={preloadHover}
       className="
@@ -76,7 +99,7 @@ export default function ProductCard({
             }}
             loading={priority ? "eager" : "lazy"}
             decoding="async"
-            fetchpriority={priority ? "high" : "auto"}
+            fetchPriority={priority ? "high" : "auto"}
           />
 
           {/* HOVER image */}
@@ -94,6 +117,7 @@ export default function ProductCard({
               onError={onImageError}
               loading="lazy"
               decoding="async"
+              fetchPriority="auto"
             />
           ) : null}
 

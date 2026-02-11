@@ -3,9 +3,9 @@ import { useNavigate } from "react-router-dom";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 import arrowUpRight from "@/assets/ui/arrow-up-right.svg";
 
-import heroDesktop from "@/assets/images/personalized-jewelry/personalized-hero-desktop.jpg";
-import heroTablet from "@/assets/images/personalized-jewelry/personalized-hero-tablet.jpg";
-import heroMobile from "@/assets/images/personalized-jewelry/personalized-hero-mobile.jpg";
+import heroDesktop from "@/assets/images/personalized-jewelry/personalized-hero-desktop.webp";
+import heroTablet from "@/assets/images/personalized-jewelry/personalized-hero-tablet.webp";
+import heroMobile from "@/assets/images/personalized-jewelry/personalized-hero-mobile.webp";
 
 export default function PersonalizedJewelrySection({
   title = "Personalized\nJewellery",

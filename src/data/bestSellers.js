@@ -1,20 +1,20 @@
-import earthRing1 from "@/assets/images/products/earth-ring-1.png";
-import earthRing2 from "@/assets/images/products/earth-ring-2.png";
+import earthRing1 from "@/assets/images/products/earth-ring-1.webp";
+import earthRing2 from "@/assets/images/products/earth-ring-2.webp";
 
-import cutRing1 from "@/assets/images/products/cut-ring-1.png";
-import cutRing2 from "@/assets/images/products/cut-ring-2.png";
+import cutRing1 from "@/assets/images/products/cut-ring-1.webp";
+import cutRing2 from "@/assets/images/products/cut-ring-2.webp";
 
-import dot1 from "@/assets/images/products/dot-1.png";
-import dot2 from "@/assets/images/products/dot-2.png";
+import dot1 from "@/assets/images/products/dot-1.webp";
+import dot2 from "@/assets/images/products/dot-2.webp";
 
-import echoRing1 from "@/assets/images/products/echo-ring-1.png";
-import echoRing2 from "@/assets/images/products/echo-ring-2.png";
+import echoRing1 from "@/assets/images/products/echo-ring-1.webp";
+import echoRing2 from "@/assets/images/products/echo-ring-2.webp";
 
-import pureEarrings1 from "@/assets/images/products/pure-earrings-1.png";
-import pureEarrings2 from "@/assets/images/products/pure-earrings-2.png";
+import pureEarrings1 from "@/assets/images/products/pure-earrings-1.webp";
+import pureEarrings2 from "@/assets/images/products/pure-earrings-2.webp";
 
-import stillRing1 from "@/assets/images/products/still-ring-1.png";
-import stillRing2 from "@/assets/images/products/still-ring-2.png";
+import stillRing1 from "@/assets/images/products/still-ring-1.webp";
+import stillRing2 from "@/assets/images/products/still-ring-2.webp";
 
 export const BEST_SELLERS = [
   {

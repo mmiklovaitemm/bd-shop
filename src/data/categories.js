@@ -1,7 +1,7 @@
-import ringsImg from "../assets/images/products/echo-ring-2.png";
-import braceletsImg from "../assets/images/products/bond-bracelet-2.png";
-import necklacesImg from "../assets/images/products/dot-2.png";
-import earringsImg from "../assets/images/products/point-earrings-2.png";
+import ringsImg from "../assets/images/products/echo-ring-2.webp";
+import braceletsImg from "../assets/images/products/bond-bracelet-2.webp";
+import necklacesImg from "../assets/images/products/dot-2.webp";
+import earringsImg from "../assets/images/products/point-earrings-2.webp";
 
 export const CATEGORIES = [
   {

@@ -1,9 +1,9 @@
-import angelouImg from "../assets/images/testimonials/celebrities/angelou.jpg";
-import donatasMontvydasImg from "../assets/images/testimonials/celebrities/donatas-montvydas.jpg";
-import fcBaseballImg from "../assets/images/testimonials/celebrities/fc-baseball.jpg";
-import jessicaShyImg from "../assets/images/testimonials/celebrities/jessica-shy.jpg";
-import monikaLiuImg from "../assets/images/testimonials/celebrities/monika-liu.jpg";
-import tomasNarkeviciusImg from "../assets/images/testimonials/celebrities/tomas-narkevicius.jpg";
+import angelouImg from "../assets/images/testimonials/celebrities/angelou.webp";
+import donatasMontvydasImg from "../assets/images/testimonials/celebrities/donatas-montvydas.webp";
+import fcBaseballImg from "../assets/images/testimonials/celebrities/fc-baseball.webp";
+import jessicaShyImg from "../assets/images/testimonials/celebrities/jessica-shy.webp";
+import monikaLiuImg from "../assets/images/testimonials/celebrities/monika-liu.webp";
+import tomasNarkeviciusImg from "../assets/images/testimonials/celebrities/tomas-narkevicius.webp";
 
 export const TESTIMONIALS = [
   {

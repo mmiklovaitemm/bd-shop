@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
 
-import mob1 from "@/assets/images/hero/mobile.png";
-import mob2 from "@/assets/images/hero/mobile-2.png";
-import mob3 from "@/assets/images/hero/mobile-3.png";
+import mob1 from "@/assets/images/hero/mobile.webp";
+import mob2 from "@/assets/images/hero/mobile-2.webp";
+import mob3 from "@/assets/images/hero/mobile-3.webp";
 
-import tab1 from "@/assets/images/hero/hero-tablet.jpg";
-import tab2 from "@/assets/images/hero/hero-tablet-2.png";
-import tab3 from "@/assets/images/hero/hero-tablet-3.jpg";
+import tab1 from "@/assets/images/hero/hero-tablet.webp";
+import tab2 from "@/assets/images/hero/hero-tablet-2.webp";
+import tab3 from "@/assets/images/hero/hero-tablet-3.webp";
 
-import desk1 from "@/assets/images/hero/hero-desktop.jpg";
-import desk2 from "@/assets/images/hero/hero-desktop-2.jpg";
-import desk3 from "@/assets/images/hero/hero-desktop-3.jpg";
+import desk1 from "@/assets/images/hero/hero-desktop.webp";
+import desk2 from "@/assets/images/hero/hero-desktop-2.webp";
+import desk3 from "@/assets/images/hero/hero-desktop-3.webp";
 
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 

@@ -1,9 +1,9 @@
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 
 // HERO images
-import heroDesktop from "@/assets/images/about-studio/about-studio-hero-desktop.jpg";
-import heroTablet from "@/assets/images/about-studio/about-studio-hero-tablet.jpg";
-import heroMobile from "@/assets/images/about-studio/about-studio-hero-mobile.jpg";
+import heroDesktop from "@/assets/images/about-studio/about-studio-hero-desktop.webp";
+import heroTablet from "@/assets/images/about-studio/about-studio-hero-tablet.webp";
+import heroMobile from "@/assets/images/about-studio/about-studio-hero-mobile.webp";
 
 // LOGO
 import logoDesktop from "@/assets/graphics/about-studio/about-studio-desktop-logo.svg";

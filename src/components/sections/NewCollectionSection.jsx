@@ -3,9 +3,9 @@ import { useNavigate } from "react-router-dom";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 import arrowUpRight from "@/assets/ui/arrow-up-right.svg";
 
-import heroDesktop from "@/assets/images/new-collection/hero-desktop.jpg";
-import heroTablet from "@/assets/images/new-collection/hero-tablet.jpg";
-import heroMobile from "@/assets/images/new-collection/hero-mobile.jpg";
+import heroDesktop from "@/assets/images/new-collection/hero-desktop.webp";
+import heroTablet from "@/assets/images/new-collection/hero-tablet.webp";
+import heroMobile from "@/assets/images/new-collection/hero-mobile.webp";
 
 export default function NewCollectionSection({
   title = "New\ncollection",

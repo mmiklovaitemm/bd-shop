@@ -1,5 +1,5 @@
 // src/pages/Product.jsx
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { PRODUCTS } from "@/data/products";
@@ -14,6 +14,9 @@ import arrowUpRightIcon from "@/assets/ui/arrow-up-right.svg";
 import deliveryIcon from "@/assets/ui/delivery.svg";
 import starIcon from "@/assets/ui/star.svg";
 import returnIcon from "@/assets/ui/return-box.svg";
+
+import arrowLeftIcon from "@/assets/ui/arrow-left.svg";
+import arrowRightIcon from "@/assets/ui/arrow-right.svg";
 
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 
@@ -40,7 +43,7 @@ export default function Product() {
   });
   const [qty, setQty] = useState(1);
 
-  // Images: 1 depends on selectedColor, 2 stays silver (for now)
+  // Images: 1 depends on selectedColor, 2 stays silver
   const images = useMemo(() => {
     if (!product) return [];
 
@@ -50,7 +53,7 @@ export default function Product() {
     const first = chosenArr[0] || product.thumbnail || "";
 
     const silverArr = product.variants?.silver || [];
-    const second = silverArr[1] || silverArr[0] || product.thumbnail || "";
+    const second = silverArr[1] || chosenArr[1] || silverArr[0] || first;
 
     return [first, second].filter(Boolean);
   }, [product, selectedColor]);
@@ -62,6 +65,49 @@ export default function Product() {
     if (c === "soft-green") return "Soft green";
     return c;
   };
+
+  // ===== Lightbox state (zoom overlay) =====
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [activeImgIndex, setActiveImgIndex] = useState(0);
+
+  const hasManyImages = images.length > 1;
+
+  const openLightbox = (index) => {
+    setActiveImgIndex(index);
+    setIsLightboxOpen(true);
+  };
+
+  const closeLightbox = () => setIsLightboxOpen(false);
+
+  const goPrev = () =>
+    setActiveImgIndex((i) => (i - 1 + images.length) % images.length);
+
+  const goNext = () => setActiveImgIndex((i) => (i + 1) % images.length);
+
+  // ESC + arrow keys
+  useEffect(() => {
+    if (!isLightboxOpen) return;
+
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") closeLightbox();
+      if (e.key === "ArrowLeft" && images.length > 1) goPrev();
+      if (e.key === "ArrowRight" && images.length > 1) goNext();
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLightboxOpen, images.length]);
+
+  // Optional: lock body scroll while lightbox open
+  useEffect(() => {
+    if (!isLightboxOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [isLightboxOpen]);
 
   if (!product) {
     return (
@@ -87,7 +133,7 @@ export default function Product() {
               src={backIcon}
               alt=""
               aria-hidden="true"
-              className="h-4 w-4 transition-transform duration-300 ease-out"
+              className="h-3 w-3 transition-transform duration-300 ease-out"
             />
             <span>Back</span>
           </span>
@@ -98,7 +144,12 @@ export default function Product() {
       <div className="md:grid md:grid-cols-[1fr_360px] lg:grid-cols-[1fr_420px] md:gap-8 lg:gap-10 md:items-start md:mb-5">
         {/* LEFT: Gallery */}
         <div className="grid grid-cols-2 gap-3 md:grid-cols-1 md:gap-4 lg:grid-cols-2">
-          <div className="group aspect-[3/4] md:aspect-auto md:h-[280px] lg:h-[560px] overflow-hidden bg-black/5 relative">
+          <button
+            type="button"
+            onClick={() => openLightbox(0)}
+            aria-label="Open image 1"
+            className="group aspect-[3/4] md:aspect-auto md:h-[280px] lg:h-[560px] overflow-hidden bg-black/5 relative text-left"
+          >
             <img
               src={images[0]}
               alt={`${product.name} - photo 1`}
@@ -107,9 +158,14 @@ export default function Product() {
               decoding="async"
             />
             <div className="pointer-events-none absolute inset-0 bg-black/0 transition-colors duration-500 ease-out group-hover:bg-black/5" />
-          </div>
+          </button>
 
-          <div className="group aspect-[3/4] md:aspect-auto md:h-[280px] lg:h-[560px] overflow-hidden bg-black/5 relative">
+          <button
+            type="button"
+            onClick={() => openLightbox(1)}
+            aria-label="Open image 2"
+            className="group aspect-[3/4] md:aspect-auto md:h-[280px] lg:h-[560px] overflow-hidden bg-black/5 relative text-left"
+          >
             <img
               src={images[1] || images[0]}
               alt={`${product.name} - photo 2`}
@@ -118,7 +174,7 @@ export default function Product() {
               decoding="async"
             />
             <div className="pointer-events-none absolute inset-0 bg-black/0 transition-colors duration-500 ease-out group-hover:bg-black/5" />
-          </div>
+          </button>
         </div>
 
         {/* RIGHT: Info */}
@@ -234,7 +290,7 @@ export default function Product() {
                 icon={bagIcon}
                 label="Add to bag"
                 ariaLabel={`Add ${product.name} to bag`}
-                className="!w-full !h-12 !min-w-0 !justify-center !border-black !bg-black !text-white hover:!scale-[1.02] hover:!-translate-y-0.5"
+                className="!w-full !h-12 !text-[13px] !min-w-0 !justify-center !border-black !bg-black !text-white hover:!scale-[1.02] hover:!-translate-y-0.5"
               />
             </div>
 
@@ -282,7 +338,7 @@ export default function Product() {
           </div>
 
           {/* Benefits row */}
-          <div className="mt-6 mb-6 border-t  border-black pt-5 grid grid-cols-2 gap-y-4 md:gap-6 gap-x-6">
+          <div className="mt-6 mb-6 border-t border-black pt-5 grid grid-cols-2 gap-y-4 md:gap-6 gap-x-6">
             <div className="flex items-center md:mt-4 gap-2 font-ui text-[14px] text-black/80">
               <img
                 src={warrantyIcon}
@@ -417,6 +473,111 @@ export default function Product() {
               </div>
             </div>
           </aside>
+        </div>
+      ) : null}
+
+      {/* Image Lightbox (zoom overlay) */}
+      {isLightboxOpen ? (
+        <div className="fixed inset-0 z-[80]">
+          {/* Overlay */}
+          <button
+            type="button"
+            aria-label="Close image preview"
+            onClick={closeLightbox}
+            className="absolute inset-0 bg-black/70"
+          />
+
+          {/* Panel */}
+          <div className="absolute inset-0 flex flex-col">
+            {/* Header */}
+            <div className="h-14 px-4 md:px-6 flex items-center justify-between border-b border-white/15 text-white bg-black">
+              <div className="font-ui text-[13px] text-white/80">
+                {activeImgIndex + 1} / {images.length}
+              </div>
+
+              {/* Close btn */}
+              <button
+                type="button"
+                onClick={closeLightbox}
+                className="group inline-flex items-center gap-2 font-ui text-[14px] cursor-pointer"
+              >
+                <span className="inline-flex items-center gap-2 transition-transform duration-300 ease-out will-change-transform group-hover:translate-x-[1px] group-hover:-translate-y-[1px]">
+                  <span className="inline-block">Close</span>
+                  <img
+                    src={arrowUpRightIcon}
+                    alt=""
+                    aria-hidden="true"
+                    className="h-3 w-3 invert transition-transform duration-300 ease-out"
+                  />
+                </span>
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="relative flex-1 flex items-center justify-center p-4 md:p-6">
+              {/* Prev */}
+              {hasManyImages ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    goPrev();
+                  }}
+                  aria-label="Previous image"
+                  className="
+                    absolute left-3 md:left-6 top-1/2 -translate-y-1/2
+                    h-11 w-11 md:h-12 md:w-12
+                    border border-white/30 bg-white/10 backdrop-blur-sm
+                    flex items-center justify-center
+                    transition-transform duration-300 ease-out
+                    hover:-translate-y-[calc(50%+2px)] hover:scale-105
+                  "
+                >
+                  <img
+                    src={arrowLeftIcon}
+                    alt=""
+                    aria-hidden="true"
+                    className="h-4 w-4 invert"
+                  />
+                </button>
+              ) : null}
+
+              {/* Image */}
+              <img
+                src={images[activeImgIndex]}
+                alt={`${product.name} - zoom`}
+                className="max-h-[78vh] md:max-h-[82vh] max-w-[92vw] object-contain select-none"
+                draggable="false"
+              />
+
+              {/* Next */}
+              {hasManyImages ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    goNext();
+                  }}
+                  aria-label="Next image"
+                  className="
+                    absolute right-3 md:right-6 top-1/2 -translate-y-1/2
+                    h-11 w-11 md:h-12 md:w-12
+                    border border-white/30 bg-white/10 backdrop-blur-sm
+                    flex items-center justify-center
+                    transition-transform duration-300 ease-out
+                    hover:-translate-y-[calc(50%+2px)] hover:scale-105
+                  "
+                >
+                  <img
+                    src={arrowRightIcon}
+                    alt=""
+                    aria-hidden="true"
+                    className="h-4 w-4 invert"
+                  />
+                </button>
+              ) : null}
+            </div>
+          </div>
         </div>
       ) : null}
 
