@@ -354,7 +354,7 @@ export default function ProductsFilterPanel({
 
       {/* Desktop inline */}
       {(variant === "auto" || variant === "desktop") && (
-        <aside className="hidden lg:flex w-[260px] bg-white border border-black h-fit sticky top-6 flex-col">
+        <aside className="hidden lg:flex w-[320px] bg-white border border-black h-fit sticky top-6 flex-col">
           <div className="h-12 px-4 flex items-center justify-between border-b border-black bg-black text-white shrink-0">
             <span className="font-ui text-[14px]">Filter</span>
 

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import Pagination from "@/components/ui/Pagination";
 
 import { PRODUCTS } from "@/data/products";
 import ProductCard from "@/components/ui/ProductCard";
@@ -75,6 +76,34 @@ export default function Products() {
   const [selectedAppearance, setSelectedAppearance] = useState([]);
   const [selectedGems, setSelectedGems] = useState([]);
   const [selectedSize, setSelectedSize] = useState(null);
+
+  // =========================
+  // PAGINATION
+  // =========================
+  const pageFromUrl = Number(searchParams.get("page") || 1);
+  const [page, setPage] = useState(
+    Number.isFinite(pageFromUrl) ? pageFromUrl : 1,
+  );
+
+  const [pageSize, setPageSize] = useState(12);
+
+  useEffect(() => {
+    const update = () => {
+      const isMobile = window.matchMedia("(max-width: 767px)").matches;
+      setPageSize(isMobile ? 8 : 12);
+    };
+
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  // keep page in sync with URL
+  useEffect(() => {
+    const p = Number(searchParams.get("page") || 1);
+    if (Number.isFinite(p) && p !== page) setPage(p);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   useEffect(() => {
     const fromUrl = searchParams.get("category");
@@ -241,6 +270,53 @@ export default function Products() {
     sortValue,
   ]);
 
+  const totalItems = filteredAndSortedProducts.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const showingCount = Math.min(safePage * pageSize, totalItems);
+
+  const pageItems = useMemo(() => {
+    const start = (safePage - 1) * pageSize;
+    return filteredAndSortedProducts.slice(start, start + pageSize);
+  }, [filteredAndSortedProducts, safePage, pageSize]);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [safePage]);
+
+  const handlePageChange = (nextPage) => {
+    const clamped = Math.max(1, Math.min(nextPage, totalPages));
+    setPage(clamped);
+
+    setSearchParams((prev) => {
+      const sp = new URLSearchParams(prev);
+      sp.set("page", String(clamped));
+      return sp;
+    });
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // reset page to 1 when filters/category/sort change
+  useEffect(() => {
+    setPage(1);
+    setSearchParams((prev) => {
+      const sp = new URLSearchParams(prev);
+      sp.set("page", "1");
+      return sp;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    activeCategory,
+    selectedMaterial,
+    priceRange.min,
+    priceRange.max,
+    selectedAppearance,
+    selectedGems,
+    selectedSize,
+    sortValue,
+  ]);
+
   const handleChangeCategory = (next) => {
     setActiveCategory(next);
 
@@ -249,9 +325,12 @@ export default function Products() {
     setSelectedGems([]);
     setSelectedSize(null);
 
+    setPage(1);
+
     setSearchParams((prev) => {
       const sp = new URLSearchParams(prev);
       sp.set("category", next);
+      sp.set("page", "1");
       return sp;
     });
   };
@@ -263,6 +342,13 @@ export default function Products() {
     setSelectedGems([]);
     setSelectedSize(null);
     setPriceRange({ min: priceBounds.min, max: priceBounds.max });
+
+    setPage(1);
+    setSearchParams((prev) => {
+      const sp = new URLSearchParams(prev);
+      sp.set("page", "1");
+      return sp;
+    });
   };
 
   const desktopColsClass = isFilterOpen ? "lg:grid-cols-3" : "lg:grid-cols-4";
@@ -306,7 +392,7 @@ export default function Products() {
       <div className="mx-auto w-full max-w-[1200px] px-4 md:px-6 lg:px-1 py-8 md:py-10">
         <div
           className={
-            isFilterOpen ? "lg:grid lg:grid-cols-[260px_1fr] gap-6" : "lg:block"
+            isFilterOpen ? "lg:grid lg:grid-cols-[320px_1fr] gap-6" : "lg:block"
           }
         >
           {isFilterOpen ? (
@@ -336,25 +422,41 @@ export default function Products() {
             </div>
           ) : null}
 
-          <div
-            className={[
-              "grid grid-cols-2 min-[460px]:grid-cols-2 md:grid-cols-3 gap-x-3 gap-y-5 md:gap-x-4 md:gap-y-6",
-              desktopColsClass,
-            ].join(" ")}
-          >
-            {filteredAndSortedProducts.map((product, idx) => (
-              <ProductCard
-                key={product.id}
-                product={{ ...product, image: product.thumbnail }}
-                priority={idx < 4}
-                onAddToCart={() => {}}
-                onAddToFavorites={() => {}}
-                onMediaReady={() => {}}
-                onImageError={(e) => {
-                  e.currentTarget.src = `${import.meta.env.BASE_URL}products/fallback.png`;
-                }}
+          <div>
+            <div
+              className={[
+                "grid grid-cols-2 min-[460px]:grid-cols-2 md:grid-cols-3 gap-x-3 gap-y-5 md:gap-x-4 md:gap-y-6",
+                desktopColsClass,
+              ].join(" ")}
+            >
+              {pageItems.map((product, idx) => (
+                <ProductCard
+                  key={product.id}
+                  product={{ ...product, image: product.thumbnail }}
+                  priority={idx < 4}
+                  onAddToCart={() => {}}
+                  onAddToFavorites={() => {}}
+                  onMediaReady={() => {}}
+                  onImageError={(e) => {
+                    e.currentTarget.src = `${import.meta.env.BASE_URL}products/fallback.png`;
+                  }}
+                />
+              ))}
+            </div>
+
+            <div className="mt-8 flex flex-col items-center gap-3">
+              <p className="font-ui text-[13px] text-black/70">
+                Showing {showingCount} of {totalItems}
+              </p>
+
+              <Pagination
+                totalItems={totalItems}
+                page={safePage}
+                pageSize={pageSize}
+                onPageChange={handlePageChange}
+                siblingCount={1}
               />
-            ))}
+            </div>
           </div>
         </div>
       </div>

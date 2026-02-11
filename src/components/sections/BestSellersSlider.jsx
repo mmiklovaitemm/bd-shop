@@ -7,6 +7,9 @@ import ProductCard from "@/components/ui/ProductCard";
 import seeAllArrow from "@/assets/ui/see-all-arrow-right.svg";
 import { BEST_SELLERS } from "@/data/bestSellers";
 
+const withBase = (path) =>
+  `${import.meta.env.BASE_URL}${String(path).replace(/^\/+/, "")}`;
+
 export default function BestSellersSlider({ items = BEST_SELLERS }) {
   const navigate = useNavigate();
 
@@ -26,6 +29,8 @@ export default function BestSellersSlider({ items = BEST_SELLERS }) {
           alt=""
           aria-hidden="true"
           className="h-3 w-3 transition-transform duration-300 ease-out will-change-transform group-hover:translate-x-1 group-hover:-translate-y-1"
+          loading="lazy"
+          decoding="async"
         />
       </button>
     ),
@@ -43,25 +48,42 @@ export default function BestSellersSlider({ items = BEST_SELLERS }) {
         </div>
       }
     >
-      {items.map((product, idx) => (
-        <div
-          key={product.id}
-          className="shrink-0 w-[260px] md:w-[280px] lg:w-[300px]"
-        >
-          <ProductCard
-            product={product}
-            priority={idx < 2}
-            onMediaReady={() => {}}
-            onAddToCart={() => console.log(`Add to cart: ${product.id}`)}
-            onAddToFavorites={() =>
-              console.log(`Add to favorites: ${product.id}`)
-            }
-            onImageError={(e) => {
-              e.target.src = "/products/fallback.png";
-            }}
-          />
-        </div>
-      ))}
+      {items.map((product, idx) => {
+        // ✅ užtikrinam, kad ProductCard turėtų hoverSrc (variants.silver[1])
+        // jei BEST_SELLERS jau turi variants – paliekam kaip yra.
+        // jei neturi, bet turi hoverImage – sukuriam variants.
+        const normalized = product?.variants
+          ? product
+          : {
+              ...product,
+              variants: {
+                silver: [
+                  product.image, // default
+                  product.hoverImage, // hover (jei yra)
+                ].filter(Boolean),
+              },
+            };
+
+        return (
+          <div
+            key={product.id}
+            className="shrink-0 w-[260px] md:w-[280px] lg:w-[300px]"
+          >
+            <ProductCard
+              product={normalized}
+              priority={idx < 2}
+              onMediaReady={() => {}}
+              onAddToCart={() => console.log(`Add to cart: ${product.id}`)}
+              onAddToFavorites={() =>
+                console.log(`Add to favorites: ${product.id}`)
+              }
+              onImageError={(e) => {
+                e.currentTarget.src = withBase("products/fallback.png");
+              }}
+            />
+          </div>
+        );
+      })}
     </HorizontalSliderSection>
   );
 }

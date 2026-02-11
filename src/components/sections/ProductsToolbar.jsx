@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import filterIcon from "@/assets/ui/filter-icon.svg";
 import { HiChevronDown } from "react-icons/hi";
 import ProductsSortPanel from "@/components/sections/ProductsSortPanel";
+
 const SORT_OPTIONS = [
   { value: "price_desc", label: "Price, high to low" },
   { value: "price_asc", label: "Price, low to high" },
@@ -104,10 +105,11 @@ export default function ProductsToolbar({
         ref={categoryWrapRef}
         className="border-b border-black px-6 py-4 relative"
       >
+        {/* ===== MOBILE/TABLET dropdown (kept) ===== */}
         <button
           type="button"
           onClick={toggleCategory}
-          className="w-full flex items-center justify-between font-ui text-[14px] text-black"
+          className="w-full flex items-center justify-between font-ui text-[14px] text-black lg:hidden"
           aria-label="Select category"
           aria-haspopup="listbox"
           aria-expanded={isCategoryOpen}
@@ -121,7 +123,7 @@ export default function ProductsToolbar({
         </button>
 
         {isCategoryOpen && (
-          <div className="absolute left-0 right-0 top-full mt-2 border border-black bg-white shadow-sm z-50">
+          <div className="absolute left-0 right-0 top-full mt-2 border border-black bg-white shadow-sm z-50 lg:hidden">
             <ul role="listbox" className="py-2">
               {categories.map((cat) => (
                 <li key={cat.value}>
@@ -144,6 +146,28 @@ export default function ProductsToolbar({
             </ul>
           </div>
         )}
+
+        {/* ===== DESKTOP row categories ===== */}
+        <div className="hidden lg:flex items-center justify-end gap-10">
+          {categories.map((cat) => {
+            const isActive = cat.value === activeCategoryValue;
+
+            return (
+              <button
+                key={cat.value}
+                type="button"
+                onClick={() => onCategoryChange?.(cat.value)}
+                className={[
+                  "relative font-ui text-[14px] transition-opacity",
+                  isActive ? "opacity-100" : "opacity-70 hover:opacity-100",
+                ].join(" ")}
+                aria-current={isActive ? "page" : undefined}
+              >
+                <span>{cat.label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Filter + Sort row */}
