@@ -19,3 +19,11 @@ html {
     overflow-x: hidden;
   }
 }
+
+@layer components {
+  .ui-interact {
+    @apply transition-transform duration-200 ease-out will-change-transform
+           lg:hover:-translate-y-[2px] lg:hover:scale-105
+           active:scale-95;
+  }
+}

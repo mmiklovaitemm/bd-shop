@@ -1,4 +1,3 @@
-// src/components/TestimonialCard.jsx
 export default function TestimonialCard({ testimonial, onClick }) {
   const { name, quote, rating = 5, image } = testimonial;
 
@@ -9,30 +8,32 @@ export default function TestimonialCard({ testimonial, onClick }) {
       className="
         group bg-white shrink-0 cursor-pointer
         w-[260px] md:w-[300px] lg:w-[300px]
-        transition-transform duration-200 ease-out
-        will-change-transform
-        hover:scale-[1.02]
+        select-none
+        touch-manipulation
       "
     >
       <div className="relative w-full h-[340px] overflow-hidden">
         <img
           src={image}
           alt={name}
-          className="absolute inset-0 h-full w-full object-cover"
           loading="lazy"
+          draggable={false}
+          onDragStart={(e) => e.preventDefault()}
+          className="
+            absolute inset-0 h-full w-full object-cover
+            pointer-events-none select-none
+          "
         />
 
-        {/* Content overlay – responsive height */}
-        <div className="absolute bottom-0 left-0 right-0 z-10">
+        <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none">
           <div
             className="
               bg-black/55 backdrop-blur-md
               px-6 py-5 text-white
-              h-[140px] 
+              h-[140px]
               flex flex-col justify-between
             "
           >
-            {/* Quote with subtle fade */}
             <p
               className="font-ui text-[14px] leading-[1.45] text-white/90 overflow-hidden"
               style={{
@@ -45,7 +46,6 @@ export default function TestimonialCard({ testimonial, onClick }) {
               {quote}
             </p>
 
-            {/* Bottom row */}
             <div className="flex items-end justify-between gap-4">
               <p className="font-display text-[18px] leading-none text-white">
                 {name}

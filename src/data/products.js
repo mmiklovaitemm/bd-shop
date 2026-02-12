@@ -306,11 +306,12 @@ export const PRODUCTS = [
   // NECKLACES
   // ======================
   makeProduct({
-    id: "dot",
+    id: "dot-ring",
     category: "necklaces",
     silver: ["dot-1.webp", "dot-2.webp"],
     priceValue: 95,
     createdAt: "2026-01-07",
+    isBestSeller: true,
     hasGem: true,
     surface: "rough",
     gemstones: ["cirkonis"],

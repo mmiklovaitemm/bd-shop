@@ -92,6 +92,10 @@ export default function Hero() {
     setImageErrors((prev) => ({ ...prev, [index]: true }));
   }, []);
 
+  const preventImgDrag = useCallback((e) => {
+    e.preventDefault();
+  }, []);
+
   return (
     <section className="w-full">
       <div
@@ -106,7 +110,9 @@ export default function Hero() {
                   key={`${mode}-${i}`}
                   src={img}
                   alt=""
-                  className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-1000 ${
+                  draggable={false}
+                  onDragStart={preventImgDrag}
+                  className={`absolute inset-0 h-full w-full object-cover select-none transition-opacity duration-1000 ${
                     i === current ? "opacity-100" : "opacity-0"
                   }`}
                   onError={() => handleImageError(i)}

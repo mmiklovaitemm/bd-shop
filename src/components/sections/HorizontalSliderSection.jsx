@@ -34,7 +34,7 @@ export default function HorizontalSliderSection({
   titleMobileClass = "font-display text-[40px] font-medium leading-none",
 
   fullBleed = true,
-  outerPxClass = "px-8",
+  outerPxClass = "px-6",
   sectionClassName = "py-8 pb-6",
   trackClassName = "flex gap-4",
 

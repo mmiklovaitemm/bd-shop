@@ -52,7 +52,7 @@ function useImagePreload(src, shouldPreload, onLoaded) {
 
     img.onload = () => onLoaded?.();
     img.onerror = () => {
-      preloadedRef.current = false; // allow retry
+      preloadedRef.current = false;
     };
   }, [src, shouldPreload, onLoaded]);
 }
@@ -66,7 +66,6 @@ function ProductImage({
   alt,
   sizes,
   srcSet,
-  priority,
   loaded,
   onLoad,
   onError,
@@ -87,11 +86,10 @@ function ProductImage({
         alt={alt}
         onLoad={onLoad}
         onError={onError}
-        loading={priority ? "eager" : "lazy"}
-        decoding="async"
-        fetchPriority={priority ? "high" : "auto"}
+        draggable={false}
+        onDragStart={(e) => e.preventDefault()}
         className={cn(
-          "absolute inset-0 h-full w-full object-cover transition-all duration-300 ease-out",
+          "absolute inset-0 h-full w-full object-cover transition-all duration-300 ease-out select-none pointer-events-none",
           loaded ? loadedClassName : notLoadedClassName,
           className,
         )}
@@ -100,14 +98,15 @@ function ProductImage({
   );
 }
 
-function OverlayContent({ product }) {
+function OverlayContent({ product, isRevealed }) {
   return (
     <>
-      <div className="pointer-events-none absolute inset-0 hidden md:flex items-center justify-center px-6 text-center">
+      {/* Desktop: rodom per hover (tik lg+) */}
+      <div className="pointer-events-none absolute inset-0 hidden lg:flex items-center justify-center px-6 text-center">
         <p
           className={cn(
             "opacity-0 translate-y-2",
-            "group-hover:opacity-100 group-hover:translate-y-0",
+            "lg:group-hover:opacity-100 lg:group-hover:translate-y-0",
             "transition-all duration-200 ease-out",
             "text-white font-display text-[20px] leading-tight",
             "max-w-[90%]",
@@ -123,14 +122,14 @@ function OverlayContent({ product }) {
         </p>
       </div>
 
-      <div className="pointer-events-none absolute inset-0 flex md:hidden items-center justify-center px-6 text-center">
+      {/* Mobile/Tablet: rodom kai isRevealed */}
+      <div className="pointer-events-none absolute inset-0 flex lg:hidden items-center justify-center px-6 text-center">
         <div
           className={cn(
-            "opacity-0 translate-y-2",
-            "group-hover:opacity-100 group-hover:translate-y-0",
+            "translate-y-2",
             "transition-all duration-200 ease-out",
-            "text-white",
-            "max-w-[90%]",
+            "text-white max-w-[90%]",
+            isRevealed ? "opacity-100 translate-y-0" : "opacity-0",
           )}
         >
           <p
@@ -153,10 +152,19 @@ function OverlayContent({ product }) {
   );
 }
 
-function BottomBar({ product, onAddToCart }) {
+function BottomBar({ product, onAddToCart, isRevealed }) {
   return (
     <div className="absolute bottom-0 left-0 right-0 z-10">
-      <div className="bg-black/50 backdrop-blur-md px-6 h-16 text-white transition-opacity duration-200 ease-out group-hover:opacity-0 flex items-center">
+      {/* Default bar (name + price) */}
+      <div
+        className={cn(
+          "bg-black/50 backdrop-blur-md px-6 h-16 text-white transition-opacity duration-200 ease-out flex items-center",
+          // Desktop slepiam per hover (tik lg+)
+          "lg:group-hover:opacity-0",
+          // Mobile/tablet slepiam kai atidarom actions
+          isRevealed ? "opacity-0 lg:opacity-100" : "opacity-100",
+        )}
+      >
         <div className="flex w-full items-center gap-4 justify-center">
           <p className="min-w-0 font-display font-normal text-[14px] leading-none truncate">
             {product.name}
@@ -168,7 +176,8 @@ function BottomBar({ product, onAddToCart }) {
         </div>
       </div>
 
-      <div className="pointer-events-none absolute inset-0 hidden md:flex items-center bg-black px-6 h-16 opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100">
+      {/* Desktop actions bar (tik lg+) */}
+      <div className="pointer-events-none absolute inset-0 hidden lg:flex items-center bg-black px-6 h-16 opacity-0 transition-opacity duration-200 ease-out lg:group-hover:opacity-100">
         <div className="flex w-full items-center justify-between gap-6">
           <p className="font-ui font-normal text-[14px] leading-none whitespace-nowrap text-white">
             {product.price}
@@ -187,7 +196,13 @@ function BottomBar({ product, onAddToCart }) {
         </div>
       </div>
 
-      <div className="pointer-events-none absolute inset-0 flex md:hidden items-center justify-center bg-black px-6 h-16 opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100">
+      {/* Mobile/Tablet actions bar (rodom kai isRevealed) */}
+      <div
+        className={cn(
+          "pointer-events-none absolute inset-0 flex lg:hidden items-center justify-center bg-black px-6 h-16 transition-opacity duration-200 ease-out",
+          isRevealed ? "opacity-100" : "opacity-0",
+        )}
+      >
         <div className="pointer-events-auto">
           <AddToBagButton
             onClick={(e) => {
@@ -249,7 +264,6 @@ export default function ProductCard({
   onAddToFavorites,
   onImageError,
   onMediaReady,
-  priority = false,
 }) {
   const safeProduct = product ?? { variants: {}, colors: [], thumbnail: "" };
 
@@ -334,37 +348,63 @@ export default function ProductCard({
 
   const hasHoverImage = Boolean(hoverSrc);
 
+  // Mobile/Tablet: 1 tap atidaro actions, 2 tap veda i page
+  const [isRevealed, setIsRevealed] = useState(false);
+
+  // desktop = lg+
+  const isDesktop = useMemo(() => {
+    if (typeof window === "undefined") return true;
+    return window.matchMedia("(min-width: 1024px)").matches;
+  }, []);
+
   return product ? (
     <article
       ref={cardRef}
       data-card
+      draggable={false}
+      onDragStart={(e) => e.preventDefault()}
+      onPointerLeave={() => {
+        if (!isDesktop) setIsRevealed(false);
+      }}
       className={cn(
-        "group bg-white w-full h-full",
-        "transition-transform duration-200 ease-out",
-        "will-change-transform",
-        "hover:scale-[1.02]",
+        "group bg-white w-full h-full ui-interact select-none active:brightness-95",
       )}
     >
-      <Link to={`/collections/${product.id}`} className="block">
-        <div className="relative w-full h-[340px] overflow-hidden bg-black/5">
-          {/* MAIN (1 nuotrauka) */}
+      <Link
+        to={`/collections/${product.id}`}
+        draggable={false}
+        onDragStart={(e) => e.preventDefault()}
+        className="block select-none"
+        onClick={(e) => {
+          if (isDesktop) return;
+          if (!isRevealed) {
+            e.preventDefault();
+            setIsRevealed(true);
+          }
+        }}
+      >
+        <div
+          className="relative w-full h-[340px] overflow-hidden bg-black/5 select-none"
+          draggable={false}
+          onDragStart={(e) => e.preventDefault()}
+        >
+          {/* MAIN */}
           <ProductImage
             src={mainSrc}
             srcSet={imageMeta.srcSet}
             sizes={imageMeta.sizes}
             alt={product.name}
-            priority={priority}
             loaded={loadedMain}
             onLoad={handleMainImageLoad}
             onError={handleImageError}
             className={
               hasHoverImage
-                ? "group-hover:opacity-0 group-hover:scale-[1.02]"
+                ? "lg:group-hover:opacity-0 lg:group-hover:scale-[1.02]"
                 : ""
             }
           />
 
-          {/* HOVER (2 nuotrauka tik per hover) */}
+          {/* HOVER IMG - tik desktop per hover */}
           {hasHoverImage ? (
             <ProductImage
               src={hoverSrc}
@@ -372,20 +412,26 @@ export default function ProductCard({
               loaded={loadedHover}
               onLoad={handleHoverLoad}
               onError={handleImageError}
-              // svarbiausia dalis: net kai loaded, likti hidden iki hover
               loadedClassName="opacity-0"
               notLoadedClassName="opacity-0"
               className={cn(
-                "opacity-0 group-hover:opacity-100",
-                "scale-100 group-hover:scale-[1.04]",
-                !loadedHover && "group-hover:opacity-0",
+                "opacity-0 lg:group-hover:opacity-100",
+                "scale-100 lg:group-hover:scale-[1.04]",
+                !loadedHover && "lg:group-hover:opacity-0",
               )}
             />
           ) : null}
 
-          <div className="pointer-events-none absolute inset-0 bg-black/55 opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100" />
+          {/* Overlay: desktop hover, mobile kai isRevealed */}
+          <div
+            className={cn(
+              "pointer-events-none absolute inset-0 bg-black/55 transition-opacity duration-200 ease-out",
+              "opacity-0 lg:group-hover:opacity-100",
+              isRevealed ? "opacity-100 lg:opacity-0" : "",
+            )}
+          />
 
-          <OverlayContent product={product} />
+          <OverlayContent product={product} isRevealed={isRevealed} />
 
           <ActionButtons
             product={product}
@@ -393,7 +439,11 @@ export default function ProductCard({
             onAddToFavorites={onAddToFavorites}
           />
 
-          <BottomBar product={product} onAddToCart={onAddToCart} />
+          <BottomBar
+            product={product}
+            onAddToCart={onAddToCart}
+            isRevealed={isRevealed}
+          />
         </div>
       </Link>
     </article>

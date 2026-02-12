@@ -1,4 +1,8 @@
 export default function CategoryCard({ category, onClick, onMediaReady }) {
+  const preventImgDrag = (e) => {
+    e.preventDefault();
+  };
+
   return (
     <article
       data-card
@@ -6,21 +10,24 @@ export default function CategoryCard({ category, onClick, onMediaReady }) {
       className="
         group bg-white shrink-0 cursor-pointer
         w-[260px] md:w-[300px] lg:w-[300px]
-        transition-transform duration-200 ease-out
-        hover:scale-[1.02]
+        transition-all duration-200 ease-out
+        active:scale-[0.97]
+        lg:hover:scale-[1.02]
       "
     >
       <div className="relative w-full h-[340px] overflow-hidden">
         <img
           src={category.image}
           alt={category.title}
-          className="absolute inset-0 h-full w-full object-cover"
+          draggable={false}
+          onDragStart={preventImgDrag}
+          className="absolute inset-0 h-full w-full object-cover select-none"
           loading="lazy"
           onLoad={onMediaReady}
         />
 
-        {/* Hover dark overlay (kaip ProductCard) */}
-        <div className="pointer-events-none absolute inset-0 bg-black/55 opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100" />
+        {/* Hover overlay only for desktop */}
+        <div className="pointer-events-none absolute inset-0 bg-black/55 opacity-0 transition-opacity duration-200 ease-out lg:group-hover:opacity-100" />
 
         {/* Bottom bar */}
         <div className="absolute bottom-0 left-0 right-0 z-10">

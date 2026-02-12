@@ -11,11 +11,11 @@ import bagIcon from "@/assets/ui/shopping-bag.svg";
 
 // Constants for better maintainability
 const ICON_HOVER_CLASS =
-  "transition-transform duration-300 ease-out hover:-translate-y-[2px]";
+  "transition-transform duration-300 ease-out lg:hover:-translate-y-[2px]";
 const NAV_LINK_CLASS =
-  "font-ui text-[12px] font-normal text-black/80 hover:text-black transition-colors";
+  "font-ui text-[12px] font-normal text-black/80 lg:hover:text-black transition-colors";
 const LANGUAGE_BUTTON_CLASS =
-  "h-7 w-7 font-ui text-[12px] transition-transform duration-300 ease-out hover:-translate-y-[2px]";
+  "h-7 w-7 font-ui text-[12px] transition-transform duration-300 ease-out lg:hover:-translate-y-[2px]";
 const HEADER_HEIGHT = "h-[64px]";
 const MAX_WIDTH = "max-w-[1320px]";
 
@@ -35,7 +35,9 @@ const LANGUAGES = [
 const LanguageButton = memo(({ code, isActive }) => (
   <button
     type="button"
-    className={`${LANGUAGE_BUTTON_CLASS} ${
+    draggable={false}
+    onDragStart={(e) => e.preventDefault()}
+    className={`${LANGUAGE_BUTTON_CLASS} select-none ${
       isActive ? "bg-black text-white" : "border border-black"
     }`}
     aria-label={`Switch to ${code} language`}
@@ -45,15 +47,21 @@ const LanguageButton = memo(({ code, isActive }) => (
 ));
 
 const NavItem = memo(({ to, children, className = NAV_LINK_CLASS }) => (
-  <NavLink to={to} className={className}>
+  <NavLink to={to} className={`${className} select-none`}>
     {children}
   </NavLink>
 ));
 
 const CartItem = memo(({ to, icon, label, count }) => (
-  <NavItem to={to} className="flex items-center gap-2">
-    <img src={icon} alt="" className={`h-4 w-auto ${ICON_HOVER_CLASS}`} />
-    <span className="font-ui text-[12px] text-black/80">
+  <NavItem to={to} className="flex items-center gap-2 select-none">
+    <img
+      src={icon}
+      alt=""
+      draggable={false}
+      onDragStart={(e) => e.preventDefault()}
+      className={`h-4 w-auto select-none ${ICON_HOVER_CLASS}`}
+    />
+    <span className="font-ui text-[12px] text-black/80 select-none">
       {label} ({count})
     </span>
   </NavItem>
@@ -65,8 +73,22 @@ export default function Header() {
   const handleMenuOpen = useCallback(() => setIsMenuOpen(true), []);
   const handleMenuClose = useCallback(() => setIsMenuOpen(false), []);
 
+  const preventDrag = useCallback((e) => {
+    e.preventDefault();
+  }, []);
+
+  const preventSelect = useCallback((e) => {
+    // leidžiam normaliai paspausti mygtukus/nuorodas, bet stabdom tekstų/ikonų žymėjimą
+    if (e.target.closest("button,a")) return;
+    e.preventDefault();
+  }, []);
+
   return (
-    <header className="border-b border-black bg-white">
+    <header
+      className="border-b border-black bg-white select-none"
+      onDragStart={preventDrag}
+      onMouseDown={preventSelect}
+    >
       {/* MOBILE + TABLET: < lg */}
       <div
         className={`mx-auto grid ${HEADER_HEIGHT} ${MAX_WIDTH} grid-cols-3 items-center px-4 md:px-6 lg:hidden`}
@@ -78,13 +100,21 @@ export default function Header() {
           alt=""
           aria-label="Open menu"
           onClick={handleMenuOpen}
-          className="p-2 justify-self-start"
-          iconClassName={`h-[20px] w-auto ${ICON_HOVER_CLASS}`}
+          className="p-2 justify-self-start select-none"
+          iconClassName={`h-[20px] w-auto select-none ${ICON_HOVER_CLASS}`}
+          draggable={false}
+          onDragStart={preventDrag}
         />
 
         {/* Center: Logo */}
         <NavItem to="/" className="justify-self-center flex items-center">
-          <img src={logoIcon} alt="um studio" className="h-[28px] w-auto" />
+          <img
+            src={logoIcon}
+            alt="um studio"
+            draggable={false}
+            onDragStart={preventDrag}
+            className="h-[28px] w-auto select-none"
+          />
         </NavItem>
 
         {/* Right: Icons and languages */}
@@ -93,7 +123,9 @@ export default function Header() {
             <img
               src={heartIcon}
               alt="Favorites"
-              className={`h-[20px] w-auto ${ICON_HOVER_CLASS}`}
+              draggable={false}
+              onDragStart={preventDrag}
+              className={`h-[20px] w-auto select-none ${ICON_HOVER_CLASS}`}
             />
           </NavItem>
 
@@ -101,7 +133,9 @@ export default function Header() {
             <img
               src={bagIcon}
               alt="Cart"
-              className={`h-[20px] w-auto ${ICON_HOVER_CLASS}`}
+              draggable={false}
+              onDragStart={preventDrag}
+              className={`h-[20px] w-auto select-none ${ICON_HOVER_CLASS}`}
             />
           </NavItem>
 
@@ -120,7 +154,13 @@ export default function Header() {
       >
         {/* Left: Logo */}
         <NavItem to="/" className="flex items-center">
-          <img src={logoIcon} alt="um studio" className="h-[28px] w-auto" />
+          <img
+            src={logoIcon}
+            alt="um studio"
+            draggable={false}
+            onDragStart={preventDrag}
+            className="h-[28px] w-auto select-none"
+          />
         </NavItem>
 
         {/* Middle: Navigation pushed to the right */}

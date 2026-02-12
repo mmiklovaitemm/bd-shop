@@ -125,7 +125,7 @@ love, beauty, and timeless elegance. Crafted with exquisite detail and the fines
               <img
                 src={logoMobile}
                 alt="Studio logo"
-                className="absolute left-0 -top-[3.5rem] z-10 w-full"
+                className="absolute left-0 -top-[3.5rem] z-10 w-full px-2"
                 loading="lazy"
                 decoding="async"
               />

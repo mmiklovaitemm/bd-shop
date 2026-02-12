@@ -19,16 +19,26 @@ export default function BestSellersSlider({ items = BEST_SELLERS }) {
         type="button"
         onClick={() => navigate("/collections?category=best-sellers")}
         aria-label="See all best sellers"
-        className="group inline-flex items-center gap-2 font-display text-[18px] font-normal text-black cursor-pointer select-none transition-colors"
+        className="
+          group inline-flex items-center gap-2
+          font-display text-[18px] font-normal text-black
+          cursor-pointer select-none
+          transition-colors
+          active:scale-95
+          lg:hover:text-black
+        "
       >
-        <span className="inline-block transition-transform duration-300 ease-out will-change-transform group-hover:translate-x-1 group-hover:-translate-y-1">
+        <span className="inline-block transition-transform duration-300 ease-out will-change-transform lg:group-hover:translate-x-1 lg:group-hover:-translate-y-1">
           See all
         </span>
+
         <img
           src={seeAllArrow}
           alt=""
           aria-hidden="true"
-          className="h-3 w-3 transition-transform duration-300 ease-out will-change-transform group-hover:translate-x-1 group-hover:-translate-y-1"
+          draggable={false}
+          onDragStart={(e) => e.preventDefault()}
+          className="h-3 w-3 select-none transition-transform duration-300 ease-out will-change-transform lg:group-hover:translate-x-1 lg:group-hover:-translate-y-1"
           loading="lazy"
           decoding="async"
         />
@@ -49,18 +59,12 @@ export default function BestSellersSlider({ items = BEST_SELLERS }) {
       }
     >
       {items.map((product, idx) => {
-        // ✅ užtikrinam, kad ProductCard turėtų hoverSrc (variants.silver[1])
-        // jei BEST_SELLERS jau turi variants – paliekam kaip yra.
-        // jei neturi, bet turi hoverImage – sukuriam variants.
         const normalized = product?.variants
           ? product
           : {
               ...product,
               variants: {
-                silver: [
-                  product.image, // default
-                  product.hoverImage, // hover (jei yra)
-                ].filter(Boolean),
+                silver: [product.image, product.hoverImage].filter(Boolean),
               },
             };
 
