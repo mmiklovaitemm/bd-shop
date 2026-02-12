@@ -4,7 +4,7 @@ import RootLayout from "@/layouts/RootLayout";
 
 import Home from "@/pages/Home";
 import Products from "@/pages/Products";
-import Product from "@/pages/Product";
+import Product from "@/pages/Product/Product";
 import Favorites from "@/pages/Favorites";
 import Account from "@/pages/Account";
 import About from "@/pages/About";

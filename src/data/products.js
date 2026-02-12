@@ -1,5 +1,4 @@
 // src/data/products.js
-
 const makeTitle = (id) =>
   id
     .split("-")
@@ -14,32 +13,45 @@ const asWebp = (filename) => filename.replace(/\.(png|jpg|jpeg)$/i, ".webp");
 const makeProduct = ({
   id,
   category,
+
   silver = [],
   gold = [],
-  extraVariants = {}, // soft-blue / soft-green
+  extraVariants = {},
+
   priceValue = 120,
   isBestSeller = false,
   createdAt = "2026-01-01",
 
-  // Appearance + Brangakmeniai
   hasGem = false,
-  surface = "smooth", // "smooth" | "rough"
-  gemstones = [], // ["kristolas","cirkonis","deimantas","perlas"]
+  surface = "smooth",
+  gemstones = [],
 
-  // Size for rings
-  sizes = [], // [15.5, 16, 17.5, 18]
+  sizes = [],
+
+  ...customVariants
 }) => {
+  const mapArr = (arr) =>
+    (arr || []).map((p) => withBase(`products/${category}/${asWebp(p)}`));
+
+  const customMapped = Object.fromEntries(
+    Object.entries(customVariants)
+      .filter(([, arr]) => Array.isArray(arr) && arr.length > 0)
+      .map(([k, arr]) => [k, mapArr(arr)]),
+  );
+
+  const baseMapped = {
+    ...(silver.length ? { silver: mapArr(silver) } : {}),
+    ...(gold.length ? { gold: mapArr(gold) } : {}),
+  };
+
+  const extraMapped = Object.fromEntries(
+    Object.entries(extraVariants).map(([k, arr]) => [k, mapArr(arr)]),
+  );
+
   const variants = {
-    silver: silver.map((p) => withBase(`products/${category}/${asWebp(p)}`)),
-    ...(gold.length
-      ? { gold: gold.map((p) => withBase(`products/${category}/${asWebp(p)}`)) }
-      : {}),
-    ...Object.fromEntries(
-      Object.entries(extraVariants).map(([k, arr]) => [
-        k,
-        arr.map((p) => withBase(`products/${category}/${asWebp(p)}`)),
-      ]),
-    ),
+    ...customMapped,
+    ...baseMapped,
+    ...extraMapped,
   };
 
   const colors = Object.keys(variants);
@@ -52,15 +64,16 @@ const makeProduct = ({
     price: `€${priceValue}`,
     createdAt,
     isBestSeller,
+
     colors,
     variants,
+
     thumbnail:
       Object.values(variants).find((arr) => (arr?.length ?? 0) > 0)?.[0] ?? "",
 
     hasGem,
     surface,
     gemstones,
-
     sizes,
   };
 };
@@ -216,11 +229,13 @@ export const PRODUCTS = [
   makeProduct({
     id: "light-earrings",
     category: "earrings",
-    silver: [
+
+    "soft-yellow": [
       "light-earrings-1.webp",
-      "light-earrings-2.webp",
       "light-earrings-3.webp",
+      "light-earrings-2.webp",
     ],
+
     extraVariants: {
       "soft-blue": [
         "light-earrings-soft-blue-1.webp",

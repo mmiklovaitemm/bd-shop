@@ -16,7 +16,6 @@ import arrowRight from "@/assets/ui/arrow-right.svg";
 const NAV_BUTTON_CLASS = `h-10 w-10 bg-[#F5F5F5] flex items-center justify-center transition-all duration-300 ease-out hover:-translate-y-0.5 hover:scale-105 disabled:opacity-40 disabled:transition-none disabled:hover:transform-none`;
 
 const GAP_PX = 16;
-
 const INITIAL_RENDER_COUNT = 10;
 const RENDER_BATCH = 8;
 const LOAD_AHEAD_PX = 900;
@@ -44,6 +43,7 @@ export default function HorizontalSliderSection({
 
   showDivider = true,
   dividerClassName = "",
+  hideNav = false,
   emptyText = "No items available at the moment.",
 }) {
   const scrollerRef = useRef(null);
@@ -69,8 +69,7 @@ export default function HorizontalSliderSection({
     const el = scrollerRef.current;
     if (!el) return 0;
     const styles = window.getComputedStyle(el);
-    const pr = parseFloat(styles.paddingRight || "0") || 0;
-    return pr;
+    return parseFloat(styles.paddingRight || "0") || 0;
   }, []);
 
   const calcStep = useCallback(() => {
@@ -182,9 +181,7 @@ export default function HorizontalSliderSection({
     const max = Math.max(0, el.scrollWidth - el.clientWidth - endPad);
     const left = el.scrollLeft;
 
-    const distanceToEnd = max - left;
-
-    if (distanceToEnd < LOAD_AHEAD_PX) {
+    if (max - left < LOAD_AHEAD_PX) {
       setRenderCount((prev) =>
         Math.min(prev + RENDER_BATCH, childArray.length),
       );
@@ -211,7 +208,6 @@ export default function HorizontalSliderSection({
     if (trackRef.current) ro.observe(trackRef.current);
 
     window.addEventListener("resize", recalcAll);
-
     requestAnimationFrame(() => maybeLoadMore());
 
     return () => {
@@ -249,26 +245,28 @@ export default function HorizontalSliderSection({
             <div className="hidden lg:flex lg:flex-col lg:items-start lg:gap-14 relative z-20">
               <h2 className={titleDesktopClass}>{title}</h2>
 
-              <div className="flex gap-3">
-                <IconButton
-                  variant="nav"
-                  icon={arrowLeft}
-                  onClick={handlePrev}
-                  disabled={!canPrev}
-                  aria-label="Previous"
-                  className={NAV_BUTTON_CLASS}
-                  iconClassName="h-4 w-4"
-                />
-                <IconButton
-                  variant="nav"
-                  icon={arrowRight}
-                  onClick={handleNext}
-                  disabled={!canNext}
-                  aria-label="Next"
-                  className={NAV_BUTTON_CLASS}
-                  iconClassName="h-4 w-4"
-                />
-              </div>
+              {!hideNav && (
+                <div className="flex gap-3">
+                  <IconButton
+                    variant="nav"
+                    icon={arrowLeft}
+                    onClick={handlePrev}
+                    disabled={!canPrev}
+                    aria-label="Previous"
+                    className={NAV_BUTTON_CLASS}
+                    iconClassName="h-4 w-4"
+                  />
+                  <IconButton
+                    variant="nav"
+                    icon={arrowRight}
+                    onClick={handleNext}
+                    disabled={!canNext}
+                    aria-label="Next"
+                    className={NAV_BUTTON_CLASS}
+                    iconClassName="h-4 w-4"
+                  />
+                </div>
+              )}
 
               {leftBottomSlot}
             </div>
@@ -278,28 +276,29 @@ export default function HorizontalSliderSection({
               <div className="mb-4 flex items-start justify-between lg:hidden">
                 <h2 className={titleMobileClass}>{title}</h2>
 
-                {headerMobileRightSlot ?? (
-                  <div className="flex gap-3">
-                    <IconButton
-                      variant="nav"
-                      icon={arrowLeft}
-                      onClick={handlePrev}
-                      disabled={!canPrev}
-                      aria-label="Previous"
-                      className={NAV_BUTTON_CLASS}
-                      iconClassName="h-4 w-4"
-                    />
-                    <IconButton
-                      variant="nav"
-                      icon={arrowRight}
-                      onClick={handleNext}
-                      disabled={!canNext}
-                      aria-label="Next"
-                      className={NAV_BUTTON_CLASS}
-                      iconClassName="h-4 w-4"
-                    />
-                  </div>
-                )}
+                {headerMobileRightSlot ??
+                  (!hideNav ? (
+                    <div className="flex gap-3">
+                      <IconButton
+                        variant="nav"
+                        icon={arrowLeft}
+                        onClick={handlePrev}
+                        disabled={!canPrev}
+                        aria-label="Previous"
+                        className={NAV_BUTTON_CLASS}
+                        iconClassName="h-4 w-4"
+                      />
+                      <IconButton
+                        variant="nav"
+                        icon={arrowRight}
+                        onClick={handleNext}
+                        disabled={!canNext}
+                        aria-label="Next"
+                        className={NAV_BUTTON_CLASS}
+                        iconClassName="h-4 w-4"
+                      />
+                    </div>
+                  ) : null)}
               </div>
 
               <div

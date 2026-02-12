@@ -18,7 +18,7 @@ export default function AddToBagButton({
 
         lg:hover:-translate-y-0.5 lg:hover:scale-[1.02]
         active:scale-[0.97]
-        h-[40px] px-5 min-w-[150px] text-[14px]
+        h-[30px] px-5 min-w-[150px] text-[14px]
         md:h-[42px] md:px-6 md:min-w-[170px] md:text-[15px]
         lg:h-[36px] lg:px-5 lg:min-w-[140px] lg:text-[13px]
 
