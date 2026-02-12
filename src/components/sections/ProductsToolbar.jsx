@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import filterIcon from "@/assets/ui/filter-icon.svg";
 import { HiChevronDown } from "react-icons/hi";
 import ProductsSortPanel from "@/components/sections/ProductsSortPanel";
+import FullWidthDivider from "../ui/FullWidthDivider";
 
 const SORT_OPTIONS = [
   { value: "price_desc", label: "Price, high to low" },
@@ -94,17 +95,15 @@ export default function ProductsToolbar({
   return (
     <section className="w-full">
       {/* Title */}
-      <div className="border-b border-black">
+      <div>
         <h1 className="font-display text-[44px] leading-none px-6 py-6 md:text-[56px]">
           {title}
         </h1>
       </div>
+      <FullWidthDivider />
 
       {/* Category row */}
-      <div
-        ref={categoryWrapRef}
-        className="border-b border-black px-6 py-4 relative"
-      >
+      <div ref={categoryWrapRef} className="px-6 py-4 relative">
         {/* ===== MOBILE/TABLET dropdown (kept) ===== */}
         <button
           type="button"
@@ -169,6 +168,7 @@ export default function ProductsToolbar({
           })}
         </div>
       </div>
+      <FullWidthDivider />
 
       {/* Filter + Sort row */}
       <div className="px-6 py-4 flex items-center justify-between gap-4">

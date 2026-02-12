@@ -9,7 +9,6 @@ import logoIcon from "@/assets/ui/logo.svg";
 import heartIcon from "@/assets/ui/heart.svg";
 import bagIcon from "@/assets/ui/shopping-bag.svg";
 
-// Constants for better maintainability
 const ICON_HOVER_CLASS =
   "transition-transform duration-300 ease-out lg:hover:-translate-y-[2px]";
 const NAV_LINK_CLASS =
@@ -19,7 +18,6 @@ const LANGUAGE_BUTTON_CLASS =
 const HEADER_HEIGHT = "h-[64px]";
 const MAX_WIDTH = "max-w-[1320px]";
 
-// Navigation items for desktop
 const NAV_ITEMS = [
   { to: "/collections", label: "Collections" },
   { to: "/about", label: "About us" },
@@ -78,7 +76,6 @@ export default function Header() {
   }, []);
 
   const preventSelect = useCallback((e) => {
-    // leidžiam normaliai paspausti mygtukus/nuorodas, bet stabdom tekstų/ikonų žymėjimą
     if (e.target.closest("button,a")) return;
     e.preventDefault();
   }, []);
@@ -125,7 +122,7 @@ export default function Header() {
               alt="Favorites"
               draggable={false}
               onDragStart={preventDrag}
-              className={`h-[20px] w-auto select-none ${ICON_HOVER_CLASS}`}
+              className={`h-[18px] mt-[2px] w-auto select-none ${ICON_HOVER_CLASS}`}
             />
           </NavItem>
 
