@@ -1,13 +1,6 @@
 // src/components/ui/ProductCard.jsx
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 
 import IconButton from "@/components/ui/IconButton";
 import AddToBagButton from "@/components/ui/AddToBagButton";
@@ -24,12 +17,8 @@ import useIntersectionObserver from "@/hooks/useIntersectionObserver";
 import useImagePreload from "@/hooks/useImagePreload";
 
 // CONSTANTS
-const CARD_HEIGHT = 340;
 const DESKTOP_BREAKPOINT = "1024px";
 const IMAGE_PRELOAD_MARGIN = "300px";
-const MOBILE_REVEAL_TIMEOUT = 2500;
-
-// SUB-COMPONENTS
 
 // ProductImage handles image display with loading states
 function ProductImage({
@@ -43,6 +32,7 @@ function ProductImage({
   className,
   loadedClassName = "opacity-100",
   notLoadedClassName = "opacity-0",
+  reduceMotion = false,
 }) {
   return (
     <>
@@ -60,7 +50,10 @@ function ProductImage({
         draggable={false}
         onDragStart={(e) => e.preventDefault()}
         className={cn(
-          "absolute inset-0 h-full w-full object-cover transition-all duration-300 ease-out select-none pointer-events-none",
+          "absolute inset-0 h-full w-full object-cover select-none pointer-events-none",
+          reduceMotion
+            ? "transition-none"
+            : "transition-all duration-300 ease-out",
           loaded ? loadedClassName : notLoadedClassName,
           className,
         )}
@@ -69,8 +62,8 @@ function ProductImage({
   );
 }
 
-// OverlayContent displays product information on hover/reveal
-function OverlayContent({ product, isRevealed }) {
+// Desktop-only hover title
+function DesktopHoverTitle({ product }) {
   const textStyle = {
     display: "-webkit-box",
     WebkitLineClamp: 3,
@@ -79,56 +72,34 @@ function OverlayContent({ product, isRevealed }) {
   };
 
   return (
-    <>
-      {/* Desktop hover title */}
-      <div className="pointer-events-none absolute inset-0 hidden lg:flex items-center justify-center px-6 text-center">
-        <p
-          className={cn(
-            "opacity-0 translate-y-2",
-            "lg:group-hover:opacity-100 lg:group-hover:translate-y-0",
-            "transition-all duration-200 ease-out",
-            "text-white font-display text-[20px] leading-tight",
-            "max-w-[90%]",
-          )}
-          style={textStyle}
-        >
-          {product.name}
-        </p>
-      </div>
-
-      {/* Mobile/Tablet revealed */}
-      <div className="pointer-events-none absolute inset-0 flex lg:hidden items-center justify-center px-6 text-center">
-        <div
-          className={cn(
-            "translate-y-2 transition-all duration-200 ease-out text-white max-w-[90%]",
-            isRevealed ? "opacity-100 translate-y-0" : "opacity-0",
-          )}
-        >
-          <p
-            className="font-display text-[20px] leading-tight"
-            style={textStyle}
-          >
-            {product.name}
-          </p>
-          <p className="mt-2 font-ui text-[14px] text-white/90">
-            {product.price}
-          </p>
-        </div>
-      </div>
-    </>
+    <div className="pointer-events-none absolute inset-0 hidden lg:flex items-center justify-center px-6 text-center">
+      <p
+        className={cn(
+          "opacity-0 translate-y-2",
+          "lg:group-hover:opacity-100 lg:group-hover:translate-y-0",
+          "transition-all duration-200 ease-out",
+          "text-white font-display text-[20px] leading-tight",
+          "max-w-[90%]",
+        )}
+        style={textStyle}
+      >
+        {product.name}
+      </p>
+    </div>
   );
 }
 
 // BottomBar displays price and action buttons
-function BottomBar({ product, onAddToCart, isRevealed }) {
+function BottomBar({ product, onAddToCart, isDesktop }) {
   return (
     <div className="absolute bottom-0 left-0 right-0 z-10">
-      {/* Default bar */}
+      {/* Default bar (always visible on mobile/tablet, fades on desktop hover) */}
       <div
         className={cn(
-          "bg-black/50 backdrop-blur-md px-6 h-16 text-white transition-opacity duration-200 ease-out flex items-center",
-          "lg:group-hover:opacity-0",
-          isRevealed ? "opacity-0 lg:opacity-100" : "opacity-100",
+          "bg-black/50 backdrop-blur-md px-6 h-16 text-white flex items-center",
+          isDesktop
+            ? "transition-opacity duration-200 ease-out lg:group-hover:opacity-0"
+            : "transition-none",
         )}
       >
         <div className="flex w-full items-center gap-4 justify-center">
@@ -142,43 +113,27 @@ function BottomBar({ product, onAddToCart, isRevealed }) {
         </div>
       </div>
 
-      {/* Desktop actions bar */}
-      <div className="pointer-events-none absolute inset-0 hidden lg:flex items-center bg-black px-6 h-16 opacity-0 transition-opacity duration-200 ease-out lg:group-hover:opacity-100">
-        <div className="flex w-full items-center justify-between gap-6">
-          <p className="font-ui font-normal text-[14px] leading-none whitespace-nowrap text-white">
-            {product.price}
-          </p>
-          <div className="pointer-events-auto">
-            <AddToBagButton
-              onClick={(e) => {
-                e?.stopPropagation?.();
-                onAddToCart?.(e);
-              }}
-              icon={bagIcon}
-              ariaLabel={`Add ${product.name} to bag`}
-            />
+      {/* Desktop actions bar (ONLY desktop hover) */}
+      {isDesktop ? (
+        <div className="pointer-events-none absolute inset-0 hidden lg:flex items-center bg-black px-6 h-16 opacity-0 transition-opacity duration-200 ease-out lg:group-hover:opacity-100">
+          <div className="flex w-full items-center justify-between gap-6">
+            <p className="font-ui font-normal text-[14px] leading-none whitespace-nowrap text-white">
+              {product.price}
+            </p>
+            <div className="pointer-events-auto">
+              <AddToBagButton
+                onClick={(e) => {
+                  e?.stopPropagation?.();
+                  e?.preventDefault?.(); // keep Link from navigating
+                  onAddToCart?.(e);
+                }}
+                icon={bagIcon}
+                ariaLabel={`Add ${product.name} to bag`}
+              />
+            </div>
           </div>
         </div>
-      </div>
-
-      {/* Mobile/Tablet actions bar */}
-      <div
-        className={cn(
-          "pointer-events-none absolute inset-0 hidden xs:flex lg:hidden items-center justify-center bg-black px-6 h-16 transition-opacity duration-200 ease-out",
-          isRevealed ? "opacity-100" : "opacity-0",
-        )}
-      >
-        <div className="pointer-events-auto">
-          <AddToBagButton
-            onClick={(e) => {
-              e?.stopPropagation?.();
-              onAddToCart?.(e);
-            }}
-            icon={bagIcon}
-            ariaLabel={`Add ${product.name} to bag`}
-          />
-        </div>
-      </div>
+      ) : null}
     </div>
   );
 }
@@ -188,6 +143,7 @@ function ActionButtons({ product, onAddToCart, onAddToFavorites }) {
   const handleCartClick = useCallback(
     (e) => {
       e.stopPropagation();
+      e.preventDefault(); // keep Link from navigating
       onAddToCart?.(e);
     },
     [onAddToCart],
@@ -196,6 +152,7 @@ function ActionButtons({ product, onAddToCart, onAddToFavorites }) {
   const handleFavoriteClick = useCallback(
     (e) => {
       e.stopPropagation();
+      e.preventDefault(); // keep Link from navigating
       onAddToFavorites?.(e);
     },
     [onAddToFavorites],
@@ -229,7 +186,6 @@ export default function ProductCard({
   onImageError,
   onMediaReady,
 }) {
-  const navigate = useNavigate();
   const isDesktop = useMediaQuery(`(min-width: ${DESKTOP_BREAKPOINT})`);
 
   // Safe product access with defaults
@@ -305,7 +261,13 @@ export default function ProductCard({
     }
   }, [mainSrc, hoverSrc]);
 
-  useImagePreload(hoverSrc, isInView, () => setLoadedHover(true));
+  // Preload hover image only on desktop
+  useImagePreload(
+    hoverSrc,
+    isDesktop && isInView,
+    () => setLoadedHover(true),
+    IMAGE_PRELOAD_MARGIN,
+  );
 
   const handleMainImageLoad = useCallback(
     (e) => {
@@ -329,49 +291,9 @@ export default function ProductCard({
   const hasHoverImage = Boolean(hoverSrc);
   const href = `/collections/${product?.id}`;
 
-  // Mobile/Tablet: 1 tap reveal, 2 tap navigate
-  const [isRevealed, setIsRevealed] = useState(false);
-
-  useEffect(() => {
-    if (isDesktop) return;
-    if (!isRevealed) return;
-    const t = setTimeout(() => setIsRevealed(false), MOBILE_REVEAL_TIMEOUT);
-    return () => clearTimeout(t);
-  }, [isRevealed, isDesktop]);
-
-  const handleMobileCardTap = useCallback(() => {
-    if (!product) return;
-    if (!isRevealed) {
-      setIsRevealed(true);
-      return;
-    }
-    navigate(href);
-  }, [isRevealed, navigate, href, product]);
-
-  // Desktop: 1 click -> show 2nd image, 2 click -> navigate
-  const [desktopPreview, setDesktopPreview] = useState(false);
-
-  const resetDesktopPreview = useCallback(() => {
-    setDesktopPreview(false);
-  }, []);
-
-  const handleDesktopLinkClick = useCallback(
-    (e) => {
-      if (!hasHoverImage) return;
-
-      // 1 click -> prevent navigate + show hover image
-      if (!desktopPreview) {
-        e.preventDefault();
-        setDesktopPreview(true);
-        return;
-      }
-
-      // 2 click -> allow Link to navigate
-    },
-    [desktopPreview, hasHoverImage],
-  );
-
   if (!product) return null;
+
+  const reduceMotion = !isDesktop;
 
   const CardInner = (
     <div
@@ -388,43 +310,40 @@ export default function ProductCard({
         loaded={loadedMain}
         onLoad={handleMainImageLoad}
         onError={handleImageError}
+        reduceMotion={reduceMotion}
         className={cn(
-          hasHoverImage
+          isDesktop && hasHoverImage
             ? "lg:group-hover:opacity-0 lg:group-hover:scale-[1.02]"
             : "",
-          desktopPreview && hasHoverImage ? "opacity-0 scale-[1.02]" : "",
         )}
       />
 
-      {/* HOVER IMG */}
-      {hasHoverImage ? (
+      {/* HOVER IMG (desktop only) */}
+      {isDesktop && hasHoverImage ? (
         <ProductImage
           src={hoverSrc}
           alt={`${product.name} - hover`}
           loaded={loadedHover}
           onLoad={handleHoverLoad}
           onError={handleImageError}
+          reduceMotion={false}
           loadedClassName="opacity-0"
           notLoadedClassName="opacity-0"
           className={cn(
             "opacity-0 lg:group-hover:opacity-100",
             "scale-100 lg:group-hover:scale-[1.04]",
             !loadedHover && "lg:group-hover:opacity-0",
-            desktopPreview ? "opacity-100 scale-[1.04]" : "",
           )}
         />
       ) : null}
 
-      {/* Overlay */}
-      <div
-        className={cn(
-          "pointer-events-none absolute inset-0 bg-black/55 transition-opacity duration-200 ease-out",
-          "opacity-0 lg:group-hover:opacity-100",
-          !isDesktop && isRevealed ? "opacity-100" : "",
-        )}
-      />
+      {/* Overlay (desktop hover only) */}
+      {isDesktop ? (
+        <div className="pointer-events-none absolute inset-0 bg-black/55 opacity-0 transition-opacity duration-200 ease-out lg:group-hover:opacity-100" />
+      ) : null}
 
-      <OverlayContent product={product} isRevealed={!isDesktop && isRevealed} />
+      {/* Desktop hover title only */}
+      {isDesktop ? <DesktopHoverTitle product={product} /> : null}
 
       <ActionButtons
         product={product}
@@ -435,7 +354,7 @@ export default function ProductCard({
       <BottomBar
         product={product}
         onAddToCart={onAddToCart}
-        isRevealed={!isDesktop && isRevealed}
+        isDesktop={isDesktop}
       />
     </div>
   );
@@ -446,29 +365,26 @@ export default function ProductCard({
       data-card
       draggable={false}
       onDragStart={(e) => e.preventDefault()}
-      onMouseLeave={resetDesktopPreview}
       className={cn(
-        "group bg-white w-full h-full ui-interact select-none active:brightness-95",
+        "group bg-white w-full h-full select-none",
+        isDesktop
+          ? "active:brightness-95"
+          : "active:brightness-100 focus:outline-none focus:ring-0",
       )}
     >
-      {isDesktop ? (
-        <Link
-          to={href}
-          className="block select-none"
-          onClick={handleDesktopLinkClick}
-        >
-          {CardInner}
-        </Link>
-      ) : (
-        <button
-          type="button"
-          className="block w-full text-left select-none"
-          onClick={handleMobileCardTap}
-          aria-label={`Open ${product.name}`}
-        >
-          {CardInner}
-        </button>
-      )}
+      <Link
+        to={href}
+        className={cn(
+          "block select-none",
+          !isDesktop && "active:bg-transparent focus:outline-none",
+        )}
+        style={
+          !isDesktop ? { WebkitTapHighlightColor: "transparent" } : undefined
+        }
+        aria-label={`Open ${product.name}`}
+      >
+        {CardInner}
+      </Link>
     </article>
   );
 }

@@ -118,7 +118,7 @@ export default function Hero() {
                   onError={() => handleImageError(i)}
                   loading={i === 0 ? "eager" : "lazy"}
                   decoding="async"
-                  fetchpriority={i === 0 ? "high" : "auto"}
+                  fetchPriority={i === 0 ? "high" : "auto"}
                 />
               ),
           )}
@@ -141,7 +141,7 @@ export default function Hero() {
           </div>
         </div>
 
-        <FullWidthDivider className="mt-4" />
+        <FullWidthDivider />
       </div>
     </section>
   );

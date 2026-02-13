@@ -34,7 +34,7 @@ export default function NewCollectionSection({
       onDragStart={preventDrag}
       onMouseDown={preventSelect}
     >
-      <div className="w-full mt-4">
+      <div className="w-full">
         <div className="relative w-full overflow-hidden">
           <div className="relative w-full h-[520px] md:h-[360px] lg:h-[420px]">
             <picture>
@@ -106,7 +106,7 @@ export default function NewCollectionSection({
         </div>
       </div>
 
-      <FullWidthDivider className="mt-4" />
+      <FullWidthDivider />
     </section>
   );
 }

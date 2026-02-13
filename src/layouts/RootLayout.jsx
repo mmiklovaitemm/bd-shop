@@ -2,6 +2,7 @@ import { Outlet } from "react-router-dom";
 
 import AnnouncementBar from "@/components/sections/AnnouncementBar";
 import Header from "@/components/layout/Header";
+import ShoppingBagDrawer from "@/components/drawers/ShoppingBagDrawer";
 import Footer from "@/components/layout/Footer";
 import ScrollToTop from "@/components/ui/ScrollToTop";
 
@@ -11,6 +12,7 @@ export default function RootLayout() {
       <ScrollToTop />
       <AnnouncementBar />
       <Header />
+      <ShoppingBagDrawer />
       <main className="mx-auto w-full max-w-6xl px-4">
         <Outlet />
       </main>

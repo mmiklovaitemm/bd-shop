@@ -1,3 +1,4 @@
+// src/components/layout/Header.jsx
 import { useState, useCallback, memo } from "react";
 import { NavLink } from "react-router-dom";
 
@@ -8,6 +9,8 @@ import menuIcon from "@/assets/ui/menu.svg";
 import logoIcon from "@/assets/ui/logo.svg";
 import heartIcon from "@/assets/ui/heart.svg";
 import bagIcon from "@/assets/ui/shopping-bag.svg";
+
+import useBagDrawer from "@/store/useBagDrawer";
 
 const ICON_HOVER_CLASS =
   "transition-transform duration-300 ease-out lg:hover:-translate-y-[2px]";
@@ -67,6 +70,7 @@ const CartItem = memo(({ to, icon, label, count }) => (
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const openBag = useBagDrawer((s) => s.open);
 
   const handleMenuOpen = useCallback(() => setIsMenuOpen(true), []);
   const handleMenuClose = useCallback(() => setIsMenuOpen(false), []);
@@ -126,15 +130,24 @@ export default function Header() {
             />
           </NavItem>
 
-          <NavItem to="/cart" className="p-1">
+          {/* BAG: atidaro drawer (ne navigacija) */}
+          <button
+            type="button"
+            onClick={openBag}
+            className="p-1 select-none"
+            style={{ WebkitTapHighlightColor: "transparent" }}
+            aria-label="Open bag"
+            draggable={false}
+            onDragStart={preventDrag}
+          >
             <img
               src={bagIcon}
-              alt="Cart"
+              alt=""
               draggable={false}
               onDragStart={preventDrag}
               className={`h-[20px] w-auto select-none ${ICON_HOVER_CLASS}`}
             />
-          </NavItem>
+          </button>
 
           {/* Languages shown from tablet */}
           <div className="hidden md:flex items-center gap-3">
@@ -178,8 +191,31 @@ export default function Header() {
             label="Wishlist"
             count={2}
           />
-          <CartItem to="/cart" icon={bagIcon} label="Bag" count={1} />
+
+          {/* BAG */}
+          <button
+            type="button"
+            onClick={openBag}
+            className="flex items-center gap-2 select-none"
+            aria-label="Open bag"
+            style={{ WebkitTapHighlightColor: "transparent" }}
+            draggable={false}
+            onDragStart={preventDrag}
+          >
+            <img
+              src={bagIcon}
+              alt=""
+              draggable={false}
+              onDragStart={preventDrag}
+              className={`h-4 w-auto select-none ${ICON_HOVER_CLASS}`}
+            />
+            <span className="font-ui text-[12px] text-black/80 select-none">
+              Bag (1)
+            </span>
+          </button>
+
           <NavItem to="/account">Log in</NavItem>
+
           <div className="flex items-center gap-2">
             {LANGUAGES.map(({ code, isActive }) => (
               <LanguageButton key={code} code={code} isActive={isActive} />

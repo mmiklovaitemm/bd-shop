@@ -20,7 +20,7 @@ export default function App() {
         <Route path="/collections" element={<Products />} />
         <Route path="/collections/:id" element={<Product />} />
         <Route path="/favorites" element={<Favorites />} />
-        <Route path="/cart" element={<ShoppingBag />} />
+        {/* <Route path="/cart" element={<ShoppingBag />} /> */}
         <Route path="/account" element={<Account />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />

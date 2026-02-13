@@ -35,7 +35,7 @@ export default function PersonalizedJewelrySection({
       onDragStart={preventDrag}
       onMouseDown={preventSelect}
     >
-      <div className="w-full mt-4">
+      <div className="w-full">
         <div className="relative w-full overflow-hidden">
           <div className="relative w-full h-[520px] md:h-[360px] lg:h-[420px]">
             <picture>
@@ -49,7 +49,7 @@ export default function PersonalizedJewelrySection({
                 className="absolute inset-0 h-full w-full object-cover select-none"
                 loading="eager"
                 decoding="async"
-                fetchpriority="high"
+                fetchPriority="high"
               />
             </picture>
 
@@ -122,7 +122,7 @@ export default function PersonalizedJewelrySection({
         </div>
       </div>
 
-      <FullWidthDivider className="mt-4" />
+      <FullWidthDivider />
     </section>
   );
 }

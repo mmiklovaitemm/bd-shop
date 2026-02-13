@@ -8,7 +8,7 @@ import AboutStudioSection from "@/components/ui/AboutStudioSection";
 
 export default function Home() {
   return (
-    <div className="py-4">
+    <div>
       <Hero />
       <BestSellersSlider />
       <NewCollectionSection />
