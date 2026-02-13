@@ -8,6 +8,7 @@ const makeTitle = (id) =>
 // (local: "/" | GH Pages: "/bd-shop/")
 const withBase = (path) =>
   `${import.meta.env.BASE_URL}${path.replace(/^\/+/, "")}`;
+
 const asWebp = (filename) => filename.replace(/\.(png|jpg|jpeg)$/i, ".webp");
 
 const makeProduct = ({
@@ -91,7 +92,7 @@ export const PRODUCTS = [
     hasGem: true,
     surface: "smooth",
     gemstones: ["deimantas"],
-    sizes: [15.5, 16, 17.5, 18], // 18.5 not there
+    sizes: [15.5, 16, 17.5, 18],
   }),
   makeProduct({
     id: "drift-ring",
@@ -108,7 +109,7 @@ export const PRODUCTS = [
     id: "earth-ring",
     category: "rings",
     silver: ["earth-ring-1.webp", "earth-ring-2.webp"],
-    gold: ["earth-ring-gold.webp"],
+    gold: ["earth-ring-gold.webp", "earth-ring-gold-2.webp"],
     priceValue: 95,
     isBestSeller: true,
     createdAt: "2026-01-05",
@@ -121,6 +122,7 @@ export const PRODUCTS = [
     id: "echo-ring",
     category: "rings",
     silver: ["echo-ring-1.webp", "echo-ring-2.webp"],
+    gold: ["echo-ring-gold-1.webp", "echo-ring-gold-2.webp"],
     priceValue: 70,
     createdAt: "2026-01-18",
     hasGem: false,
@@ -132,7 +134,7 @@ export const PRODUCTS = [
     id: "fluid-ring",
     category: "rings",
     silver: ["fluid-ring-1.webp", "fluid-ring-2.webp"],
-    gold: ["fluid-ring-gold.webp"],
+    gold: ["fluid-ring-gold.webp", "fluid-ring-gold-2.webp"],
     priceValue: 115,
     createdAt: "2026-01-08",
     hasGem: false,
@@ -144,13 +146,13 @@ export const PRODUCTS = [
     id: "fold-ring",
     category: "rings",
     silver: ["fold-ring-1.webp", "fold-ring-2.webp"],
-    gold: ["fold-ring-gold.webp"],
+    gold: ["fold-ring-gold.webp", "fold-ring-gold-2.webp"],
     priceValue: 105,
     createdAt: "2026-01-15",
     hasGem: false,
     surface: "rough",
     gemstones: [],
-    sizes: [15.5, 16, 17.5, 18], // 18.5 not there
+    sizes: [15.5, 16, 17.5, 18],
   }),
   makeProduct({
     id: "pure-ring",
@@ -161,7 +163,7 @@ export const PRODUCTS = [
     hasGem: true,
     surface: "smooth",
     gemstones: ["perlas"],
-    sizes: [15.5, 16, 17.5, 18], // 18.5 not there
+    sizes: [15.5, 16, 17.5, 18],
   }),
   makeProduct({
     id: "ridge-ring",
@@ -178,7 +180,7 @@ export const PRODUCTS = [
     id: "stack-ring",
     category: "rings",
     silver: [],
-    gold: ["stack-ring-1.webp", "stack-ring-2.webp"], // čia tavo gold nuotraukos
+    gold: ["stack-ring-1.webp", "stack-ring-2.webp"],
     priceValue: 75,
     createdAt: "2026-01-25",
     hasGem: false,
@@ -186,12 +188,11 @@ export const PRODUCTS = [
     gemstones: [],
     sizes: [15.5, 16, 17.5, 18, 18.5],
   }),
-
   makeProduct({
     id: "still-ring",
     category: "rings",
     silver: ["still-ring-1.webp", "still-ring-2.webp"],
-    gold: ["still-ring-gold.webp"],
+    gold: ["still-ring-gold.webp", "still-ring-gold-color-2.webp"],
     priceValue: 105,
     createdAt: "2026-01-28",
     hasGem: false,
@@ -208,13 +209,13 @@ export const PRODUCTS = [
     hasGem: true,
     surface: "smooth",
     gemstones: ["kristolas"],
-    sizes: [15.5, 16, 17.5, 18], // 18.5 not there
+    sizes: [15.5, 16, 17.5, 18],
   }),
   makeProduct({
     id: "wave-ring",
     category: "rings",
     silver: ["wave-ring-1.webp", "wave-ring-2.webp"],
-    gold: ["wave-ring-gold.webp"],
+    gold: ["wave-ring-gold.webp", "wave-ring-gold-2.webp"],
     priceValue: 90,
     createdAt: "2026-02-01",
     hasGem: false,
@@ -229,13 +230,11 @@ export const PRODUCTS = [
   makeProduct({
     id: "light-earrings",
     category: "earrings",
-
     "soft-yellow": [
       "light-earrings-1.webp",
       "light-earrings-3.webp",
       "light-earrings-2.webp",
     ],
-
     extraVariants: {
       "soft-blue": [
         "light-earrings-soft-blue-1.webp",
@@ -276,7 +275,7 @@ export const PRODUCTS = [
       "point-earrings-2.webp",
       "point-earrings-3.webp",
     ],
-    gold: ["point-earrings-gold.webp"],
+    gold: ["point-earrings-gold.webp", "point-earrings-gold-2.webp"],
     priceValue: 85,
     createdAt: "2026-01-09",
     isBestSeller: true,
@@ -293,7 +292,7 @@ export const PRODUCTS = [
       "pure-earrings-2.webp",
       "pure-earrings-3.webp",
     ],
-    gold: ["pure-earrings-gold.webp"],
+    gold: ["pure-earrings-gold.webp", "pure-earrings-gold-2.webp"],
     priceValue: 90,
     createdAt: "2026-01-16",
     hasGem: false,
@@ -321,9 +320,10 @@ export const PRODUCTS = [
   // NECKLACES
   // ======================
   makeProduct({
-    id: "dot-ring",
+    id: "dot-necklace",
     category: "necklaces",
-    silver: ["dot-1.webp", "dot-2.webp"],
+    silver: ["dot-silver-1.webp", "dot-silver-2.webp"],
+    gold: ["dot-1.webp", "dot-2.webp"],
     priceValue: 95,
     createdAt: "2026-01-07",
     isBestSeller: true,
@@ -351,7 +351,7 @@ export const PRODUCTS = [
     id: "bond-bracelet",
     category: "bracelets",
     silver: ["bond-bracelet-1.webp", "bond-bracelet-2.webp"],
-    gold: ["bond-bracelet-gold.webp"],
+    gold: ["bond-bracelet-gold.webp", "bond-bracelet-gold-2.webp"],
     priceValue: 100,
     createdAt: "2026-01-13",
     hasGem: false,
@@ -363,6 +363,7 @@ export const PRODUCTS = [
     id: "core-bracelet",
     category: "bracelets",
     silver: ["core-bracelet-1.webp", "core-bracelet-2.webp"],
+    gold: ["core-bracelet-gold-1.webp", "core-bracelet-gold-2.webp"],
     priceValue: 105,
     createdAt: "2026-01-17",
     hasGem: false,

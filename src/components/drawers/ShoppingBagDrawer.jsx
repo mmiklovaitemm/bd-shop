@@ -1,53 +1,42 @@
 import { useEffect, useMemo } from "react";
 import useBagDrawer from "@/store/useBagDrawer";
+import useCart from "@/store/useCart";
 import preventDragHandler from "@/utils/preventDrag";
+
+import { PRODUCTS } from "@/data/products";
 
 import arrowUpRightIcon from "@/assets/ui/arrow-up-right.svg";
 import trashIcon from "@/assets/ui/trash.svg";
 
-const FAKE_ITEMS = [
-  {
-    id: 1,
-    name: "“Earth” ring",
-    price: 34.9,
-    color: "Silver (367)",
-    size: "15.5",
-    quantity: 1,
-    image: "https://picsum.photos/seed/earthring1/300/360",
-    note: null,
-  },
-  {
-    id: 2,
-    name: "“Earth” ring",
-    price: 34.9,
-    color: "Silver (367)",
-    size: "15.5",
-    quantity: 1,
-    image: "https://picsum.photos/seed/earthring2/300/360",
-    note: "We will send you blaa bla bla",
-  },
-  {
-    id: 3,
-    name: "“Earth” ring",
-    price: 34.9,
-    color: "Silver (367)",
-    size: "15.5",
-    quantity: 1,
-    image: "https://picsum.photos/seed/earthring3/300/360",
-    note: null,
-  },
-];
-
 const fmtPrice = (n) =>
-  new Intl.NumberFormat("en-US", {
+  new Intl.NumberFormat("lt-LT", {
     style: "currency",
-    currency: "USD",
+    currency: "EUR",
     minimumFractionDigits: 2,
-  }).format(n);
+  }).format(Number(n || 0));
+
+const getProductById = (id) => PRODUCTS.find((p) => p.id === id) || null;
+
+const pickVariantImage = (product, color) => {
+  if (!product) return "";
+  const c = color || product.colors?.[0] || "silver";
+  return (
+    product?.variants?.[c]?.[0] ||
+    product?.variants?.[product?.colors?.[0]]?.[0] ||
+    product?.thumbnail ||
+    ""
+  );
+};
 
 export default function ShoppingBagDrawer() {
   const isOpen = useBagDrawer((s) => s.isOpen);
   const close = useBagDrawer((s) => s.close);
+
+  const items = useCart((s) => s.items);
+  const inc = useCart((s) => s.inc);
+  const dec = useCart((s) => s.dec);
+  const removeItem = useCart((s) => s.removeItem);
+  const updateVariant = useCart((s) => s.updateVariant);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -76,11 +65,11 @@ export default function ShoppingBagDrawer() {
 
   const subtotal = useMemo(
     () =>
-      FAKE_ITEMS.reduce(
-        (sum, item) => sum + item.price * (item.quantity || 1),
+      items.reduce(
+        (sum, item) => sum + (Number(item.price) || 0) * (item.quantity || 1),
         0,
       ),
-    [],
+    [items],
   );
 
   return (
@@ -128,7 +117,7 @@ export default function ShoppingBagDrawer() {
                 aria-hidden="true"
                 draggable={false}
                 onDragStart={preventDragHandler}
-                className="h-4 w-4 transition-transform duration-300 ease-out select-none"
+                className="h-3 w-3 transition-transform duration-300 ease-out select-none"
               />
             </span>
           </button>
@@ -138,112 +127,203 @@ export default function ShoppingBagDrawer() {
         <div className="flex flex-col h-[calc(100vh-64px)]">
           {/* ITEMS */}
           <div className="flex-1 overflow-y-auto">
-            {FAKE_ITEMS.map((item, idx) => {
-              const isLast = idx === FAKE_ITEMS.length - 1;
+            {items.length === 0 ? (
+              <div className="px-6 py-10 text-center font-ui text-[14px] text-black/60">
+                Your bag is empty.
+              </div>
+            ) : (
+              items.map((item, idx) => {
+                const isLast = idx === items.length - 1;
 
-              return (
-                <div
-                  key={item.id}
-                  className={[
-                    "px-6 py-6",
-                    idx !== 0 ? "border-t border-black/80" : "",
-                    isLast ? "border-b border-black/80" : "",
-                  ].join(" ")}
-                >
-                  <div className="grid grid-cols-[90px_1fr] gap-5">
-                    {/* image */}
-                    <div className="w-[90px] h-[110px] bg-black/5 overflow-hidden">
-                      <img
-                        src={item.image}
-                        alt=""
-                        draggable={false}
-                        onDragStart={preventDragHandler}
-                        className="w-full h-full object-cover select-none"
-                        loading="lazy"
-                      />
-                    </div>
+                const product = getProductById(item.productId);
+                const availableColors = product?.colors || [];
+                const availableSizes = product?.sizes || [];
 
-                    {/* content */}
-                    <div className="min-w-0">
-                      {/* top row */}
-                      <div className="flex items-start justify-between gap-3">
-                        <p className="font-display text-[18px] leading-tight">
-                          {item.name}
-                        </p>
-                        <p className="font-ui text-[14px] whitespace-nowrap">
-                          {fmtPrice(item.price)}
-                        </p>
+                // jei įdėta be size, bet produktas turi dydžius – rodom select ir default į pirmą
+                const currentColor =
+                  item.color || availableColors[0] || "silver";
+
+                const currentSize =
+                  item.size ||
+                  (availableSizes.length ? availableSizes[0] : null);
+
+                const hasSizes = availableSizes.length > 0;
+                const hasColors = availableColors.length > 0;
+
+                return (
+                  <div
+                    key={item.key}
+                    className={[
+                      "px-6 py-6",
+                      idx !== 0 ? "border-t border-black/80" : "",
+                      isLast ? "border-b border-black/80" : "",
+                    ].join(" ")}
+                  >
+                    <div className="grid grid-cols-[90px_1fr] gap-5">
+                      {/* image */}
+                      <div className="w-[90px] h-[110px] bg-black/5 overflow-hidden">
+                        <img
+                          src={item.image}
+                          alt={item.name || ""}
+                          draggable={false}
+                          onDragStart={preventDragHandler}
+                          className="w-full h-full object-cover select-none"
+                          loading="lazy"
+                        />
                       </div>
 
-                      {/* meta pills */}
-                      <div className="mt-3 flex flex-wrap items-center gap-3">
-                        <div className="bg-black/5 px-3 py-1 font-ui text-[13px] text-black/70">
-                          <span className="text-black/45 mr-2">Color:</span>
-                          <span className="text-black/80">{item.color}</span>
+                      {/* content */}
+                      <div className="min-w-0">
+                        {/* top row */}
+                        <div className="flex items-start justify-between gap-3">
+                          <p className="font-display text-[18px] leading-tight">
+                            {item.name}
+                          </p>
+                          <p className="font-ui text-[14px] whitespace-nowrap">
+                            {fmtPrice(item.price)}
+                          </p>
                         </div>
 
-                        <div className="bg-black/5 px-3 py-1 font-ui text-[13px] text-black/70">
-                          <span className="text-black/45 mr-2">Size:</span>
-                          <span className="text-black/80">{item.size}</span>
-                        </div>
-                      </div>
+                        {/* VARIANT CONTROLS */}
+                        <div className="mt-3 grid grid-cols-2 gap-3">
+                          {/* COLOR */}
+                          <div className="bg-black/5 px-3 py-2">
+                            <p className="font-ui text-[12px] text-black/50">
+                              Color
+                            </p>
 
-                      {/* qty + trash */}
-                      <div className="mt-4 flex items-center justify-between gap-4">
-                        {/* qty control */}
-                        <div className="inline-flex items-stretch border border-black h-10 bg-white">
-                          <button
-                            type="button"
-                            aria-label="Decrease quantity"
-                            className="w-9 grid place-items-center font-ui text-[18px] select-none bg-black/5 lg:hover:bg-black/10"
-                            onClick={(e) => e.preventDefault()}
-                          >
-                            –
-                          </button>
+                            {hasColors ? (
+                              <select
+                                className="mt-1 w-full bg-transparent font-ui text-[13px] text-black/80 outline-none"
+                                value={currentColor}
+                                onChange={(e) => {
+                                  const nextColor = e.target.value;
+                                  const nextImage = pickVariantImage(
+                                    product,
+                                    nextColor,
+                                  );
 
-                          <div className="w-9 grid place-items-center font-ui text-[13px] border-x border-black bg-white">
-                            {item.quantity}
+                                  updateVariant(item.key, {
+                                    color: nextColor,
+                                    size: currentSize,
+                                    image: nextImage,
+                                  });
+                                }}
+                              >
+                                {availableColors.map((c) => (
+                                  <option key={c} value={c}>
+                                    {c}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <p className="mt-1 font-ui text-[13px] text-black/60">
+                                —
+                              </p>
+                            )}
                           </div>
 
+                          {/* SIZE */}
+                          <div className="bg-black/5 px-3 py-2">
+                            <p className="font-ui text-[12px] text-black/50">
+                              Size
+                            </p>
+
+                            {hasSizes ? (
+                              <select
+                                className="mt-1 w-full bg-transparent font-ui text-[13px] text-black/80 outline-none"
+                                value={currentSize || ""}
+                                onChange={(e) => {
+                                  const nextSize = e.target.value || null;
+
+                                  // size nekeičia image, bet paliekam tą patį
+                                  updateVariant(item.key, {
+                                    color: currentColor,
+                                    size: nextSize,
+                                    image: item.image,
+                                  });
+                                }}
+                              >
+                                {availableSizes.map((s) => (
+                                  <option key={s} value={s}>
+                                    {s}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <p className="mt-1 font-ui text-[13px] text-black/60">
+                                One size
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* qty + trash */}
+                        <div className="mt-4 flex items-center justify-between gap-4">
+                          {/* qty control */}
+                          <div className="inline-flex items-stretch border border-black h-10 bg-white">
+                            <button
+                              type="button"
+                              aria-label="Decrease quantity"
+                              className="w-9 grid place-items-center font-ui text-[18px] select-none bg-black/5 lg:hover:bg-black/10"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                dec(item.key);
+                              }}
+                            >
+                              –
+                            </button>
+
+                            <div className="w-9 grid place-items-center font-ui text-[13px] border-x border-black bg-white">
+                              {item.quantity || 1}
+                            </div>
+
+                            <button
+                              type="button"
+                              aria-label="Increase quantity"
+                              className="w-9 grid place-items-center font-ui text-[18px] select-none bg-black/5 lg:hover:bg-black/10"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                inc(item.key);
+                              }}
+                            >
+                              +
+                            </button>
+                          </div>
+
+                          {/* trash */}
                           <button
                             type="button"
-                            aria-label="Increase quantity"
-                            className="w-9 grid place-items-center font-ui text-[18px] select-none bg-black/5 lg:hover:bg-black/10"
-                            onClick={(e) => e.preventDefault()}
+                            aria-label="Remove item"
+                            className="p-2 select-none lg:hover:opacity-70"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              removeItem(item.key);
+                            }}
                           >
-                            +
+                            <img
+                              src={trashIcon}
+                              alt=""
+                              aria-hidden="true"
+                              draggable={false}
+                              onDragStart={preventDragHandler}
+                              className="h-5 w-5 opacity-60 select-none"
+                            />
                           </button>
                         </div>
 
-                        {/* trash */}
-                        <button
-                          type="button"
-                          aria-label="Remove item"
-                          className="p-2 select-none lg:hover:opacity-70"
-                          onClick={(e) => e.preventDefault()}
-                        >
-                          <img
-                            src={trashIcon}
-                            alt=""
-                            aria-hidden="true"
-                            draggable={false}
-                            onDragStart={preventDragHandler}
-                            className="h-5 w-5 opacity-60 select-none"
-                          />
-                        </button>
+                        {/* optional note bar */}
+                        {item.note ? (
+                          <div className="mt-5 bg-black/55 text-white font-ui text-[13px] px-4 py-3">
+                            {item.note}
+                          </div>
+                        ) : null}
                       </div>
                     </div>
                   </div>
-
-                  {/* optional note bar */}
-                  {item.note ? (
-                    <div className="mt-5 bg-black/55 text-white font-ui text-[13px] px-4 py-3">
-                      {item.note}
-                    </div>
-                  ) : null}
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
 
           {/* FOOTER */}
@@ -252,6 +332,7 @@ export default function ShoppingBagDrawer() {
               type="button"
               className="ui-interact w-full h-12 bg-black text-white font-ui text-[14px] flex items-center justify-center gap-4 select-none"
               onClick={(e) => e.preventDefault()}
+              disabled={items.length === 0}
             >
               <span>Check out</span>
               <span className="inline-block h-px w-10 bg-white/90" />

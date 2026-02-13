@@ -1,6 +1,8 @@
 import { memo } from "react";
 import { FiHeart } from "react-icons/fi";
 
+import useFavorites from "@/context/useFavorites";
+
 import cn from "@/utils/cn";
 import preventDragHandler from "@/utils/preventDrag";
 
@@ -192,14 +194,15 @@ const ProductInfo = memo(function ProductInfo({
   setSelectedColor,
   quantity,
   setQuantity,
-  isWishlisted,
   onAddToBag,
-  onToggleWishlist,
   onOpenDetails,
   hoverClasses = { btn: "", iconBtn: "", group: "" },
 }) {
+  const { has, toggle } = useFavorites();
+
   if (!product) return null;
 
+  const isWishlisted = has(product.id);
   const hoverBtnClass = hoverClasses.btn;
 
   return (
@@ -264,7 +267,11 @@ const ProductInfo = memo(function ProductInfo({
             "h-12 w-12 border-[0.5px] border-black/25 flex items-center justify-center bg-white select-none",
             hoverClasses.iconBtn,
           )}
-          onClick={onToggleWishlist}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggle(product.id);
+          }}
         >
           <FiHeart
             className={cn(

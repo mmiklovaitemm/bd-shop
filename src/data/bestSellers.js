@@ -36,7 +36,7 @@ export const BEST_SELLERS = [
     },
   },
   {
-    id: "dot-ring",
+    id: "dot-necklace",
     name: '"Dot" necklace',
     price: "€79.90",
     image: dot1,

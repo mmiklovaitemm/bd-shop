@@ -2,25 +2,25 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
+import useFavorites from "@/context/useFavorites";
+import useAddToCart from "@/hooks/useAddToCart";
+
 import IconButton from "@/components/ui/IconButton";
 import AddToBagButton from "@/components/ui/AddToBagButton";
 
 import heartIcon from "@/assets/ui/heart.svg";
+import heartWhiteFillIcon from "@/assets/ui/heart-white-fill.svg";
 import bagIcon from "@/assets/ui/shopping-bag.svg";
 
-// UTILITY FUNCTIONS
 import cn from "@/utils/cn";
 
-// UTILITY HOOKS
 import useMediaQuery from "@/hooks/useMediaQuery";
 import useIntersectionObserver from "@/hooks/useIntersectionObserver";
 import useImagePreload from "@/hooks/useImagePreload";
 
-// CONSTANTS
 const DESKTOP_BREAKPOINT = "1024px";
 const IMAGE_PRELOAD_MARGIN = "300px";
 
-// ProductImage handles image display with loading states
 function ProductImage({
   src,
   alt,
@@ -39,7 +39,6 @@ function ProductImage({
       {!loaded && (
         <div className="absolute inset-0 animate-pulse bg-black/10" />
       )}
-
       <img
         src={src}
         srcSet={srcSet}
@@ -62,7 +61,6 @@ function ProductImage({
   );
 }
 
-// Desktop-only hover title
 function DesktopHoverTitle({ product }) {
   const textStyle = {
     display: "-webkit-box",
@@ -89,11 +87,9 @@ function DesktopHoverTitle({ product }) {
   );
 }
 
-// BottomBar displays price and action buttons
 function BottomBar({ product, onAddToCart, isDesktop }) {
   return (
     <div className="absolute bottom-0 left-0 right-0 z-10">
-      {/* Default bar (always visible on mobile/tablet, fades on desktop hover) */}
       <div
         className={cn(
           "bg-black/50 backdrop-blur-md px-6 h-16 text-white flex items-center",
@@ -113,7 +109,6 @@ function BottomBar({ product, onAddToCart, isDesktop }) {
         </div>
       </div>
 
-      {/* Desktop actions bar (ONLY desktop hover) */}
       {isDesktop ? (
         <div className="pointer-events-none absolute inset-0 hidden lg:flex items-center bg-black px-6 h-16 opacity-0 transition-opacity duration-200 ease-out lg:group-hover:opacity-100">
           <div className="flex w-full items-center justify-between gap-6">
@@ -124,7 +119,7 @@ function BottomBar({ product, onAddToCart, isDesktop }) {
               <AddToBagButton
                 onClick={(e) => {
                   e?.stopPropagation?.();
-                  e?.preventDefault?.(); // keep Link from navigating
+                  e?.preventDefault?.();
                   onAddToCart?.(e);
                 }}
                 icon={bagIcon}
@@ -138,12 +133,16 @@ function BottomBar({ product, onAddToCart, isDesktop }) {
   );
 }
 
-// ActionButtons handles cart and favorites actions
-function ActionButtons({ product, onAddToCart, onAddToFavorites }) {
+function ActionButtons({
+  product,
+  onAddToCart,
+  onToggleWishlist,
+  isWishlisted,
+}) {
   const handleCartClick = useCallback(
     (e) => {
       e.stopPropagation();
-      e.preventDefault(); // keep Link from navigating
+      e.preventDefault();
       onAddToCart?.(e);
     },
     [onAddToCart],
@@ -152,10 +151,10 @@ function ActionButtons({ product, onAddToCart, onAddToFavorites }) {
   const handleFavoriteClick = useCallback(
     (e) => {
       e.stopPropagation();
-      e.preventDefault(); // keep Link from navigating
-      onAddToFavorites?.(e);
+      e.preventDefault();
+      onToggleWishlist?.(e);
     },
-    [onAddToFavorites],
+    [onToggleWishlist],
   );
 
   return (
@@ -167,18 +166,22 @@ function ActionButtons({ product, onAddToCart, onAddToFavorites }) {
         aria-label={`Add ${product.name} to cart`}
         className="left-3"
       />
+
       <IconButton
         variant="overlay"
-        icon={heartIcon}
+        icon={isWishlisted ? heartWhiteFillIcon : heartIcon}
         onClick={handleFavoriteClick}
-        aria-label={`Add ${product.name} to favorites`}
-        className="right-3"
+        aria-label={
+          isWishlisted
+            ? `Remove ${product.name} from favorites`
+            : `Add ${product.name} to favorites`
+        }
+        className={cn("right-3", isWishlisted && "[&>img]:filter-none")}
       />
     </>
   );
 }
 
-// MAIN COMPONENT
 export default function ProductCard({
   product,
   onAddToCart,
@@ -186,9 +189,11 @@ export default function ProductCard({
   onImageError,
   onMediaReady,
 }) {
+  // HOOK’AI VISADA KVIEČIAMI (jokių early return čia!)
   const isDesktop = useMediaQuery(`(min-width: ${DESKTOP_BREAKPOINT})`);
+  const { has, toggle: toggleFavorite } = useFavorites();
+  const { addToCart } = useAddToCart();
 
-  // Safe product access with defaults
   const safeProduct = useMemo(
     () => ({
       variants: {},
@@ -202,6 +207,8 @@ export default function ProductCard({
     }),
     [product],
   );
+
+  const isWishlisted = has(safeProduct?.id);
 
   const baseColor = useMemo(() => {
     const colors = safeProduct.colors || [];
@@ -261,7 +268,6 @@ export default function ProductCard({
     }
   }, [mainSrc, hoverSrc]);
 
-  // Preload hover image only on desktop
   useImagePreload(
     hoverSrc,
     isDesktop && isInView,
@@ -288,76 +294,32 @@ export default function ProductCard({
     [onImageError],
   );
 
-  const hasHoverImage = Boolean(hoverSrc);
-  const href = `/collections/${product?.id}`;
+  const handleAddToCart = useCallback(
+    (e) => {
+      e?.preventDefault?.();
+      e?.stopPropagation?.();
 
-  if (!product) return null;
+      if (!safeProduct?.id) return;
 
-  const reduceMotion = !isDesktop;
+      addToCart({
+        product: safeProduct,
+        color: baseColor || "silver",
+        size: null,
+        quantity: 1,
+        image: mainSrc || safeProduct.thumbnail || "",
+      });
 
-  const CardInner = (
-    <div
-      className="relative w-full h-[340px] overflow-hidden bg-black/5 select-none"
-      draggable={false}
-      onDragStart={(e) => e.preventDefault()}
-    >
-      {/* MAIN */}
-      <ProductImage
-        src={mainSrc}
-        srcSet={imageMeta.srcSet}
-        sizes={imageMeta.sizes}
-        alt={product.name}
-        loaded={loadedMain}
-        onLoad={handleMainImageLoad}
-        onError={handleImageError}
-        reduceMotion={reduceMotion}
-        className={cn(
-          isDesktop && hasHoverImage
-            ? "lg:group-hover:opacity-0 lg:group-hover:scale-[1.02]"
-            : "",
-        )}
-      />
-
-      {/* HOVER IMG (desktop only) */}
-      {isDesktop && hasHoverImage ? (
-        <ProductImage
-          src={hoverSrc}
-          alt={`${product.name} - hover`}
-          loaded={loadedHover}
-          onLoad={handleHoverLoad}
-          onError={handleImageError}
-          reduceMotion={false}
-          loadedClassName="opacity-0"
-          notLoadedClassName="opacity-0"
-          className={cn(
-            "opacity-0 lg:group-hover:opacity-100",
-            "scale-100 lg:group-hover:scale-[1.04]",
-            !loadedHover && "lg:group-hover:opacity-0",
-          )}
-        />
-      ) : null}
-
-      {/* Overlay (desktop hover only) */}
-      {isDesktop ? (
-        <div className="pointer-events-none absolute inset-0 bg-black/55 opacity-0 transition-opacity duration-200 ease-out lg:group-hover:opacity-100" />
-      ) : null}
-
-      {/* Desktop hover title only */}
-      {isDesktop ? <DesktopHoverTitle product={product} /> : null}
-
-      <ActionButtons
-        product={product}
-        onAddToCart={onAddToCart}
-        onAddToFavorites={onAddToFavorites}
-      />
-
-      <BottomBar
-        product={product}
-        onAddToCart={onAddToCart}
-        isDesktop={isDesktop}
-      />
-    </div>
+      onAddToCart?.(e);
+    },
+    [addToCart, safeProduct, baseColor, mainSrc, onAddToCart],
   );
+
+  // DABAR (po hook’ų) galim daryti early return
+  if (!safeProduct?.id) return null;
+
+  const hasHoverImage = Boolean(hoverSrc);
+  const href = `/collections/${safeProduct.id}`;
+  const reduceMotion = !isDesktop;
 
   return (
     <article
@@ -381,9 +343,71 @@ export default function ProductCard({
         style={
           !isDesktop ? { WebkitTapHighlightColor: "transparent" } : undefined
         }
-        aria-label={`Open ${product.name}`}
+        aria-label={`Open ${safeProduct.name}`}
       >
-        {CardInner}
+        <div
+          className="relative w-full h-[340px] overflow-hidden bg-black/5 select-none"
+          draggable={false}
+          onDragStart={(e) => e.preventDefault()}
+        >
+          <ProductImage
+            src={mainSrc}
+            srcSet={imageMeta.srcSet}
+            sizes={imageMeta.sizes}
+            alt={safeProduct.name}
+            loaded={loadedMain}
+            onLoad={handleMainImageLoad}
+            onError={handleImageError}
+            reduceMotion={reduceMotion}
+            className={cn(
+              isDesktop && hasHoverImage
+                ? "lg:group-hover:opacity-0 lg:group-hover:scale-[1.02]"
+                : "",
+            )}
+          />
+
+          {isDesktop && hasHoverImage ? (
+            <ProductImage
+              src={hoverSrc}
+              alt={`${safeProduct.name} - hover`}
+              loaded={loadedHover}
+              onLoad={handleHoverLoad}
+              onError={handleImageError}
+              reduceMotion={false}
+              loadedClassName="opacity-0"
+              notLoadedClassName="opacity-0"
+              className={cn(
+                "opacity-0 lg:group-hover:opacity-100",
+                "scale-100 lg:group-hover:scale-[1.04]",
+                !loadedHover && "lg:group-hover:opacity-0",
+              )}
+            />
+          ) : null}
+
+          {isDesktop ? (
+            <div className="pointer-events-none absolute inset-0 bg-black/55 opacity-0 transition-opacity duration-200 ease-out lg:group-hover:opacity-100" />
+          ) : null}
+
+          {isDesktop ? <DesktopHoverTitle product={safeProduct} /> : null}
+
+          <ActionButtons
+            product={safeProduct}
+            onAddToCart={handleAddToCart}
+            isWishlisted={isWishlisted}
+            onToggleWishlist={(e) => {
+              e?.preventDefault?.();
+              e?.stopPropagation?.();
+              toggleFavorite(safeProduct.id);
+              onAddToFavorites?.(e);
+            }}
+          />
+
+          <BottomBar
+            product={safeProduct}
+            onAddToCart={handleAddToCart}
+            isDesktop={isDesktop}
+          />
+        </div>
       </Link>
     </article>
   );
