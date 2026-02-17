@@ -1,4 +1,5 @@
 // src/data/products.js
+
 const makeTitle = (id) =>
   id
     .split("-")
@@ -10,6 +11,73 @@ const withBase = (path) =>
   `${import.meta.env.BASE_URL}${path.replace(/^\/+/, "")}`;
 
 const asWebp = (filename) => filename.replace(/\.(png|jpg|jpeg)$/i, ".webp");
+
+const DEFAULT_DETAILS_BY_CATEGORY = {
+  rings: {
+    bandWidthMm: 25,
+    weightG: 4.5,
+  },
+  earrings: {
+    dimensions: { heightMm: 25, widthMm: 16.4 },
+    weightG: 4.5,
+  },
+  necklaces: {
+    chain: "Curb",
+    totalLengthCm: 45,
+    adjustableFromCm: 41,
+    adjustableToCm: 45,
+    weightG: 4.5,
+  },
+  bracelets: {
+    sizes: [
+      {
+        label: "S/M - 18 cm",
+        lines: [
+          {
+            label: "Total Bracelet Length",
+            value: "18.5 cm, adjustable from 16 cm to 18.5 cm",
+          },
+        ],
+        weightG: 2.5,
+      },
+      {
+        label: "M/L - 18 cm",
+        lines: [
+          {
+            label: "Total Bracelet Length",
+            value: "21.5 cm, adjustable from 19 cm to 18.5 cm",
+          },
+        ],
+        weightG: 2.9,
+      },
+    ],
+  },
+};
+
+const makeProductCode = (id) => {
+  const parts = String(id)
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, " ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  const letters =
+    parts.length >= 2
+      ? `${parts[0][0]}${parts[1][0]}`
+      : parts[0]
+        ? parts[0].slice(0, 2)
+        : "XX";
+
+  // mažas stabilus hash -> 00..99
+  let sum = 0;
+  const s = String(id);
+  for (let i = 0; i < s.length; i++) sum = (sum + s.charCodeAt(i)) % 100;
+
+  const num = String(sum).padStart(2, "0");
+
+  return `HG34-CT-N4_${letters}${num}`;
+};
 
 const makeProduct = ({
   id,
@@ -26,8 +94,8 @@ const makeProduct = ({
   hasGem = false,
   surface = "smooth",
   gemstones = [],
-
   sizes = [],
+  details = {},
 
   ...customVariants
 }) => {
@@ -57,6 +125,20 @@ const makeProduct = ({
 
   const colors = Object.keys(variants);
 
+  const defaultMetal =
+    colors.includes("silver") || colors.some((c) => c.startsWith("soft-"))
+      ? colors[0] || "silver"
+      : colors.includes("gold")
+        ? "gold"
+        : colors[0] || "silver";
+
+  const mergedDetails = {
+    ...(DEFAULT_DETAILS_BY_CATEGORY[category] || {}),
+    ...details,
+    metal: details?.metal ?? defaultMetal,
+    productCode: details?.productCode ?? makeProductCode(id),
+  };
+
   return {
     id,
     name: makeTitle(id),
@@ -76,6 +158,7 @@ const makeProduct = ({
     surface,
     gemstones,
     sizes,
+    details: mergedDetails,
   };
 };
 
@@ -93,6 +176,10 @@ export const PRODUCTS = [
     surface: "smooth",
     gemstones: ["deimantas"],
     sizes: [15.5, 16, 17.5, 18],
+    details: {
+      detailsText:
+        "This elegant ring features a clear, rectangular-cut stone set on a slim, polished band. Its clean lines and refined proportions highlight the stone’s natural clarity, creating a light, timeless look. Designed for effortless elegance, this piece balances simplicity and sophistication, making it perfect for everyday wear or as a subtle statement for special occasions.",
+    },
   }),
   makeProduct({
     id: "drift-ring",
@@ -104,6 +191,10 @@ export const PRODUCTS = [
     surface: "rough",
     gemstones: [],
     sizes: [16, 17.5, 18, 18.5],
+    details: {
+      detailsText:
+        "This statement ring features a bold, open design with softly hammered surfaces that reflect light in an organic, irregular way. The sculptural form wraps elegantly around the finger, creating a sense of movement and depth. Contemporary yet expressive, this piece is designed to stand out while maintaining a refined, modern aesthetic.",
+    },
   }),
   makeProduct({
     id: "earth-ring",
@@ -117,6 +208,10 @@ export const PRODUCTS = [
     surface: "rough",
     gemstones: [],
     sizes: [15.5, 16, 17.5, 18],
+    details: {
+      detailsText:
+        "This sculptural ring combines a wide, softly hammered band with smooth, rounded loops that wrap around the finger in an open, fluid form. The contrast between textured and polished surfaces creates depth and visual interest, while the bold silhouette remains refined and balanced. Contemporary and expressive, this piece is designed as a statement ring that elevates both everyday and more considered looks.",
+    },
   }),
   makeProduct({
     id: "echo-ring",
@@ -129,6 +224,10 @@ export const PRODUCTS = [
     surface: "smooth",
     gemstones: [],
     sizes: [15.5, 16, 17.5, 18, 18.5],
+    details: {
+      detailsText:
+        "This minimalist ring features softly layered, flowing bands that wrap seamlessly around the finger. Its smooth, polished surface creates a fluid silhouette with a subtle sense of movement and depth. Elegant yet understated, this piece is designed for everyday wear, offering a modern, timeless accent that pairs effortlessly with other jewellery or stands beautifully on its own.",
+    },
   }),
   makeProduct({
     id: "fluid-ring",
@@ -141,6 +240,10 @@ export const PRODUCTS = [
     surface: "smooth",
     gemstones: [],
     sizes: [16, 17.5, 18, 18.5],
+    details: {
+      detailsText:
+        "This bold ring features a smooth, rounded band with a softly matte finish that highlights its sculptural form. Its clean, minimalist design creates a strong yet refined presence, making it a versatile piece for everyday wear. Timeless and modern, this ring is designed to stand alone or pair effortlessly with other jewellery for a balanced, contemporary look.",
+    },
   }),
   makeProduct({
     id: "fold-ring",
@@ -153,6 +256,10 @@ export const PRODUCTS = [
     surface: "rough",
     gemstones: [],
     sizes: [15.5, 16, 17.5, 18],
+    details: {
+      detailsText:
+        "This modern ring is defined by crisp folds and sculpted edges that create a striking, architectural silhouette. Subtle texture catches the light across the surface, adding depth while keeping the design clean and minimal. Designed to feel contemporary yet timeless, this piece brings a confident accent to everyday styling.",
+    },
   }),
   makeProduct({
     id: "pure-ring",
@@ -164,6 +271,10 @@ export const PRODUCTS = [
     surface: "smooth",
     gemstones: ["perlas"],
     sizes: [15.5, 16, 17.5, 18],
+    details: {
+      detailsText:
+        "This refined ring features a luminous pearl detail set into a slim, polished band, creating a delicate balance of softness and structure. Its minimalist silhouette highlights the natural glow of the pearl, offering an elegant touch without feeling overstated. Perfect for everyday wear or subtle occasions, this piece adds quiet sophistication to any jewellery collection.",
+    },
   }),
   makeProduct({
     id: "ridge-ring",
@@ -175,6 +286,10 @@ export const PRODUCTS = [
     surface: "rough",
     gemstones: [],
     sizes: [16, 17.5, 18, 18.5],
+    details: {
+      detailsText:
+        "This ring features a textured, ridged surface that creates a subtle rhythm of light and shadow across the band. Its bold shape feels sculptural yet wearable, combining an organic finish with a clean, modern silhouette. Designed to be worn alone as a statement or stacked with minimal pieces, it brings effortless character to everyday looks.",
+    },
   }),
   makeProduct({
     id: "stack-ring",
@@ -187,6 +302,11 @@ export const PRODUCTS = [
     surface: "smooth",
     gemstones: [],
     sizes: [15.5, 16, 17.5, 18, 18.5],
+    details: {
+      metal: "gold",
+      detailsText:
+        "This minimalist ring set features two delicate designs with subtle sculptural details. One ring is accented with a small, drop-shaped charm, while the other features a smooth, elongated element for a clean, modern look. Designed to be worn together or separately, these rings offer versatile styling and a refined, contemporary aesthetic suitable for everyday wear.",
+    },
   }),
   makeProduct({
     id: "still-ring",
@@ -199,6 +319,10 @@ export const PRODUCTS = [
     surface: "smooth",
     gemstones: [],
     sizes: [16, 17.5, 18, 18.5],
+    details: {
+      detailsText:
+        "This delicate ring features a soft square stone set in a sleek, polished frame on a slender band. The warm gold tone enhances the stone’s subtle, milky translucence, creating a calm and elegant look. Minimal yet expressive, this piece is designed for everyday wear, adding a refined touch of warmth and modern simplicity to any jewellery collection.",
+    },
   }),
   makeProduct({
     id: "true-ring",
@@ -210,6 +334,10 @@ export const PRODUCTS = [
     surface: "smooth",
     gemstones: ["kristolas"],
     sizes: [15.5, 16, 17.5, 18],
+    details: {
+      detailsText:
+        "This statement ring features a striking geometric-cut stone set into a bold, sculpted band. The clean, angular setting enhances the stone’s brilliance, while the smooth, polished band adds a sense of strength and balance. Modern and confident in design, this ring is created to stand out, making it a refined statement piece for both everyday wear and special occasions.",
+    },
   }),
   makeProduct({
     id: "wave-ring",
@@ -222,6 +350,10 @@ export const PRODUCTS = [
     surface: "smooth",
     gemstones: [],
     sizes: [15.5, 16, 17.5, 18, 18.5],
+    details: {
+      detailsText:
+        "This sculptural ring is inspired by gentle wave-like curves, creating a smooth silhouette with soft movement around the finger. Its polished finish reflects light subtly, giving the piece a clean, modern feel. Designed to be timeless and easy to style, this ring works beautifully as a solo statement or layered with minimal jewellery for a refined, contemporary look.",
+    },
   }),
 
   // ======================
@@ -251,6 +383,11 @@ export const PRODUCTS = [
     surface: "smooth",
     gemstones: ["kristolas", "cirkonis", "perlas"],
     sizes: [],
+    details: {
+      metal: "soft-yellow",
+      detailsText:
+        "These minimalist stud earrings feature soft square silhouettes with gently rounded edges, set with a smooth, light-toned stone. Their clean lines and subtle contrast create a calm, refined look that feels both modern and timeless. Designed for effortless everyday wear, they add a quiet elegance and a touch of softness to any jewellery collection.",
+    },
   }),
   makeProduct({
     id: "loop-earrings",
@@ -266,6 +403,10 @@ export const PRODUCTS = [
     surface: "smooth",
     gemstones: [],
     sizes: [],
+    details: {
+      detailsText:
+        "These refined hoop earrings feature a clean circular silhouette with a polished finish that catches the light in a subtle, elegant way. Their minimal form feels timeless and easy to style, making them an everyday essential. Designed to pair effortlessly with other pieces or stand on their own, they add a modern touch to both casual and elevated looks.",
+    },
   }),
   makeProduct({
     id: "point-earrings",
@@ -283,6 +424,10 @@ export const PRODUCTS = [
     surface: "smooth",
     gemstones: [],
     sizes: [],
+    details: {
+      detailsText:
+        "These modern earrings feature an organic, open-drop shape suspended from a sleek hoop, creating gentle movement and a sculptural feel. The smooth, polished surface enhances their contemporary silhouette, while the balanced form keeps them refined and wearable. Designed to stand out effortlessly, this piece brings a sophisticated, modern accent to both everyday and elevated looks.",
+    },
   }),
   makeProduct({
     id: "pure-earrings",
@@ -299,6 +444,10 @@ export const PRODUCTS = [
     surface: "smooth",
     gemstones: [],
     sizes: [],
+    details: {
+      detailsText:
+        "These refined drop earrings feature two polished spherical elements suspended from a classic lever-back closure. Their smooth, high-shine finish catches the light beautifully, creating a subtle yet eye-catching movement. Elegant and timeless, they are designed to add a touch of sophistication to both everyday wear and special occasions.",
+    },
   }),
   makeProduct({
     id: "sol-earrings",
@@ -314,6 +463,10 @@ export const PRODUCTS = [
     surface: "smooth",
     gemstones: [],
     sizes: [],
+    details: {
+      detailsText:
+        "These elegant drop earrings feature a smooth, elongated silhouette that gently tapers into a soft teardrop shape. Their polished surface reflects light beautifully, creating subtle movement with every turn. Minimal yet expressive, they are designed to elongate the neckline and add a refined, modern accent to both everyday and evening looks.",
+    },
   }),
 
   // ======================
@@ -331,6 +484,10 @@ export const PRODUCTS = [
     surface: "rough",
     gemstones: ["cirkonis"],
     sizes: [],
+    details: {
+      detailsText:
+        "This delicate necklace pairs a fine chain with a minimal pendant detail that adds a soft point of light at the neckline. Its clean proportions make it ideal for layering, while the subtle texture gives it a refined, contemporary character. Designed to be effortless and versatile, it brings a quiet elegance to everyday styling and more polished occasions.",
+    },
   }),
   makeProduct({
     id: "fall-necklace",
@@ -342,6 +499,10 @@ export const PRODUCTS = [
     surface: "smooth",
     gemstones: [],
     sizes: [],
+    details: {
+      detailsText:
+        "This necklace features a sleek, drop-shaped pendant that falls gracefully along the neckline, creating an elegant elongated silhouette. The smooth, polished finish catches the light softly, keeping the look minimal yet expressive. Designed to be worn alone for a refined statement or layered for depth, it adds a modern touch to both everyday and evening outfits.",
+    },
   }),
 
   // ======================
@@ -357,7 +518,21 @@ export const PRODUCTS = [
     hasGem: false,
     surface: "smooth",
     gemstones: [],
-    sizes: [],
+    sizes: ["S/M", "M/L"],
+    details: {
+      detailsText:
+        "This bold chain bracelet is crafted from interlinked, polished rings that create a strong yet balanced silhouette. Its smooth, rounded links catch the light beautifully, giving the piece a refined, contemporary feel. Designed to stand out on its own or pair effortlessly with other jewellery, this bracelet adds a modern statement to both everyday and elevated looks.",
+      sizeDetails: {
+        "S/M": {
+          totalLengthText: "18.5 cm, adjustable from 16 cm to 18.5 cm",
+          weightG: 2.5,
+        },
+        "M/L": {
+          totalLengthText: "21.5 cm, adjustable from 19 cm to 18.5 cm",
+          weightG: 2.9,
+        },
+      },
+    },
   }),
   makeProduct({
     id: "core-bracelet",
@@ -369,6 +544,20 @@ export const PRODUCTS = [
     hasGem: false,
     surface: "smooth",
     gemstones: [],
-    sizes: [],
+    sizes: ["S/M", "M/L"],
+    details: {
+      detailsText:
+        "This sculptural chain bracelet features smooth, rounded links designed to feel clean and minimal while still making an impact. Its polished finish reflects light softly, giving the piece a refined, modern character. Easy to style alone or stacked with other jewellery, this bracelet brings a contemporary accent to everyday looks and more elevated outfits.",
+      sizeDetails: {
+        "S/M": {
+          totalLengthText: "18.5 cm, adjustable from 16 cm to 18.5 cm",
+          weightG: 2.5,
+        },
+        "M/L": {
+          totalLengthText: "21.5 cm, adjustable from 19 cm to 18.5 cm",
+          weightG: 2.9,
+        },
+      },
+    },
   }),
 ];

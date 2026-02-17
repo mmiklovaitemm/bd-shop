@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
 import HorizontalSliderSection from "@/components/sections/HorizontalSliderSection";
-import ProductCard from "@/components/ui/ProductCard";
+import ProductCard from "@/components/ui/ProductCard/ProductCard";
 
 import seeAllArrow from "@/assets/ui/see-all-arrow-right.svg";
 import { BEST_SELLERS } from "@/data/bestSellers";

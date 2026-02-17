@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 
-import ProductCard from "@/components/ui/ProductCard";
+import ProductCard from "@/components/ui/ProductCard/ProductCard";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 
 import { PRODUCTS } from "@/data/products";

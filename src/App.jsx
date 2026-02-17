@@ -7,8 +7,9 @@ import Products from "@/pages/Products";
 import Product from "@/pages/Product/Product";
 import Favorites from "@/pages/Favorites";
 import Account from "@/pages/Account";
-import About from "@/pages/About";
+import About from "@/pages/AboutUs/About";
 import Contact from "@/pages/Contact";
+import PersonalizedProducts from "@/pages/PersonalizedProducts";
 import NotFound from "@/pages/NotFound";
 
 export default function App() {
@@ -22,6 +23,7 @@ export default function App() {
         <Route path="/account" element={<Account />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
+        <Route path="/personalized" element={<PersonalizedProducts />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

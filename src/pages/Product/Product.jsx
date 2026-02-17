@@ -38,7 +38,7 @@ function ProductView({ product }) {
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [activeImgIndex, setActiveImgIndex] = useState(0);
 
-  // Product selection state (inicializuojam iš product)
+  // Product selection state
   const [quantity, setQuantity] = useState(1);
   const [selectedColor, setSelectedColor] = useState(
     product?.colors?.[0] || "silver",
@@ -77,7 +77,6 @@ function ProductView({ product }) {
       e?.stopPropagation?.();
       if (!product) return;
 
-      // 1 paveiksliukas pagal pasirinktą spalvą (fallback į default spalvą / thumbnail)
       const img =
         product?.variants?.[selectedColor]?.[0] ||
         product?.variants?.[product?.colors?.[0]]?.[0] ||
@@ -155,6 +154,8 @@ function ProductView({ product }) {
         isOpen={isDetailsOpen}
         onClose={() => setIsDetailsOpen(false)}
         product={product}
+        selectedColor={selectedColor}
+        selectedSize={selectedSize}
       />
 
       <Lightbox
@@ -199,6 +200,5 @@ export default function Product() {
     );
   }
 
-  // Svarbu: key priverčia PERMOUNT, kai pasikeičia produktas (id)
   return <ProductView key={product.id} product={product} />;
 }

@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import Pagination from "@/components/ui/Pagination";
 
 import { PRODUCTS } from "@/data/products";
-import ProductCard from "@/components/ui/ProductCard";
+import ProductCard from "@/components/ui/ProductCard/ProductCard";
 import AboutStudioSection from "@/components/ui/AboutStudioSection";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 import ProductsToolbar from "@/components/sections/ProductsToolBar";
@@ -288,23 +288,28 @@ export default function Products() {
     const clamped = Math.max(1, Math.min(nextPage, totalPages));
     setPage(clamped);
 
-    setSearchParams((prev) => {
-      const sp = new URLSearchParams(prev);
-      sp.set("page", String(clamped));
-      return sp;
-    });
+    setSearchParams(
+      (prev) => {
+        const sp = new URLSearchParams(prev);
+        sp.set("page", String(clamped));
+        return sp;
+      },
+      { replace: true },
+    );
 
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // reset page to 1 when filters/category/sort change
   useEffect(() => {
     setPage(1);
-    setSearchParams((prev) => {
-      const sp = new URLSearchParams(prev);
-      sp.set("page", "1");
-      return sp;
-    });
+    setSearchParams(
+      (prev) => {
+        const sp = new URLSearchParams(prev);
+        sp.set("page", "1");
+        return sp;
+      },
+      { replace: true },
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     activeCategory,
