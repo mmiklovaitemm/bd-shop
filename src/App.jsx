@@ -9,7 +9,7 @@ import Favorites from "@/pages/Favorites";
 import Account from "@/pages/Account";
 import About from "@/pages/AboutUs/About";
 import Contact from "@/pages/Contact";
-import PersonalizedProducts from "@/pages/PersonalizedProducts";
+import PersonalizedProducts from "@/pages/PersonalizedPage/PersonalizedProducts";
 import NotFound from "@/pages/NotFound";
 
 export default function App() {

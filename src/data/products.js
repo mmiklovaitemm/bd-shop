@@ -69,7 +69,6 @@ const makeProductCode = (id) => {
         ? parts[0].slice(0, 2)
         : "XX";
 
-  // mažas stabilus hash -> 00..99
   let sum = 0;
   const s = String(id);
   for (let i = 0; i < s.length; i++) sum = (sum + s.charCodeAt(i)) % 100;
@@ -558,6 +557,105 @@ export const PRODUCTS = [
           weightG: 2.9,
         },
       },
+    },
+  }),
+
+  // ======================
+  // PERSONAL
+  // ======================
+  makeProduct({
+    id: "forever-ring",
+    category: "personal",
+    silver: ["Forever-ring-silver-1.webp", "Forever-ring-silver-2.webp"],
+    gold: ["Forever-ring-gold-1.webp", "Forever-ring-gold-2.webp"],
+    priceValue: 120,
+    createdAt: "2026-02-10",
+    hasGem: false,
+    surface: "smooth",
+    gemstones: [],
+    sizes: [15.5, 16, 17.5, 18, 18.5],
+    details: {
+      detailsText:
+        "A bold signet-style ring created for personal engraving. Its smooth surface is perfect for initials, dates, or meaningful symbols.",
+      serviceOptions: [
+        {
+          value: "shipping",
+          label: "Shipping kit",
+          description:
+            "We send you a kit to capture your print. Send it back to us for engraving.",
+          priceDelta: 0,
+        },
+        {
+          value: "in_store",
+          label: "In-store",
+          description: "Visit our store and we’ll take your print on-site.",
+          priceDelta: 0,
+        },
+      ],
+    },
+  }),
+
+  makeProduct({
+    id: "special-ring",
+    category: "personal",
+    silver: ["Special-ring-silver-1.webp", "Special-ring-silver-2.webp"],
+    gold: ["Special-ring-gold-1.webp", "Special-ring-gold-2.webp"],
+    priceValue: 110,
+    createdAt: "2026-02-11",
+    hasGem: false,
+    surface: "rough",
+    gemstones: [],
+    sizes: [15.5, 16, 17.5, 18],
+    details: {
+      detailsText:
+        "A textured ring designed to hold a unique personal imprint. The hammered finish reflects light beautifully while keeping a modern aesthetic.",
+      serviceOptions: [
+        {
+          value: "shipping",
+          label: "Shipping kit",
+          description:
+            "We send you a kit to capture your print. Send it back to us for engraving.",
+          priceDelta: 0,
+        },
+        {
+          value: "in_store",
+          label: "In-store",
+          description: "Visit our store and we’ll take your print on-site.",
+          priceDelta: 0,
+        },
+      ],
+    },
+  }),
+
+  makeProduct({
+    id: "impressa-ring",
+    category: "personal",
+    silver: ["Impressa-ring-1-silver.webp", "Impressa-ring-2.webp"],
+    gold: ["Impressa-ring-1-gold.webp", "Impressa-ring-2.webp"],
+    priceValue: 125,
+    createdAt: "2026-02-12",
+    hasGem: false,
+    surface: "smooth",
+    gemstones: [],
+    sizes: [16, 17.5, 18, 18.5],
+    details: {
+      detailsText:
+        "A refined engraving ring with a clean plate surface. Designed for fingerprint, initials or custom engraving, turning jewellery into a personal story.",
+      serviceOptions: [
+        {
+          value: "shipping",
+          label: "Shipping kit",
+          description:
+            "We send you a kit to capture your print. Send it back to us for engraving.",
+          priceDelta: 0,
+        },
+        {
+          value: "in_store",
+          label: "In-store",
+          description: "Visit our store and we’ll take your print on-site.",
+          priceDelta: 0,
+        },
+      ],
     },
   }),
 ];

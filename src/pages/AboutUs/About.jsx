@@ -13,6 +13,7 @@ import persMobile from "@/assets/images/personalized-jewelry/personalized-hero-m
 import persTablet from "@/assets/images/personalized-jewelry/personalized-hero-tablet.webp";
 import persDesktop from "@/assets/images/personalized-jewelry/personalized-hero-desktop.webp";
 import TestimonialsSlider from "@/components/sections/TestimonialsSlider";
+import OurSalons from "./OurSalons";
 
 export default function About() {
   return (
@@ -27,7 +28,10 @@ export default function About() {
       <FullWidthDivider />
       <AboutStudioSection />
 
-      <BestSellersIntro />
+      <BestSellersIntro
+        title="Best Sellers"
+        description="Every piece of our jewelry is created to capture a feeling — love, beauty, and timeless elegance. Crafted with exquisite detail and the finest materials, each design is meant to be cherished."
+      />
       <FullWidthDivider />
 
       <TwoImageStrip
@@ -40,7 +44,9 @@ export default function About() {
         altLeft="New collection"
         altRight="Personalized jewelry"
       />
+      <FullWidthDivider />
 
+      <OurSalons />
       <FullWidthDivider />
 
       <TestimonialsSlider />

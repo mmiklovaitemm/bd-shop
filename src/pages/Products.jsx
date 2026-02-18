@@ -63,8 +63,11 @@ const applySizeFilter = (list, selectedSize) => {
 export default function Products() {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const initialCategory = searchParams.get("category") || "rings";
-  const [activeCategory, setActiveCategory] = useState(initialCategory);
+  const categoryFromUrl =
+    searchParams.get("category") || searchParams.get("filter") || "rings";
+  const pageFromUrlParam = Number(searchParams.get("page") || 1);
+
+  const [activeCategory, setActiveCategory] = useState("rings");
 
   const [sortValue, setSortValue] = useState("price_desc");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -80,13 +83,10 @@ export default function Products() {
   // =========================
   // PAGINATION
   // =========================
-  const pageFromUrl = Number(searchParams.get("page") || 1);
-  const [page, setPage] = useState(
-    Number.isFinite(pageFromUrl) ? pageFromUrl : 1,
-  );
-
+  const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(12);
 
+  // Responsive page size
   useEffect(() => {
     const update = () => {
       const isMobile = window.matchMedia("(max-width: 767px)").matches;
@@ -98,18 +98,16 @@ export default function Products() {
     return () => window.removeEventListener("resize", update);
   }, []);
 
-  // keep page in sync with URL
   useEffect(() => {
-    const p = Number(searchParams.get("page") || 1);
-    if (Number.isFinite(p) && p !== page) setPage(p);
+    const p = Number.isFinite(pageFromUrlParam) ? pageFromUrlParam : 1;
+    if (p !== page) setPage(p);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  }, [pageFromUrlParam]);
 
   useEffect(() => {
-    const fromUrl = searchParams.get("category");
-    if (fromUrl && fromUrl !== activeCategory) setActiveCategory(fromUrl);
+    if (categoryFromUrl !== activeCategory) setActiveCategory(categoryFromUrl);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  }, [categoryFromUrl]);
 
   const activeCategoryLabel =
     CATEGORY_ITEMS.find((c) => c.value === activeCategory)?.label || "Rings";
@@ -296,8 +294,6 @@ export default function Products() {
       },
       { replace: true },
     );
-
-    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   useEffect(() => {
@@ -332,15 +328,18 @@ export default function Products() {
 
     setPage(1);
 
-    setSearchParams((prev) => {
-      const sp = new URLSearchParams(prev);
-      sp.set("category", next);
-      sp.set("page", "1");
-      return sp;
-    });
+    setSearchParams(
+      (prev) => {
+        const sp = new URLSearchParams(prev);
+        sp.set("category", next);
+        sp.set("page", "1");
+        sp.delete("filter");
+        return sp;
+      },
+      { replace: true },
+    );
   };
 
-  // CLEAR ALL
   const handleClearAll = () => {
     setSelectedMaterial(null);
     setSelectedAppearance([]);
@@ -349,11 +348,15 @@ export default function Products() {
     setPriceRange({ min: priceBounds.min, max: priceBounds.max });
 
     setPage(1);
-    setSearchParams((prev) => {
-      const sp = new URLSearchParams(prev);
-      sp.set("page", "1");
-      return sp;
-    });
+    setSearchParams(
+      (prev) => {
+        const sp = new URLSearchParams(prev);
+        sp.set("page", "1");
+        sp.delete("filter");
+        return sp;
+      },
+      { replace: true },
+    );
   };
 
   const desktopColsClass = isFilterOpen ? "lg:grid-cols-3" : "lg:grid-cols-4";
@@ -394,7 +397,7 @@ export default function Products() {
         clearDisabled={false}
       />
 
-      <div className="mx-auto w-full max-w-[1200px] px-4 md:px-6 lg:px-1 py-8 md:py-10">
+      <div className="mx-auto w-full max-w-[1200px] px-4 py-8 md:px-6 md:py-10 lg:px-1">
         <div
           className={
             isFilterOpen ? "lg:grid lg:grid-cols-[320px_1fr] gap-6" : "lg:block"

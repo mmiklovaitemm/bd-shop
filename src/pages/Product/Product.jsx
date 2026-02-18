@@ -45,6 +45,10 @@ function ProductView({ product }) {
   );
   const [selectedSize, setSelectedSize] = useState(product?.sizes?.[0] || null);
 
+  const [selectedService, setSelectedService] = useState(
+    product?.details?.serviceOptions?.[0]?.value || null,
+  );
+
   // Memoized images based on selected color
   const images = useMemo(() => {
     if (!product) return [];
@@ -83,17 +87,31 @@ function ProductView({ product }) {
         product?.thumbnail ||
         "";
 
+      if (product.category === "personal" && !selectedService) {
+        alert("Please choose service option.");
+        return;
+      }
+
       addToCart({
         product,
         color: selectedColor || "silver",
         size: selectedSize || null,
         quantity: quantity || 1,
         image: img,
+        serviceOption: selectedService || null,
       });
 
       openBag();
     },
-    [addToCart, openBag, product, selectedColor, selectedSize, quantity],
+    [
+      addToCart,
+      openBag,
+      product,
+      selectedColor,
+      selectedSize,
+      quantity,
+      selectedService,
+    ],
   );
 
   return (
@@ -143,6 +161,8 @@ function ProductView({ product }) {
           setSelectedColor={setSelectedColor}
           quantity={quantity}
           setQuantity={setQuantity}
+          selectedService={selectedService}
+          setSelectedService={setSelectedService}
           onAddToBag={handleAddToBag}
           onOpenDetails={() => setIsDetailsOpen(true)}
           hoverClasses={HOVER_CLASSES}

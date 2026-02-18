@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
+import preventDragHandler from "@/utils/preventDrag";
+
 import warrantyIcon from "@/assets/ui/warranty.svg";
 import returnIcon from "@/assets/ui/return-box.svg";
 import deliveryIcon from "@/assets/ui/delivery.svg";
@@ -34,7 +36,13 @@ export default function AnnouncementBar() {
     <div className="bg-black text-white">
       {/* Mobile: rotating */}
       <div className="mx-auto flex h-[40px] max-w-6xl items-center justify-center gap-2 px-4 font-ui text-[12px] font-normal leading-none md:hidden">
-        <img src={items[index].icon} alt="" className="h-[15px] w-auto" />
+        <img
+          src={items[index].icon}
+          alt=""
+          className="h-[15px] w-auto invert select-none"
+          draggable={false}
+          onDragStart={preventDragHandler}
+        />
         <span>{items[index].text}</span>
       </div>
 
@@ -42,7 +50,13 @@ export default function AnnouncementBar() {
       <div className="mx-auto hidden h-[40px] max-w-6xl items-center justify-center gap-12 px-4 font-ui text-[12px] font-normal leading-none md:flex">
         {items.map((it) => (
           <div key={it.text} className="flex items-center gap-2">
-            <img src={it.icon} alt="" className="h-[15px] w-auto" />
+            <img
+              src={it.icon}
+              alt=""
+              className="h-[15px] w-auto invert select-none"
+              draggable={false}
+              onDragStart={preventDragHandler}
+            />
             <span>{it.text}</span>
           </div>
         ))}

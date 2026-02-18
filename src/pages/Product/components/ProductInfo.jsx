@@ -62,7 +62,7 @@ const BenefitItem = memo(function BenefitItem({ icon, text }) {
         aria-hidden="true"
         draggable={false}
         onDragStart={preventDragHandler}
-        className="h-4 w-4 invert select-none"
+        className="h-4 w-4 select-none"
       />
       {text}
     </div>
@@ -194,6 +194,8 @@ const ProductInfo = memo(function ProductInfo({
   setSelectedColor,
   quantity,
   setQuantity,
+  selectedService,
+  setSelectedService,
   onAddToBag,
   onOpenDetails,
   hoverClasses = { btn: "", iconBtn: "", group: "" },
@@ -204,6 +206,10 @@ const ProductInfo = memo(function ProductInfo({
 
   const isWishlisted = has(product.id);
   const hoverBtnClass = hoverClasses.btn;
+
+  const hasServiceOptions =
+    product.category === "personal" &&
+    (product.details?.serviceOptions?.length ?? 0) > 0;
 
   return (
     <div className="md:pt-1">
@@ -234,6 +240,60 @@ const ProductInfo = memo(function ProductInfo({
           hoverBtnClass={hoverBtnClass}
         />
       </div>
+
+      {hasServiceOptions && (
+        <div className="mt-5">
+          <p className="font-ui text-[13px] text-black/70">Service option:</p>
+
+          <div className="mt-2 grid gap-2">
+            {product.details.serviceOptions.map((opt) => {
+              const active = selectedService === opt.value;
+
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setSelectedService(opt.value)}
+                  className={cn(
+                    "w-full border px-4 py-3 text-left select-none",
+                    hoverBtnClass,
+                    active
+                      ? "border-black bg-black text-white"
+                      : "border-black/40 bg-white text-black lg:hover:bg-black/5",
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-ui text-[13px]">
+                        <span className="font-mono">{opt.label}</span>
+                      </p>
+
+                      {opt.description ? (
+                        <p
+                          className={cn(
+                            "mt-1 font-ui text-[12px] leading-relaxed",
+                            active ? "text-white/80" : "text-black/70",
+                          )}
+                        >
+                          {opt.description}
+                        </p>
+                      ) : null}
+                    </div>
+
+                    <span
+                      className={cn(
+                        "mt-1 h-4 w-4 shrink-0 rounded-full border",
+                        active ? "border-white bg-white" : "border-black/40",
+                      )}
+                      aria-hidden="true"
+                    />
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="mt-5">
         <p className="font-ui text-[13px] text-black/70">Quantity:</p>
