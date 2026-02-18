@@ -267,33 +267,33 @@ export default function Login() {
 
   return (
     <>
-      <main className="py-6">
+      <main className="py-6 overflow-x-hidden">
         <section className="mx-auto w-full max-w-[420px] md:max-w-[560px] lg:max-w-[680px] md:border md:border-black/40 bg-white">
           <div className="px-6 pt-6 pb-8">
             {/* Top buttons */}
-            <div className="flex gap-3">
+            <div className="flex gap-3 w-full">
               {isRegister ? (
                 <Link
                   to="/login"
-                  className="block w-full border border-black/60 bg-white py-4 text-center text-base tracking-wide"
+                  className="block flex-1 min-w-0 border border-black/60 bg-white py-4 text-center text-base tracking-wide"
                   onClick={goLogin}
                 >
                   Sign in
                 </Link>
               ) : (
-                <div className="block w-full bg-black py-4 text-center text-base tracking-wide text-white">
+                <div className="block flex-1 min-w-0 bg-black py-4 text-center text-base tracking-wide text-white">
                   Sign in
                 </div>
               )}
 
               {isRegister ? (
-                <div className="block w-full bg-black py-4 text-center text-base tracking-wide text-white">
+                <div className="block flex-1 min-w-0 bg-black py-4 text-center text-base tracking-wide text-white">
                   Create an account
                 </div>
               ) : (
                 <Link
                   to="/register"
-                  className="block w-full border border-black/60 bg-white py-4 text-center text-base tracking-wide"
+                  className="block flex-1 min-w-0 border border-black/60 bg-white py-4 text-center text-base tracking-wide"
                   onClick={goRegister}
                 >
                   Create an account

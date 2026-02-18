@@ -28,7 +28,9 @@ export default function Contact() {
     "focus:outline-none focus:border-black focus:bg-black/5";
 
   const getFieldClass = (key) =>
-    `${baseFieldClass} ${errors[key] ? "border border-red-600" : "border border-black"}`;
+    `${baseFieldClass} ${
+      errors[key] ? "border border-red-600" : "border border-black"
+    }`;
 
   const clearError = (key) => {
     setErrors((prev) => {
@@ -50,11 +52,10 @@ export default function Contact() {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    // jei buvo success, o user pradeda taisyti – grąžinam į form mode
     if (isSent) setIsSent(false);
 
     setFormData((prev) => ({ ...prev, [name]: value }));
-    clearError(name); // nuimam tik to lauko klaidą
+    clearError(name);
   };
 
   const handleSubmit = (e) => {
@@ -102,7 +103,7 @@ export default function Contact() {
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full overflow-x-hidden">
       {/* Title */}
       <div className="px-4 md:px-8 py-6">
         <h1 className="text-4xl md:text-5xl font-display">Contacts</h1>
