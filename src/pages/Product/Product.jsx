@@ -15,6 +15,7 @@ import Lightbox from "@/pages/Product/components/Lightbox";
 import DetailsPanel from "@/pages/Product/components/DetailsPanel";
 import ProductInfo from "@/pages/Product/components/ProductInfo";
 import YouMayAlsoLike from "@/pages/Product/components/YouMayAlsoLike";
+import HowItWorksPanel from "@/pages/Product/components/HowItWorksPanel";
 
 // Constants
 import { HOVER_CLASSES } from "@/pages/Product/constants";
@@ -33,6 +34,7 @@ function ProductView({ product }) {
 
   // UI state
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
 
   // Lightbox state
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
@@ -94,6 +96,7 @@ function ProductView({ product }) {
 
       addToCart({
         product,
+        category: product.category,
         color: selectedColor || "silver",
         size: selectedSize || null,
         quantity: quantity || 1,
@@ -165,6 +168,7 @@ function ProductView({ product }) {
           setSelectedService={setSelectedService}
           onAddToBag={handleAddToBag}
           onOpenDetails={() => setIsDetailsOpen(true)}
+          onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
           hoverClasses={HOVER_CLASSES}
         />
       </div>
@@ -177,6 +181,13 @@ function ProductView({ product }) {
         selectedColor={selectedColor}
         selectedSize={selectedSize}
       />
+
+      {product?.category === "personal" && (
+        <HowItWorksPanel
+          isOpen={isHowItWorksOpen}
+          onClose={() => setIsHowItWorksOpen(false)}
+        />
+      )}
 
       <Lightbox
         isOpen={isLightboxOpen}

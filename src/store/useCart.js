@@ -112,4 +112,11 @@ export default create((set) => ({
 
       return { items: copy };
     }),
+
+  updateServiceOption: (key, serviceOption) =>
+    set((state) => ({
+      items: state.items.map((x) =>
+        x.key === key ? { ...x, serviceOption: serviceOption || null } : x,
+      ),
+    })),
 }));

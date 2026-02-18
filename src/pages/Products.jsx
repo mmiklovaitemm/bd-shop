@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import Pagination from "@/components/ui/Pagination";
 
 import { PRODUCTS } from "@/data/products";
+
 import ProductCard from "@/components/ui/ProductCard/ProductCard";
 import AboutStudioSection from "@/components/ui/AboutStudioSection";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
@@ -80,9 +81,7 @@ export default function Products() {
   const [selectedGems, setSelectedGems] = useState([]);
   const [selectedSize, setSelectedSize] = useState(null);
 
-  // =========================
   // PAGINATION
-  // =========================
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(12);
 
@@ -112,7 +111,18 @@ export default function Products() {
   const activeCategoryLabel =
     CATEGORY_ITEMS.find((c) => c.value === activeCategory)?.label || "Rings";
 
+  // PRODUCTS IN CATEGORY
   const productsInCategory = useMemo(() => {
+    if (activeCategory === "best-sellers") {
+      return PRODUCTS.filter((p) => p.isBestSeller);
+    }
+
+    if (activeCategory === "new-collection") {
+      return [...PRODUCTS]
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .slice(0, 5);
+    }
+
     return PRODUCTS.filter((p) => p.category === activeCategory);
   }, [activeCategory]);
 
@@ -135,7 +145,7 @@ export default function Products() {
     );
 
     if (selectedMaterial) {
-      list = list.filter((p) => p.colors.includes(selectedMaterial));
+      list = list.filter((p) => (p.colors || []).includes(selectedMaterial));
     }
 
     return list;
@@ -150,7 +160,7 @@ export default function Products() {
 
     const counts = {};
     for (const p of list) {
-      for (const c of p.colors) counts[c] = (counts[c] || 0) + 1;
+      for (const c of p.colors || []) counts[c] = (counts[c] || 0) + 1;
     }
 
     const order = ["silver", "gold"];
@@ -279,8 +289,8 @@ export default function Products() {
   }, [filteredAndSortedProducts, safePage, pageSize]);
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [safePage]);
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }, [activeCategory, safePage]);
 
   const handlePageChange = (nextPage) => {
     const clamped = Math.max(1, Math.min(nextPage, totalPages));

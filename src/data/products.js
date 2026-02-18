@@ -166,10 +166,28 @@ export const PRODUCTS = [
   // RINGS
   // ======================
   makeProduct({
+    id: "um-ring",
+    category: "rings",
+    silver: ["UM-ring-silver-1.webp", "UM-ring-silver-2.webp"],
+    gold: ["UM-ring-gold-1.webp", "UM-ring-gold-2.webp"],
+    priceValue: 95,
+    createdAt: "2026-02-18",
+    hasGem: false,
+    surface: "smooth",
+    gemstones: [],
+    sizes: [15.5, 16, 17.5, 18, 18.5],
+    details: {
+      detailsText:
+        "A clean, modern signet-inspired ring with a bold face and polished finish. Designed as an everyday statement piece that pairs effortlessly with minimal jewellery.",
+    },
+  }),
+
+  makeProduct({
     id: "cut-ring",
     category: "rings",
     silver: ["cut-ring-1.webp", "cut-ring-2.webp"],
     priceValue: 58,
+    isBestSeller: true, // ✅ added
     createdAt: "2026-01-10",
     hasGem: true,
     surface: "smooth",
@@ -218,6 +236,7 @@ export const PRODUCTS = [
     silver: ["echo-ring-1.webp", "echo-ring-2.webp"],
     gold: ["echo-ring-gold-1.webp", "echo-ring-gold-2.webp"],
     priceValue: 70,
+    isBestSeller: true, // ✅ added
     createdAt: "2026-01-18",
     hasGem: false,
     surface: "smooth",
@@ -313,6 +332,7 @@ export const PRODUCTS = [
     silver: ["still-ring-1.webp", "still-ring-2.webp"],
     gold: ["still-ring-gold.webp", "still-ring-gold-color-2.webp"],
     priceValue: 105,
+    isBestSeller: true, // ✅ added
     createdAt: "2026-01-28",
     hasGem: false,
     surface: "smooth",
@@ -344,7 +364,7 @@ export const PRODUCTS = [
     silver: ["wave-ring-1.webp", "wave-ring-2.webp"],
     gold: ["wave-ring-gold.webp", "wave-ring-gold-2.webp"],
     priceValue: 90,
-    createdAt: "2026-02-01",
+    createdAt: "2026-02-17",
     hasGem: false,
     surface: "smooth",
     gemstones: [],
@@ -358,6 +378,23 @@ export const PRODUCTS = [
   // ======================
   // EARRINGS
   // ======================
+  makeProduct({
+    id: "melt-earring",
+    category: "earrings",
+    silver: ["Melt-earring-silver-1.webp", "Melt-earring-silver-2.webp"],
+    gold: ["Melt-earring-gold-1.webp", "Melt-earring-gold-2.webp"],
+    priceValue: 85,
+    createdAt: "2026-02-18",
+    hasGem: false,
+    surface: "smooth",
+    gemstones: [],
+    sizes: [],
+    details: {
+      detailsText:
+        "Minimal sculptural earrings with a soft, organic form and a polished finish. Lightweight, modern, and easy to style from day to night.",
+    },
+  }),
+
   makeProduct({
     id: "light-earrings",
     category: "earrings",
@@ -418,7 +455,7 @@ export const PRODUCTS = [
     gold: ["point-earrings-gold.webp", "point-earrings-gold-2.webp"],
     priceValue: 85,
     createdAt: "2026-01-09",
-    isBestSeller: true,
+    isBestSeller: true, // (palikau kaip buvo)
     hasGem: false,
     surface: "smooth",
     gemstones: [],
@@ -438,6 +475,7 @@ export const PRODUCTS = [
     ],
     gold: ["pure-earrings-gold.webp", "pure-earrings-gold-2.webp"],
     priceValue: 90,
+    isBestSeller: true, // ✅ added
     createdAt: "2026-01-16",
     hasGem: false,
     surface: "smooth",
@@ -601,7 +639,7 @@ export const PRODUCTS = [
     silver: ["Special-ring-silver-1.webp", "Special-ring-silver-2.webp"],
     gold: ["Special-ring-gold-1.webp", "Special-ring-gold-2.webp"],
     priceValue: 110,
-    createdAt: "2026-02-11",
+    createdAt: "2026-02-15",
     hasGem: false,
     surface: "rough",
     gemstones: [],
@@ -633,7 +671,7 @@ export const PRODUCTS = [
     silver: ["Impressa-ring-1-silver.webp", "Impressa-ring-2.webp"],
     gold: ["Impressa-ring-1-gold.webp", "Impressa-ring-2.webp"],
     priceValue: 125,
-    createdAt: "2026-02-12",
+    createdAt: "2026-02-16",
     hasGem: false,
     surface: "smooth",
     gemstones: [],

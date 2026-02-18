@@ -16,7 +16,7 @@ export default function NewCollectionSection({
   const [titleLine1, titleLine2] = title.split("\n");
 
   const handleShopNow = () => {
-    navigate("/products");
+    navigate("/collections?category=new-collection");
   };
 
   const preventDrag = useCallback((e) => {

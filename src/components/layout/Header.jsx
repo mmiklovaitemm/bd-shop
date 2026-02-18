@@ -11,6 +11,8 @@ import heartIcon from "@/assets/ui/heart.svg";
 import bagIcon from "@/assets/ui/shopping-bag.svg";
 
 import useBagDrawer from "@/store/useBagDrawer";
+import useCart from "@/store/useCart";
+import useFavorites from "@/context/useFavorites";
 
 const ICON_HOVER_CLASS =
   "transition-transform duration-300 ease-out lg:hover:-translate-y-[2px]";
@@ -72,6 +74,14 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const openBag = useBagDrawer((s) => s.open);
 
+  // LIVE COUNTS
+  const cartCount = useCart((s) =>
+    s.items.reduce((sum, item) => sum + (item.quantity || 1), 0),
+  );
+
+  const { favoriteIds } = useFavorites();
+  const favoritesCount = favoriteIds.length;
+
   const handleMenuOpen = useCallback(() => setIsMenuOpen(true), []);
   const handleMenuClose = useCallback(() => setIsMenuOpen(false), []);
 
@@ -120,7 +130,10 @@ export default function Header() {
 
         {/* Right: Icons and languages */}
         <div className="justify-self-end flex items-center gap-2 md:gap-5">
-          <NavItem to="/favorites" className="p-1 md:mr-[-15px]">
+          <NavItem
+            to="/favorites"
+            className="p-1 md:mr-[-15px] flex items-center gap-1"
+          >
             <img
               src={heartIcon}
               alt="Favorites"
@@ -128,13 +141,16 @@ export default function Header() {
               onDragStart={preventDrag}
               className={`h-[18px] mt-[2px] w-auto select-none ${ICON_HOVER_CLASS}`}
             />
+            <span className="font-ui text-[12px] text-black/80 select-none">
+              ({favoritesCount})
+            </span>
           </NavItem>
 
-          {/* BAG: atidaro drawer (ne navigacija) */}
+          {/* BAG: atidaro drawer  */}
           <button
             type="button"
             onClick={openBag}
-            className="p-1 select-none"
+            className="p-1 select-none flex items-center gap-1"
             style={{ WebkitTapHighlightColor: "transparent" }}
             aria-label="Open bag"
             draggable={false}
@@ -147,6 +163,9 @@ export default function Header() {
               onDragStart={preventDrag}
               className={`h-[20px] w-auto select-none ${ICON_HOVER_CLASS}`}
             />
+            <span className="font-ui text-[12px] text-black/80 select-none">
+              ({cartCount})
+            </span>
           </button>
 
           {/* Languages shown from tablet */}
@@ -173,7 +192,7 @@ export default function Header() {
           />
         </NavItem>
 
-        {/* Middle: Navigation pushed to the right */}
+        {/* Middle */}
         <nav className="flex flex-1 items-center justify-end gap-10 pr-10">
           {NAV_ITEMS.map(({ to, label }) => (
             <NavItem key={to} to={to}>
@@ -189,7 +208,7 @@ export default function Header() {
             to="/favorites"
             icon={heartIcon}
             label="Wishlist"
-            count={2}
+            count={favoritesCount}
           />
 
           {/* BAG */}
@@ -210,7 +229,7 @@ export default function Header() {
               className={`h-4 w-auto select-none ${ICON_HOVER_CLASS}`}
             />
             <span className="font-ui text-[12px] text-black/80 select-none">
-              Bag (1)
+              Bag ({cartCount})
             </span>
           </button>
 

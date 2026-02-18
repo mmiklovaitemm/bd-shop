@@ -16,23 +16,37 @@ export default function useProductCardMedia(product) {
   );
 
   const baseColor = useMemo(() => {
-    const colors = safeProduct.colors || [];
     const variants = safeProduct.variants || {};
-    const found = colors.find((c) => (variants?.[c]?.length ?? 0) > 0);
-    return found || "silver";
+    const colorsFromProduct = safeProduct.colors || [];
+
+    const found = colorsFromProduct.find(
+      (c) => (variants?.[c]?.length ?? 0) > 0,
+    );
+    if (found) return found;
+
+    const variantKeys = Object.keys(variants);
+    const firstKeyWithImages = variantKeys.find(
+      (k) => (variants?.[k]?.length ?? 0) > 0,
+    );
+    if (firstKeyWithImages) return firstKeyWithImages;
+
+    return "silver";
   }, [safeProduct.colors, safeProduct.variants]);
 
   const { mainSrc, hoverSrc } = useMemo(() => {
     const variants = safeProduct.variants || {};
-    const arr = variants[baseColor] || [];
+    const arr = variants?.[baseColor] || [];
 
-    const main =
-      arr[0] ||
-      safeProduct.thumbnail ||
-      (typeof safeProduct.image === "string"
-        ? safeProduct.image
-        : safeProduct.image?.src) ||
-      "";
+    const imageValue = safeProduct.image;
+
+    const imageSrc =
+      typeof imageValue === "string"
+        ? imageValue
+        : imageValue && typeof imageValue === "object"
+          ? imageValue.src || imageValue.url || ""
+          : "";
+
+    const main = arr[0] || safeProduct.thumbnail || imageSrc || "";
 
     const hover = arr[1] || null;
 

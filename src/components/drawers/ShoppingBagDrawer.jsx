@@ -37,6 +37,7 @@ export default function ShoppingBagDrawer() {
   const dec = useCart((s) => s.dec);
   const removeItem = useCart((s) => s.removeItem);
   const updateVariant = useCart((s) => s.updateVariant);
+  const updateServiceOption = useCart((s) => s.updateServiceOption);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -63,12 +64,26 @@ export default function ShoppingBagDrawer() {
     };
   }, [isOpen]);
 
+  const SHIPPING_KIT_FEE = 15;
+
   const subtotal = useMemo(
     () =>
-      items.reduce(
-        (sum, item) => sum + (Number(item.price) || 0) * (item.quantity || 1),
-        0,
-      ),
+      items.reduce((sum, item) => {
+        const base = Number(item.price) || 0;
+        const qty = item.quantity || 1;
+
+        const isShippingKit =
+          item?.serviceOption === "shipping-kit" ||
+          item?.serviceOption === "shipping_kit" ||
+          String(item?.serviceOption || "")
+            .toLowerCase()
+            .includes("shipping");
+
+        const fee =
+          item?.category === "personal" && isShippingKit ? SHIPPING_KIT_FEE : 0;
+
+        return sum + (base + fee) * qty;
+      }, 0),
     [items],
   );
 
@@ -138,8 +153,6 @@ export default function ShoppingBagDrawer() {
                 const product = getProductById(item.productId);
                 const availableColors = product?.colors || [];
                 const availableSizes = product?.sizes || [];
-
-                // jei įdėta be size, bet produktas turi dydžius – rodom select ir default į pirmą
                 const currentColor =
                   item.color || availableColors[0] || "silver";
 
@@ -179,13 +192,58 @@ export default function ShoppingBagDrawer() {
                           <p className="font-display text-[18px] leading-tight">
                             {item.name}
                           </p>
-                          <p className="font-ui text-[14px] whitespace-nowrap">
-                            {fmtPrice(item.price)}
-                          </p>
+                          {(() => {
+                            const base = Number(item.price) || 0;
+
+                            const isPersonal = item.category === "personal";
+                            const isShippingKit = String(
+                              item.serviceOption || "",
+                            )
+                              .toLowerCase()
+                              .includes("shipping");
+
+                            const fee = isPersonal && isShippingKit ? 15 : 0;
+                            const unitTotal = base + fee;
+
+                            return (
+                              <div className="text-right">
+                                <p className="font-ui text-[14px] whitespace-nowrap">
+                                  {fmtPrice(unitTotal)}
+                                </p>
+
+                                {fee > 0 ? (
+                                  <p className="mt-1 font-ui text-[12px] text-black/60 whitespace-nowrap">
+                                    Shipping kit + {fmtPrice(fee)}
+                                  </p>
+                                ) : null}
+                              </div>
+                            );
+                          })()}
                         </div>
 
                         {/* VARIANT CONTROLS */}
                         <div className="mt-3 grid grid-cols-2 gap-3">
+                          {product?.category === "personal" ? (
+                            <div className=" bg-black/5 px-3 py-2">
+                              <p className="font-ui text-[12px] text-black/50">
+                                Service option
+                              </p>
+
+                              <select
+                                className="mt-1 w-full bg-transparent font-ui text-[13px] text-black/80 outline-none"
+                                value={item.serviceOption || "shipping"}
+                                onChange={(e) =>
+                                  updateServiceOption(item.key, e.target.value)
+                                }
+                              >
+                                <option value="shipping">
+                                  Shipping kit (+15€)
+                                </option>
+                                <option value="in-store">In-store</option>
+                              </select>
+                            </div>
+                          ) : null}
+
                           {/* COLOR */}
                           <div className="bg-black/5 px-3 py-2">
                             <p className="font-ui text-[12px] text-black/50">

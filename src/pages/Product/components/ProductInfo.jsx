@@ -198,6 +198,7 @@ const ProductInfo = memo(function ProductInfo({
   setSelectedService,
   onAddToBag,
   onOpenDetails,
+  onOpenHowItWorks,
   hoverClasses = { btn: "", iconBtn: "", group: "" },
 }) {
   const { has, toggle } = useFavorites();
@@ -354,7 +355,7 @@ const ProductInfo = memo(function ProductInfo({
             )}
           >
             <span className="underline underline-offset-4">
-              Dimensions & details
+              Dimensions &amp; details
             </span>
             <img
               src={arrowUpRightIcon}
@@ -367,6 +368,34 @@ const ProductInfo = memo(function ProductInfo({
           </button>
         </div>
       </div>
+
+      {product.category === "personal" && (
+        <div className="mt-2">
+          <div className="bg-black/5 px-4 py-3">
+            <button
+              type="button"
+              onClick={onOpenHowItWorks}
+              className={cn(
+                "group w-full flex items-center justify-between font-ui text-[13px] text-black select-none",
+                hoverBtnClass,
+              )}
+            >
+              <span className="underline underline-offset-4">
+                Personal jewellery - How it works
+              </span>
+
+              <img
+                src={arrowUpRightIcon}
+                alt=""
+                aria-hidden="true"
+                draggable={false}
+                onDragStart={preventDragHandler}
+                className="h-4 w-4 transition-transform duration-200 ease-out lg:group-hover:translate-x-[1px] lg:group-hover:-translate-y-[1px] select-none"
+              />
+            </button>
+          </div>
+        </div>
+      )}
 
       <ProductBenefits />
     </div>

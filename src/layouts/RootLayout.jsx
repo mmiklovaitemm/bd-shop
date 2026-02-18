@@ -5,6 +5,7 @@ import Header from "@/components/layout/Header";
 import ShoppingBagDrawer from "@/components/drawers/ShoppingBagDrawer";
 import Footer from "@/components/layout/Footer";
 import ScrollToTop from "@/components/ui/ScrollToTop";
+import SubscribeBanner from "@/components/ui/SubscribeBanner";
 
 export default function RootLayout() {
   return (
@@ -17,6 +18,7 @@ export default function RootLayout() {
         <Outlet />
       </main>
 
+      <SubscribeBanner delayMs={3000} />
       <Footer />
     </div>
   );

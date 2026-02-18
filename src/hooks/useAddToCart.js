@@ -8,7 +8,7 @@ export default function useAddToCart() {
   const openBag = useBagDrawer((s) => s.open);
 
   const addToCart = useCallback(
-    ({ product, color, size, quantity = 1, image }) => {
+    ({ product, color, size, quantity = 1, image, serviceOption = null }) => {
       if (!product?.id) return;
 
       const priceNumber = parsePriceToNumber(product.price);
@@ -22,10 +22,12 @@ export default function useAddToCart() {
         productId: product.id,
         name: product.name,
         price: priceNumber,
+        image,
         color: safeColor,
-        size: size ?? null,
+        size: size || null,
         quantity,
-        image: image || product.thumbnail || "",
+        category: product.category,
+        serviceOption,
       });
 
       openBag();

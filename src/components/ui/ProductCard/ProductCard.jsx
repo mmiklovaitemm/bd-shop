@@ -9,6 +9,7 @@ import cn from "@/utils/cn";
 import useMediaQuery from "@/hooks/useMediaQuery";
 import useIntersectionObserver from "@/hooks/useIntersectionObserver";
 import useImagePreload from "@/hooks/useImagePreload";
+import usePreloadQueue from "@/hooks/usePreloadQueue";
 
 import ProductImage from "@/components/ui/ProductCard/ProductImage";
 import DesktopHoverTitle from "@/components/ui/ProductCard/DesktopHoverTitle";
@@ -18,7 +19,7 @@ import ActionButtons from "@/components/ui/ProductCard/ActionButtons";
 import useProductCardMedia from "@/components/ui/ProductCard/useProductCardMedia";
 
 const DESKTOP_BREAKPOINT = "1024px";
-const IMAGE_PRELOAD_MARGIN = "300px";
+const IMAGE_PRELOAD_MARGIN = "120px";
 
 export default function ProductCard({
   product,
@@ -35,11 +36,13 @@ export default function ProductCard({
     useProductCardMedia(product);
 
   const isWishlisted = has(safeProduct?.id);
+  const enqueuePreload = usePreloadQueue();
 
   const [cardRef, isInView] = useIntersectionObserver();
 
   const [loadedMain, setLoadedMain] = useState(false);
   const [loadedHover, setLoadedHover] = useState(false);
+  const [mainError, setMainError] = useState(false);
 
   const prevMainSrc = useRef(mainSrc);
   const prevHoverSrc = useRef(hoverSrc);
@@ -47,7 +50,10 @@ export default function ProductCard({
   useLayoutEffect(() => {
     if (mainSrc !== prevMainSrc.current) {
       prevMainSrc.current = mainSrc;
-      setTimeout(() => setLoadedMain(false), 0);
+      setTimeout(() => {
+        setLoadedMain(false);
+        setMainError(false);
+      }, 0);
     }
     if (hoverSrc !== prevHoverSrc.current) {
       prevHoverSrc.current = hoverSrc;
@@ -58,7 +64,13 @@ export default function ProductCard({
   useImagePreload(
     hoverSrc,
     isDesktop && isInView,
-    () => setLoadedHover(true),
+    () => {
+      // ribojam concurrent preloads
+      enqueuePreload((done) => {
+        setLoadedHover(true);
+        done();
+      });
+    },
     IMAGE_PRELOAD_MARGIN,
   );
 
@@ -76,6 +88,13 @@ export default function ProductCard({
 
   const handleImageError = useCallback(
     (e) => {
+      setMainError(true);
+
+      if (e?.currentTarget) {
+        e.currentTarget.src = `${import.meta.env.BASE_URL}products/fallback.png`;
+        e.currentTarget.srcset = "";
+      }
+
       onImageError?.(e);
     },
     [onImageError],
@@ -136,6 +155,13 @@ export default function ProductCard({
           draggable={false}
           onDragStart={(e) => e.preventDefault()}
         >
+          {/* LOADER (kol kraunasi pagrindinis vaizdas) */}
+          {!loadedMain && (
+            <div className="absolute inset-0 z-[1] bg-black/5">
+              <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-black/5 via-black/10 to-black/5" />
+            </div>
+          )}
+
           <ProductImage
             src={mainSrc}
             srcSet={imageMeta.srcSet}
@@ -160,12 +186,11 @@ export default function ProductCard({
               onLoad={handleHoverLoad}
               onError={handleImageError}
               reduceMotion={false}
-              loadedClassName="opacity-0"
+              loadedClassName="opacity-0 lg:group-hover:opacity-100"
               notLoadedClassName="opacity-0"
               className={cn(
-                "opacity-0 lg:group-hover:opacity-100",
+                "transition-opacity duration-500 ease-out will-change-opacity",
                 "scale-100 lg:group-hover:scale-[1.04]",
-                !loadedHover && "lg:group-hover:opacity-0",
               )}
             />
           ) : null}
@@ -193,6 +218,8 @@ export default function ProductCard({
             onAddToCart={handleAddToCart}
             isDesktop={isDesktop}
           />
+
+          {mainError ? null : null}
         </div>
       </Link>
     </article>
