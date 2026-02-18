@@ -6,7 +6,7 @@ import Home from "@/pages/Home";
 import Products from "@/pages/Products";
 import Product from "@/pages/Product/Product";
 import Favorites from "@/pages/Favorites";
-import Account from "@/pages/Account";
+import LogIn from "@/pages/LogIn";
 import About from "@/pages/AboutUs/About";
 import Contact from "@/pages/Contact";
 import PersonalizedProducts from "@/pages/PersonalizedPage/PersonalizedProducts";
@@ -20,7 +20,8 @@ export default function App() {
         <Route path="/collections" element={<Products />} />
         <Route path="/collections/:id" element={<Product />} />
         <Route path="/favorites" element={<Favorites />} />
-        <Route path="/account" element={<Account />} />
+        <Route path="/login" element={<LogIn />} />
+        <Route path="/register" element={<LogIn />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/personalized" element={<PersonalizedProducts />} />

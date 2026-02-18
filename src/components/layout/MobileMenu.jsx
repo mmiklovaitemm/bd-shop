@@ -109,7 +109,7 @@ export default function MobileMenu({ open, onClose }) {
         <div className="px-6 h-[72px] flex items-center justify-between">
           {/* Log in btn */}
           <NavLink
-            to="/account"
+            to="/login"
             onClick={onClose}
             className="group flex items-center gap-2 font-ui text-[14px] text-black/80 transition-all duration-300 ease-out hover:text-black hover:-translate-y-[2px]"
           >
