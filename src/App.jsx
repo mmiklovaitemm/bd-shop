@@ -11,6 +11,9 @@ import About from "@/pages/AboutUs/About";
 import Contact from "@/pages/Contact";
 import PersonalizedProducts from "@/pages/PersonalizedPage/PersonalizedProducts";
 import NotFound from "@/pages/NotFound";
+import Account from "@/pages/Account/Account";
+import OrderHistory from "./pages/Account/OrderHistory";
+import Profile from "./pages/Account/Profile";
 
 export default function App() {
   return (
@@ -22,6 +25,9 @@ export default function App() {
         <Route path="/favorites" element={<Favorites />} />
         <Route path="/login" element={<LogIn />} />
         <Route path="/register" element={<LogIn />} />
+        <Route path="/account" element={<Account />} />
+        <Route path="/account/orders" element={<OrderHistory />} />
+        <Route path="/account/profile" element={<Profile />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/personalized" element={<PersonalizedProducts />} />

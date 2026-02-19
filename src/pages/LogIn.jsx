@@ -1,6 +1,7 @@
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 import { useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import OurSalons from "./AboutUs/OurSalons";
 
 function PasswordInput({
   label,
@@ -429,6 +430,8 @@ export default function Login() {
         </section>
       </main>
 
+      <FullWidthDivider />
+      <OurSalons />
       <FullWidthDivider />
     </>
   );

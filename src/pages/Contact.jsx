@@ -103,7 +103,7 @@ export default function Contact() {
   };
 
   return (
-    <div className="w-full overflow-x-hidden">
+    <div className="w-full">
       {/* Title */}
       <div className="px-4 md:px-8 py-6">
         <h1 className="text-4xl md:text-5xl font-display">Contacts</h1>
