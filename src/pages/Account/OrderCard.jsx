@@ -14,7 +14,7 @@ export default function OrderCard({ order, onOpen }) {
         {/* MOBILE */}
         <div className="md:hidden">
           <div className="flex items-start justify-between gap-4">
-            <div>
+            <div className="mt-[-15px]">
               <p className="font-display text-lg">{order.date}</p>
               <div className="mt-3">
                 <StatusPill status={order.status} />
@@ -52,7 +52,7 @@ export default function OrderCard({ order, onOpen }) {
             ))}
           </div>
 
-          <div className="mt-4 bg-neutral-100 px-4 py-3 font-ui text-sm">
+          <div className="mt-4 bg-neutral-100 px-4 py-3 font-ui text-xs max-w-[250px]">
             <span className="text-neutral-500">Order no.:</span>{" "}
             <span className="text-black">{order.orderNo}</span>
           </div>

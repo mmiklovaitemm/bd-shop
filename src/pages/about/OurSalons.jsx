@@ -56,7 +56,7 @@ function SalonCard({ image, city, address, phone, hours }) {
 
 export default function OurSalons() {
   return (
-    <section className="px-1 py-8">
+    <section className="px-2 py-8">
       {/* Desktop: title left, cards right */}
       <div className="lg:flex lg:items-start lg:gap-0">
         {/* LEFT SIDE TITLE */}

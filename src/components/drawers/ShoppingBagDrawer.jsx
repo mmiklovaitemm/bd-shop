@@ -1,4 +1,6 @@
 import { useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+
 import useBagDrawer from "@/store/useBagDrawer";
 import useCart from "@/store/useCart";
 import preventDragHandler from "@/utils/preventDrag";
@@ -29,6 +31,7 @@ const pickVariantImage = (product, color) => {
 };
 
 export default function ShoppingBagDrawer() {
+  const navigate = useNavigate();
   const isOpen = useBagDrawer((s) => s.isOpen);
   const close = useBagDrawer((s) => s.close);
 
@@ -388,8 +391,14 @@ export default function ShoppingBagDrawer() {
           <div className="border-t border-black p-6">
             <button
               type="button"
-              className="ui-interact w-full h-12 bg-black text-white font-ui text-[14px] flex items-center justify-center gap-4 select-none"
-              onClick={(e) => e.preventDefault()}
+              className="ui-interact w-full h-12 bg-black text-white font-ui text-[14px] flex items-center justify-center gap-4 select-none disabled:opacity-50"
+              onClick={(e) => {
+                e.preventDefault();
+                if (items.length === 0) return;
+
+                close(); // 1) uždarom drawer
+                navigate("/checkout"); // 2) naviguojam į Checkout page
+              }}
               disabled={items.length === 0}
             >
               <span>Check out</span>

@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import shoppingBagIcon from "@/assets/ui/shopping-bag.svg";
 import userIcon from "@/assets/ui/user.svg";
 import logoutIcon from "@/assets/ui/log-out.svg";
-import OurSalons from "../AboutUs/OurSalons";
+import OurSalons from "../about/OurSalons";
 import AboutStudioSection from "@/components/ui/AboutStudioSection";
 
 function ActionButton({ icon, label, onClick, invertIcon = false }) {

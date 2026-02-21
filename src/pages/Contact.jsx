@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
-import OurSalons from "./AboutUs/OurSalons";
+import OurSalons from "./about/OurSalons";
 import checkSendMessageIcon from "@/assets/ui/check-send-message.svg";
 
 export default function Contact() {

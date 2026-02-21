@@ -1,7 +1,7 @@
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 import { useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import OurSalons from "./AboutUs/OurSalons";
+import OurSalons from "./about/OurSalons";
 
 function PasswordInput({
   label,
@@ -252,7 +252,7 @@ export default function Login() {
       return;
     }
 
-    // TODO: prijungsi auth logiką
+    // TODO: prijungti auth logika
   };
 
   // reset + clear errors when switching tabs

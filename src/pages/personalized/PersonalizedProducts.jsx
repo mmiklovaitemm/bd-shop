@@ -1,7 +1,7 @@
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 import HowItWorksHero from "./HowItWorksHero";
 import HowItWorksSteps from "./HowItWorksSteps";
-import BestSellersIntro from "../AboutUs/BestSellersIntro";
+import BestSellersIntro from "../about/BestSellersIntro";
 
 export default function PersonalizedProducts() {
   return (

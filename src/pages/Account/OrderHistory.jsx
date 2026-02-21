@@ -1,16 +1,20 @@
 // src/pages/account/OrderHistory.jsx
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 import backArrowIcon from "@/assets/ui/back-arrow.svg";
-import OrderCard from "@/pages/Account/OrderCard";
+import OrderCard from "@/pages/account/OrderCard";
 import AboutStudioSection from "@/components/ui/AboutStudioSection";
+import OrderInfoPanel from "@/pages/account/OrderInfoPanel";
 
 export default function OrderHistory() {
   const navigate = useNavigate();
   const location = useLocation();
   const isOrders = location.pathname === "/account/orders";
   const isProfile = location.pathname === "/account/profile";
+
+  const [openOrderId, setOpenOrderId] = useState(null);
 
   // Vėliau čia bus fetch iš backend
   const orders = [
@@ -25,6 +29,24 @@ export default function OrderHistory() {
         "/products/rings/earth-ring-2.webp",
       ],
       orderNo: "56-767-hgeww3-fbg",
+      info: {
+        orderDate: "2025.10.23",
+        orderNo: "56-767-hgeww3-fbg",
+        pickup: "Omniva / In store",
+        deliveryTo: {
+          name: "Kamilė Augytė",
+          street: "Pavilnionių g. 55,",
+          zipCity: "99041 Vilniaus apskr.",
+        },
+        billingAddress: {
+          name: "Kamilė Augytė",
+          street: "Pavilnionių g. 55,",
+          zipCity: "99041 Vilniaus apskr.",
+        },
+        deliveryPrice: "$4,99",
+        orderValue: "$265,79",
+        total: "$278,00",
+      },
     },
   ];
 
@@ -80,20 +102,39 @@ export default function OrderHistory() {
             onClick={() => navigate("/account")}
             className="inline-flex items-center gap-2 text-sm font-ui"
           >
-            <img src={backArrowIcon} alt="" className="h-4 w-4" />
+            <img src={backArrowIcon} alt="" className="h-3 w-3" />
             <span>Back</span>
           </button>
 
-          <FullWidthDivider className="my-4" />
+          <FullWidthDivider className="mt-4" />
 
           <div>
-            {orders.map((order) => (
-              <OrderCard
-                key={order.id}
-                order={order}
-                onOpen={() => console.log(order.id)}
-              />
-            ))}
+            {orders.map((order) => {
+              const isOpen = openOrderId === order.id;
+
+              return (
+                <div key={order.id}>
+                  {/* Panelė atsiranda VIRŠ paspausto orderio */}
+                  {isOpen && (
+                    <>
+                      <OrderInfoPanel info={order.info} />
+
+                      {/* Divideris PO info panelės – tik tablet view */}
+                      <FullWidthDivider className="hidden md:block" />
+                    </>
+                  )}
+
+                  <OrderCard
+                    order={order}
+                    onOpen={() =>
+                      setOpenOrderId((prev) =>
+                        prev === order.id ? null : order.id,
+                      )
+                    }
+                  />
+                </div>
+              );
+            })}
           </div>
         </section>
       </main>

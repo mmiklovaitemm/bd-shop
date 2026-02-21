@@ -14,7 +14,7 @@ export default function RootLayout() {
       <AnnouncementBar />
       <Header />
       <ShoppingBagDrawer />
-      <main className="mx-auto w-full max-w-6xl px-4">
+      <main className="mx-auto w-full max-w-6xl">
         <Outlet />
       </main>
 
