@@ -16,6 +16,7 @@ import OrderHistory from "./pages/account/OrderHistory";
 import Profile from "./pages/account/Profile";
 import ChangePassword from "./pages/account/ChangePassword";
 import Checkout from "./pages/checkout/Checkout";
+import ThankYou from "./pages/checkout/ThankYou";
 
 export default function App() {
   return (
@@ -37,6 +38,7 @@ export default function App() {
         <Route path="/contact" element={<Contact />} />
         <Route path="/personalized" element={<PersonalizedProducts />} />
         <Route path="/checkout" element={<Checkout />} />
+        <Route path="/thank-you" element={<ThankYou />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
