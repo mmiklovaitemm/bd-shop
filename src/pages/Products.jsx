@@ -7,7 +7,7 @@ import { PRODUCTS } from "@/data/products";
 import ProductCard from "@/components/ui/ProductCard/ProductCard";
 import AboutStudioSection from "@/components/ui/AboutStudioSection";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
-import ProductsToolbar from "@/components/sections/ProductsToolBar";
+import ProductsToolbar from "@/components/sections/ProductsToolbar";
 import ProductsFilterPanel from "@/components/sections/ProductsFilterPanel";
 
 const CATEGORY_ITEMS = [
