@@ -23,7 +23,7 @@ export default function TextInput({
       <input
         ref={inputRef}
         type={type}
-        value={value}
+        value={value ?? ""}
         onChange={onChange}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}

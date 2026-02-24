@@ -8,6 +8,7 @@ import heroMobile from "@/assets/images/about-studio/about-studio-hero-mobile.we
 
 // UI
 import backArrow from "@/assets/ui/back-arrow.svg";
+import OurSalons from "../about/OurSalons";
 
 export default function ThankYou() {
   const navigate = useNavigate();
@@ -130,6 +131,9 @@ export default function ThankYou() {
       </section>
 
       <FullWidthDivider className="mt-4" />
+
+      <OurSalons />
+      <FullWidthDivider />
     </>
   );
 }

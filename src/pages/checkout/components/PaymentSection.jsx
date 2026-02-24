@@ -11,6 +11,16 @@ import revolutIcon from "@/assets/ui/Revolut-icon.svg";
 
 import TextInput from "./TextInput";
 
+const formatExpiry = (value) => {
+  if (!value) return "";
+
+  const digits = String(value).replace(/\D/g, "").slice(0, 4);
+
+  if (digits.length <= 2) return digits;
+
+  return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+};
+
 export default function PaymentSection({
   paymentType,
   setPaymentType,
@@ -129,11 +139,14 @@ export default function PaymentSection({
                 required
                 value={cardDate}
                 onChange={(e) => {
-                  setCardDate(e.target.value);
+                  const val = e.target.value || "";
+                  setCardDate(formatExpiry(val));
                   clearError?.("cardDate");
                 }}
                 placeholder="MM/YY"
                 inputMode="numeric"
+                autoComplete="cc-exp"
+                maxLength={5}
                 error={errors.cardDate}
                 inputRef={cardDateRef}
               />

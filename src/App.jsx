@@ -12,11 +12,11 @@ import Contact from "@/pages/Contact";
 import PersonalizedProducts from "@/pages/personalized/PersonalizedProducts";
 import NotFound from "@/pages/NotFound";
 import Account from "@/pages/account/Account";
-import OrderHistory from "./pages/account/OrderHistory";
-import Profile from "./pages/account/Profile";
-import ChangePassword from "./pages/account/ChangePassword";
-import Checkout from "./pages/checkout/Checkout";
-import ThankYou from "./pages/checkout/ThankYou";
+import OrderHistory from "@/pages/account/OrderHistory";
+import Profile from "@/pages/account/Profile";
+import ChangePassword from "@/pages/account/ChangePassword";
+import Checkout from "@/pages/checkout/Checkout";
+import ThankYou from "@/pages/checkout/ThankYou";
 
 export default function App() {
   return (

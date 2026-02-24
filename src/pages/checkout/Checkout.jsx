@@ -197,9 +197,6 @@ export default function Checkout() {
                   <p className="font-ui text-sm font-semibold">
                     Payment successful
                   </p>
-                  <p className="mt-1 font-ui text-sm text-black/60">
-                    Demo flow: your order has been placed.
-                  </p>
 
                   <button
                     type="button"
