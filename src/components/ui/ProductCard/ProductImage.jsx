@@ -61,13 +61,16 @@ export default function ProductImage({
         src={finalSrc || ""}
         srcSet={errored ? undefined : srcSet}
         sizes={errored ? undefined : sizes}
-        alt={alt || ""}
+        width={340}
+        height={340}
+        alt={alt || "Jewelry product image"}
         loading={priority ? "eager" : "lazy"}
         decoding="async"
         draggable={false}
         onDragStart={(e) => e.preventDefault()}
         className={cn(
           "h-full w-full object-cover select-none",
+          !loaded && "blur-[8px] scale-[1.02]",
           reduceMotion
             ? "transition-none"
             : "transition-opacity duration-500 ease-out will-change-opacity",

@@ -102,7 +102,13 @@ export default function OrderHistory() {
             onClick={() => navigate("/account")}
             className="inline-flex items-center gap-2 text-sm font-ui"
           >
-            <img src={backArrowIcon} alt="" className="h-3 w-3" />
+            <img
+              src={backArrowIcon}
+              alt="Back"
+              width={12}
+              height={12}
+              className="h-3 w-3"
+            />
             <span>Back</span>
           </button>
 
