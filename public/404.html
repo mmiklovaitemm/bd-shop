@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Redirecting...</title>
+    <script>
+      // GitHub Pages SPA fallback:
+      // Redirect unknown routes back to index.html while keeping the path.
+      const l = window.location;
+      const repo = "/bd-shop";
+
+      // Remove repo prefix from path (so router gets clean path)
+      const path = l.pathname.startsWith(repo)
+        ? l.pathname.slice(repo.length)
+        : l.pathname;
+
+      // Put original path into query so index.html can restore it
+      l.replace(
+        `${l.origin}${repo}/?p=${encodeURIComponent(path)}${l.search}${l.hash}`,
+      );
+    </script>
+  </head>
+  <body></body>
+</html>

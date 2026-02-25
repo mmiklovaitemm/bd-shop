@@ -9,7 +9,22 @@
       name="description"
       content="Handmade jewelry store offering unique rings, earrings and necklaces crafted with love."
     />
+
+    <!-- GitHub Pages SPA fix -->
+    <script>
+      (function () {
+        const params = new URLSearchParams(window.location.search);
+        const p = params.get("p");
+        if (!p) return;
+
+        const repo = "/bd-shop";
+        const cleanPath = p.startsWith("/") ? p : "/" + p;
+
+        window.history.replaceState(null, "", repo + cleanPath);
+      })();
+    </script>
   </head>
+
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>

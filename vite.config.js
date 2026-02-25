@@ -9,7 +9,6 @@ export default defineConfig(() => ({
   plugins: [react()],
   // GitHub Pages: https://username.github.io/bd-shop/
   // Netlify: https://site.netlify.app/
-
   base: process.env.DEPLOY_TARGET === "gh" ? `/${repoName}/` : "/",
   resolve: {
     alias: {
