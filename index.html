@@ -2,16 +2,31 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" href="./logo.svg" />
+    <link rel="icon" href="/bd-shop/logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>UM studio jewelry</title>
     <meta
       name="description"
       content="Handmade jewelry store offering unique rings, earrings and necklaces crafted with love."
     />
-    <script type="module" crossorigin src="./assets/index-BFxAOtjp.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-BW5UfqQJ.css">
+
+    <!-- GitHub Pages SPA fix -->
+    <script>
+      (function () {
+        const params = new URLSearchParams(window.location.search);
+        const p = params.get("p");
+        if (!p) return;
+
+        const repo = "/bd-shop";
+        const cleanPath = p.startsWith("/") ? p : "/" + p;
+
+        window.history.replaceState(null, "", repo + cleanPath);
+      })();
+    </script>
+    <script type="module" crossorigin src="/bd-shop/assets/index-K4fsW31z.js"></script>
+    <link rel="stylesheet" crossorigin href="/bd-shop/assets/index-BW5UfqQJ.css">
   </head>
+
   <body>
     <div id="root"></div>
   </body>
