@@ -1,8 +1,9 @@
+// src/pages/Product.jsx
 import { useMemo, useState, useCallback } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
 
 import { PRODUCTS } from "@/data/products";
+
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 
 // Icons
@@ -26,12 +27,6 @@ import useBagDrawer from "@/store/useBagDrawer";
 // Utils
 import cn from "@/utils/cn";
 import preventDragHandler from "@/utils/preventDrag";
-
-// Helper
-function getCurrentAbsoluteUrl() {
-  // Works on client-side (Netlify/GH Pages)
-  return window.location.href;
-}
 
 function ProductView({ product }) {
   const { addToCart } = useAddToCart();
@@ -122,60 +117,11 @@ function ProductView({ product }) {
     ],
   );
 
-  // SEO text
-  const seoTitle = useMemo(() => {
-    const name = product?.name || "Product";
-    return `${name} | UM Studio`;
-  }, [product]);
-
-  const seoDescription = useMemo(() => {
-    const fromSeo = product?.seoDescription;
-    if (fromSeo && String(fromSeo).trim().length > 0) return fromSeo;
-
-    const fromDesc = product?.description;
-    if (fromDesc && String(fromDesc).trim().length > 0) return fromDesc;
-
-    const name = product?.name || "handmade jewelry";
-    return `Discover ${name} by UM Studio – handmade silver jewelry crafted with love. Minimalist design, perfect for gifts and everyday elegance.`;
-  }, [product]);
-
-  // Canonical/og:url
-  const canonicalUrl = useMemo(() => getCurrentAbsoluteUrl(), []);
-
-  // OG image
-  const ogImage = "https://um-studio-bd.netlify.app/og-image.png";
-
   return (
     <main
       className="mx-auto w-full md:max-w-[1200px] lg:max-w-none px-4 md:px-1 lg:px-2 py-4 md:py-4 select-none"
       onDragStart={preventDragHandler}
     >
-      <Helmet>
-        <title>{seoTitle}</title>
-        <meta name="description" content={seoDescription} />
-        <link rel="canonical" href={canonicalUrl} />
-
-        {/* Open Graph */}
-        <meta property="og:site_name" content="UM Studio" />
-        <meta property="og:title" content={seoTitle} />
-        <meta property="og:description" content={seoDescription} />
-        <meta property="og:type" content="product" />
-        <meta property="og:url" content={canonicalUrl} />
-        <meta property="og:image" content={ogImage} />
-        <meta property="og:image:width" content="1200" />
-        <meta property="og:image:height" content="630" />
-        <meta
-          property="og:image:alt"
-          content="UM Studio handmade jewelry – silver rings and earrings on a neutral background"
-        />
-
-        {/* Twitter */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={seoTitle} />
-        <meta name="twitter:description" content={seoDescription} />
-        <meta name="twitter:image" content={ogImage} />
-      </Helmet>
-
       {/* Back Navigation */}
       <div className="mb-4">
         <Link
