@@ -1,3 +1,4 @@
+// src/pages/Product/components/YouMayAlsoLike.jsx
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -5,37 +6,40 @@ import HorizontalSliderSection from "@/components/sections/HorizontalSliderSecti
 import ProductCard from "@/components/ui/ProductCard/ProductCard";
 
 import seeAllArrow from "@/assets/ui/see-all-arrow-right.svg";
-import { PRODUCTS } from "@/data/products";
+import { useProducts } from "@/hooks/useProducts";
 
 const withBase = (path) =>
   `${import.meta.env.BASE_URL}${String(path).replace(/^\/+/, "")}`;
 
 export default function YouMayAlsoLike({ currentProduct }) {
   const navigate = useNavigate();
+  const { products, loading } = useProducts();
 
   const items = useMemo(() => {
-    if (!currentProduct) return PRODUCTS.slice(0, 10);
+    if (!products.length) return [];
+
+    if (!currentProduct?.id) return products.slice(0, 24);
 
     const excludeId = currentProduct.id;
     const category = currentProduct.category;
     const type = currentProduct.type;
 
     const sameCategory = category
-      ? PRODUCTS.filter((p) => p.id !== excludeId && p.category === category)
+      ? products.filter((p) => p.id !== excludeId && p.category === category)
       : [];
 
     const sameType = type
-      ? PRODUCTS.filter((p) => p.id !== excludeId && p.type === type)
+      ? products.filter((p) => p.id !== excludeId && p.type === type)
       : [];
 
     const base = sameCategory.length ? sameCategory : sameType;
 
-    const rest = PRODUCTS.filter(
+    const rest = products.filter(
       (p) => p.id !== excludeId && !base.includes(p),
     );
 
     return [...base, ...rest].slice(0, 24);
-  }, [currentProduct]);
+  }, [currentProduct, products]);
 
   const SeeAllButton = useMemo(
     () => (
@@ -88,36 +92,31 @@ export default function YouMayAlsoLike({ currentProduct }) {
         </div>
       }
     >
-      {items.map((product, idx) => {
-        const normalized = product?.variants
-          ? product
-          : {
-              ...product,
-              variants: {
-                silver: [product.image, product.hoverImage].filter(Boolean),
-              },
-            };
+      {loading
+        ? []
+        : items.map((product, idx) => {
+            const cardProduct = { ...product, image: product.thumbnail };
 
-        return (
-          <div
-            key={product.id}
-            className="shrink-0 w-[260px] md:w-[280px] lg:w-[300px]"
-          >
-            <ProductCard
-              product={normalized}
-              priority={idx < 2}
-              onMediaReady={() => {}}
-              onAddToCart={() => console.log(`Add to cart: ${product.id}`)}
-              onAddToFavorites={() =>
-                console.log(`Add to favorites: ${product.id}`)
-              }
-              onImageError={(e) => {
-                e.currentTarget.src = withBase("products/fallback.png");
-              }}
-            />
-          </div>
-        );
-      })}
+            return (
+              <div
+                key={product.id}
+                className="shrink-0 w-[260px] md:w-[280px] lg:w-[300px]"
+              >
+                <ProductCard
+                  product={cardProduct}
+                  priority={idx < 2}
+                  onMediaReady={() => {}}
+                  onAddToCart={() => console.log(`Add to cart: ${product.id}`)}
+                  onAddToFavorites={() =>
+                    console.log(`Add to favorites: ${product.id}`)
+                  }
+                  onImageError={(e) => {
+                    e.currentTarget.src = withBase("products/fallback.png");
+                  }}
+                />
+              </div>
+            );
+          })}
     </HorizontalSliderSection>
   );
 }

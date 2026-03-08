@@ -5,8 +5,8 @@ import { useNavigate } from "react-router-dom";
 import shoppingBagIcon from "@/assets/ui/shopping-bag.svg";
 import userIcon from "@/assets/ui/user.svg";
 import logoutIcon from "@/assets/ui/log-out.svg";
-import OurSalons from "../about/OurSalons";
 import AboutStudioSection from "@/components/ui/AboutStudioSection";
+import useAuth from "@/store/useAuth";
 
 function ActionButton({ icon, label, onClick, invertIcon = false }) {
   return (
@@ -41,23 +41,17 @@ function ActionButton({ icon, label, onClick, invertIcon = false }) {
 
 export default function Account() {
   const navigate = useNavigate();
+  const logout = useAuth((s) => s.logout);
 
-  const handleOrderHistory = () => {
-    // kol kas nuvedam į placeholder route arba paliekam čia.
-    // vėliau susikursim /account/orders
-    navigate("/account/orders");
-  };
+  const handleOrderHistory = () => navigate("/account/orders");
+  const handleProfile = () => navigate("/account/profile");
 
-  const handleProfile = () => {
-    // vėliau susikursim /account/profile
-    navigate("/account/profile");
-  };
-
-  const handleLogout = () => {
-    // jei turi tokeną/localStorage – išvalom (pritaikyk pagal savo auth)
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/login");
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } finally {
+      navigate("/login", { replace: true });
+    }
   };
 
   return (

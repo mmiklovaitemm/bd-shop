@@ -65,7 +65,6 @@ export default function ProductCard({
     hoverSrc,
     isDesktop && isInView,
     () => {
-      // ribojam concurrent preloads
       enqueuePreload((done) => {
         setLoadedHover(true);
         done();
@@ -113,6 +112,7 @@ export default function ProductCard({
         size: null,
         quantity: 1,
         image: mainSrc || safeProduct.thumbnail || "",
+        serviceOption: safeProduct.category === "personal" ? "shipping" : null,
       });
 
       onAddToCart?.(e);
@@ -155,7 +155,7 @@ export default function ProductCard({
           draggable={false}
           onDragStart={(e) => e.preventDefault()}
         >
-          {/* LOADER (kol kraunasi pagrindinis vaizdas) */}
+          {/* LOADER  */}
           {!loadedMain && (
             <div className="absolute inset-0 z-[1] bg-black/5">
               <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-black/5 via-black/10 to-black/5" />

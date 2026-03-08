@@ -24,6 +24,8 @@ const formatExpiry = (value) => {
 export default function PaymentSection({
   paymentType,
   setPaymentType,
+  selectedBank,
+  setSelectedBank,
 
   cardNumber,
   setCardNumber,
@@ -206,6 +208,7 @@ export default function PaymentSection({
                 <span className="h-2 w-2 rounded-full bg-white" />
               ) : null}
             </span>
+
             <span>E. bank payment</span>
           </div>
 
@@ -247,9 +250,23 @@ export default function PaymentSection({
         </button>
 
         {paymentType === "bank" ? (
-          <div className="border border-black p-4">
+          <div className="border border-black p-4 space-y-3">
+            <p className="font-ui text-sm font-semibold">Choose your bank</p>
+
+            <select
+              value={selectedBank}
+              onChange={(e) => setSelectedBank(e.target.value)}
+              className="h-12 w-full border border-black px-4 bg-white font-ui text-sm outline-none"
+            >
+              <option value="swedbank">Swedbank</option>
+              <option value="seb">SEB</option>
+              <option value="luminor">Luminor</option>
+              <option value="revolut">Revolut</option>
+            </select>
+
             <p className="font-ui text-sm text-black/60">
-              E-bank payment selection will be added next.
+              You will be redirected to your selected bank after clicking Pay
+              now.
             </p>
           </div>
         ) : null}

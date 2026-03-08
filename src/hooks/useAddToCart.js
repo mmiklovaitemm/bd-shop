@@ -15,7 +15,9 @@ export default function useAddToCart() {
 
       const safeColor = color || "silver";
       const safeSize = size || "nosize";
-      const key = `${product.id}|${safeColor}|${safeSize}`;
+      const safeServiceOption = serviceOption || "no-service";
+
+      const key = `${product.id}|${safeColor}|${safeSize}|${safeServiceOption}`;
 
       addItem({
         key,

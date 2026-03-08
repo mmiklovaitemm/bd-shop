@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import AboutStudioSection from "@/components/ui/AboutStudioSection";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 import backArrowIcon from "@/assets/ui/back-arrow.svg";
+import useAuth from "@/store/useAuth";
 
 function RequiredStar() {
   return <span className="text-red-600">*</span>;
@@ -102,6 +103,7 @@ function PasswordInput({
 
 export default function ChangePassword() {
   const navigate = useNavigate();
+  const changePassword = useAuth((s) => s.changePassword);
 
   // refs for scroll-to-error
   const currentRef = useRef(null);
@@ -114,8 +116,10 @@ export default function ChangePassword() {
   const [newPassword, setNewPassword] = useState("");
   const [repeatNewPassword, setRepeatNewPassword] = useState("");
 
-  // errors
   const [errors, setErrors] = useState({});
+  const [serverError, setServerError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const clearError = (key) => {
     setErrors((prev) => {
@@ -133,7 +137,7 @@ export default function ChangePassword() {
     return "";
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const nextErrors = {};
@@ -176,8 +180,30 @@ export default function ChangePassword() {
       return;
     }
 
-    // TODO: čia vėliau prijungsi API call (change password)
-    // Po sėkmės gali daryti navigate(-1) arba rodyti toast.
+    setServerError("");
+    setSuccess("");
+    setSubmitting(true);
+
+    try {
+      await changePassword({
+        currentPassword,
+        newPassword,
+      });
+
+      // logout po password change
+      await useAuth.getState().logout();
+
+      navigate("/login", { replace: true });
+
+      setSuccess("Password updated successfully.");
+      setCurrentPassword("");
+      setNewPassword("");
+      setRepeatNewPassword("");
+    } catch (err) {
+      setServerError(err.message || "Something went wrong.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -201,16 +227,29 @@ export default function ChangePassword() {
 
           <FullWidthDivider className="my-4" />
 
-          {/* Card tablet+ / desktop */}
           <div className="md:mx-auto md:border md:border-black/40 md:bg-white md:max-w-[560px] lg:max-w-[680px]">
             <div className="md:px-8 md:py-8">
               <form onSubmit={handleSubmit} className="space-y-5">
+                {serverError ? (
+                  <div className="border border-red-600 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    {serverError}
+                  </div>
+                ) : null}
+
+                {success ? (
+                  <div className="border border-black/30 bg-black/5 px-4 py-3 text-sm text-black/80">
+                    {success}
+                  </div>
+                ) : null}
+
                 <PasswordInput
                   label="Current password"
                   value={currentPassword}
                   onChange={(e) => {
                     setCurrentPassword(e.target.value);
                     clearError("currentPassword");
+                    setServerError("");
+                    setSuccess("");
                   }}
                   autoComplete="current-password"
                   required
@@ -224,6 +263,8 @@ export default function ChangePassword() {
                   onChange={(e) => {
                     setNewPassword(e.target.value);
                     clearError("newPassword");
+                    setServerError("");
+                    setSuccess("");
                   }}
                   autoComplete="new-password"
                   required
@@ -237,6 +278,8 @@ export default function ChangePassword() {
                   onChange={(e) => {
                     setRepeatNewPassword(e.target.value);
                     clearError("repeatNewPassword");
+                    setServerError("");
+                    setSuccess("");
                   }}
                   autoComplete="new-password"
                   required
@@ -246,9 +289,13 @@ export default function ChangePassword() {
 
                 <button
                   type="submit"
-                  className="mt-4 w-full bg-black py-5 text-center text-base tracking-wide text-white"
+                  disabled={submitting}
+                  className={[
+                    "mt-4 w-full bg-black py-5 text-center text-base tracking-wide text-white",
+                    submitting ? "opacity-60 cursor-not-allowed" : "",
+                  ].join(" ")}
                 >
-                  Save
+                  {submitting ? "Saving..." : "Save"}
                 </button>
               </form>
             </div>

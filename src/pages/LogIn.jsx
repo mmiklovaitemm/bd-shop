@@ -1,7 +1,9 @@
+import { useEffect, useRef, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
-import { useRef, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
 import OurSalons from "./about/OurSalons";
+import useAuth from "@/store/useAuth";
 
 function PasswordInput({
   label,
@@ -138,8 +140,25 @@ function TextInput({
 }
 
 export default function Login() {
+  const location = useLocation();
   const { pathname } = useLocation();
   const isRegister = pathname === "/register";
+
+  const navigate = useNavigate();
+  const from = location.state?.from || "/account";
+
+  const login = useAuth((s) => s.login);
+  const register = useAuth((s) => s.register);
+  const user = useAuth((s) => s.user);
+
+  const [serverError, setServerError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      navigate(from, { replace: true });
+    }
+  }, [user, navigate, from]);
 
   // refs for scroll-to-error
   const firstNameRef = useRef(null);
@@ -194,7 +213,7 @@ export default function Login() {
     return "";
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const nextErrors = {};
@@ -252,17 +271,39 @@ export default function Login() {
       return;
     }
 
-    // TODO: prijungti auth logika
+    setServerError("");
+    setSubmitting(true);
+
+    try {
+      if (isRegister) {
+        await register({
+          email,
+          password: registerPassword,
+          firstName,
+          lastName,
+        });
+        navigate(from, { replace: true });
+      } else {
+        await login({ email, password: loginPassword });
+        navigate(from, { replace: true });
+      }
+    } catch (err) {
+      setServerError(err.message || "Something went wrong.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // reset + clear errors when switching tabs
   const goLogin = () => {
     setErrors({});
+    setServerError("");
     resetLoginFields();
   };
 
   const goRegister = () => {
     setErrors({});
+    setServerError("");
     resetRegisterFields();
   };
 
@@ -304,6 +345,12 @@ export default function Login() {
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+              {serverError ? (
+                <div className="border border-red-600 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {serverError}
+                </div>
+              ) : null}
+
               {isRegister ? (
                 <>
                   <TextInput
@@ -374,9 +421,13 @@ export default function Login() {
 
                   <button
                     type="submit"
-                    className="mt-6 w-full bg-black py-5 text-center text-base tracking-wide text-white"
+                    disabled={submitting}
+                    className={[
+                      "mt-6 w-full bg-black py-5 text-center text-base tracking-wide text-white",
+                      submitting ? "opacity-60 cursor-not-allowed" : "",
+                    ].join(" ")}
                   >
-                    Create account
+                    {submitting ? "Please wait..." : "Create account"}
                   </button>
                 </>
               ) : (
@@ -419,9 +470,13 @@ export default function Login() {
 
                   <button
                     type="submit"
-                    className="mt-6 w-full bg-black py-5 text-center text-base tracking-wide text-white"
+                    disabled={submitting}
+                    className={[
+                      "mt-6 w-full bg-black py-5 text-center text-base tracking-wide text-white",
+                      submitting ? "opacity-60 cursor-not-allowed" : "",
+                    ].join(" ")}
                   >
-                    Log in
+                    {submitting ? "Please wait..." : "Log in"}
                   </button>
                 </>
               )}

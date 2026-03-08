@@ -35,7 +35,7 @@ export default function ShippingMethodSelector({
             </div>
           </div>
 
-          <p className="font-ui text-[13px] whitespace-nowrap">€4,99</p>
+          <p className="font-ui text-[13px] whitespace-nowrap">€2</p>
         </button>
 
         <button
@@ -66,7 +66,7 @@ export default function ShippingMethodSelector({
             </div>
           </div>
 
-          <p className="font-ui text-[13px] whitespace-nowrap">€6,99</p>
+          <p className="font-ui text-[13px] whitespace-nowrap">€2,50</p>
         </button>
       </div>
     </div>

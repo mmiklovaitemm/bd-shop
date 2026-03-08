@@ -3,10 +3,6 @@ import FullWidthDivider from "@/components/ui/FullWidthDivider";
 import StatusPill from "./StatusPill";
 import arrowRightIcon from "@/assets/ui/arrow-right.svg";
 
-function ColDivider() {
-  return <div className="hidden md:block w-px self-stretch bg-black" />;
-}
-
 export default function OrderCard({ order, onOpen }) {
   return (
     <>
@@ -34,9 +30,27 @@ export default function OrderCard({ order, onOpen }) {
           <div className="mt-5 h-px w-full bg-black" />
 
           <div className="mt-5 flex items-start justify-between gap-4">
-            <h2 className="font-display text-2xl leading-none">
-              {order.productName}
-            </h2>
+            <div className="space-y-1">
+              {(order.productLines || []).slice(0, 2).map((item, index) => (
+                <p
+                  key={index}
+                  className={`font-display leading-none ${
+                    order.productLines.length === 1 ? "text-2xl" : "text-lg"
+                  }`}
+                >
+                  {item.name}{" "}
+                  <span className="font-ui text-sm align-middle">
+                    x{item.quantity}
+                  </span>
+                </p>
+              ))}
+
+              {order.productLines?.length > 2 && (
+                <p className="font-ui text-xs text-neutral-500">
+                  +{order.productLines.length - 2} more
+                </p>
+              )}
+            </div>
             <p className="font-ui text-base">{order.price}</p>
           </div>
 
@@ -68,20 +82,29 @@ export default function OrderCard({ order, onOpen }) {
             </div>
           </div>
 
-          <ColDivider />
-
           {/* 2) name + price */}
-          <div className="w-[180px] px-6 flex flex-col justify-center">
-            <p className="font-display text-lg leading-none">
-              {order.productName}
-            </p>
+          <div className="w-[180px] px-6 flex flex-col justify-center border-l border-black">
+            <div className="space-y-1">
+              {(order.productLines || []).slice(0, 2).map((item, index) => (
+                <p key={index} className="font-display text-sm leading-none">
+                  {item.name}{" "}
+                  <span className="font-ui text-xs align-middle">
+                    x{item.quantity}
+                  </span>
+                </p>
+              ))}
+
+              {order.productLines?.length > 2 && (
+                <p className="mt-1 font-ui text-xs text-neutral-500">
+                  +{order.productLines.length - 2} more
+                </p>
+              )}
+            </div>
             <p className="mt-2 font-ui text-sm">{order.price}</p>
           </div>
 
-          <ColDivider />
-
           {/* 3) order no */}
-          <div className="w-[240px] px-6 flex items-center">
+          <div className="w-[240px] px-6 flex items-center border-l border-black">
             <div className="w-full bg-neutral-100 px-4 py-3 font-ui">
               <div className="text-[11px] text-neutral-500 leading-tight">
                 Order no.:
@@ -94,7 +117,7 @@ export default function OrderCard({ order, onOpen }) {
 
           {/* 4) images */}
           <div className="flex-1 px-6 flex items-center justify-end gap-3">
-            {order.images.slice(0, 3).map((img, index) => (
+            {order.images.slice(0, 2).map((img, index) => (
               <img
                 key={index}
                 src={img}
@@ -128,20 +151,29 @@ export default function OrderCard({ order, onOpen }) {
             </div>
           </div>
 
-          <div className="w-px self-stretch bg-black" />
-
           {/* 2) name + price */}
-          <div className="w-[360px] px-8 flex items-center justify-between gap-6">
-            <p className="font-display text-xl leading-none">
-              {order.productName}
-            </p>
+          <div className="w-[360px] px-8 flex items-center justify-between gap-6 border-l border-black">
+            <div className="space-y-1">
+              {(order.productLines || []).slice(0, 2).map((item, index) => (
+                <p key={index} className="font-display text-base leading-none">
+                  {item.name}{" "}
+                  <span className="font-ui text-xs align-middle">
+                    x{item.quantity}
+                  </span>
+                </p>
+              ))}
+
+              {order.productLines?.length > 2 && (
+                <p className="mt-1 font-ui text-xs text-neutral-500">
+                  +{order.productLines.length - 2} more
+                </p>
+              )}
+            </div>
             <p className="font-ui text-sm">{order.price}</p>
           </div>
 
-          <div className="w-px self-stretch bg-black" />
-
-          {/* 3) order no  */}
-          <div className="w-[320px] px-8 flex items-center">
+          {/* 3) order no */}
+          <div className="w-[320px] px-8 flex items-center border-l border-black">
             <div className="w-full bg-neutral-100 px-5 py-3 font-ui text-sm">
               <span className="text-neutral-500">Order no.:</span>{" "}
               <span className="text-black">{order.orderNo}</span>

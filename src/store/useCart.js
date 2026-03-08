@@ -64,13 +64,18 @@ export default create((set) => ({
 
       const current = items[idx];
 
-      const productId = current.productId;
+      const productId =
+        current.productId ?? String(current.key || "").split("|")[0];
       const nextColor = next?.color ?? current.color ?? "silver";
       const nextSize = next?.size ?? current.size ?? null;
+      const nextServiceOption =
+        current.serviceOption ??
+        String(current.key || "").split("|")[3] ??
+        null;
 
       const nextKey = `${productId}|${nextColor || "silver"}|${
         nextSize || "nosize"
-      }`;
+      }|${nextServiceOption || "no-service"}`;
 
       if (nextKey === oldKey) {
         const copy = [...items];
@@ -119,4 +124,6 @@ export default create((set) => ({
         x.key === key ? { ...x, serviceOption: serviceOption || null } : x,
       ),
     })),
+
+  clearCart: () => set({ items: [] }),
 }));

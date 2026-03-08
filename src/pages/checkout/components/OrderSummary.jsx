@@ -4,6 +4,9 @@ export default function OrderSummary({
   variant = "mobile",
   items,
   subtotal,
+  deliveryPrice = 0,
+  deliveryType = "ship",
+  total = subtotal + deliveryPrice,
   isOpen,
   onToggle,
   calcLineTotal,
@@ -27,7 +30,7 @@ export default function OrderSummary({
           <span className="font-ui text-sm">Order summary</span>
 
           <div className="flex items-center gap-3">
-            <span className="font-ui text-sm">{fmtPrice(subtotal)}</span>
+            <span className="font-ui text-sm">{fmtPrice(total)}</span>
 
             <svg
               width="18"
@@ -54,9 +57,7 @@ export default function OrderSummary({
         <div className="px-4 py-4 border-b border-black/20">
           <div className="flex items-center justify-between">
             <p className="font-ui text-sm font-semibold">Order summary</p>
-            <p className="font-ui text-sm font-semibold">
-              {fmtPrice(subtotal)}
-            </p>
+            <p className="font-ui text-sm font-semibold">{fmtPrice(total)}</p>
           </div>
         </div>
       )}
@@ -130,11 +131,31 @@ export default function OrderSummary({
                 </div>
               ))}
 
-              <div className="pt-2 flex items-center justify-between border-t border-black/20">
-                <p className="font-ui text-sm text-black/60">Total</p>
-                <p className="font-ui text-sm font-semibold">
-                  {fmtPrice(subtotal)}
-                </p>
+              <div className="pt-2 border-t border-black/20 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="font-ui text-sm text-black/60">Subtotal</p>
+                  <p className="font-ui text-sm font-semibold">
+                    {fmtPrice(subtotal)}
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <p className="font-ui text-sm text-black/60">
+                    {deliveryType === "pickup" ? "Pickup" : "Delivery"}
+                  </p>
+                  <p className="font-ui text-sm font-semibold">
+                    {deliveryType === "pickup"
+                      ? "Free"
+                      : fmtPrice(deliveryPrice)}
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between pt-2 border-t border-black/20">
+                  <p className="font-ui text-sm text-black/60">Total</p>
+                  <p className="font-ui text-sm font-semibold">
+                    {fmtPrice(total)}
+                  </p>
+                </div>
               </div>
             </div>
           )}

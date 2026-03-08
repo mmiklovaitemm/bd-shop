@@ -1,8 +1,6 @@
 // src/pages/Product.jsx
-import { useMemo, useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
-
-import { PRODUCTS } from "@/data/products";
 
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 
@@ -23,6 +21,7 @@ import { HOVER_CLASSES } from "@/pages/Product/constants";
 // Hooks
 import useAddToCart from "@/hooks/useAddToCart";
 import useBagDrawer from "@/store/useBagDrawer";
+import { useProduct } from "@/hooks/useProducts";
 
 // Utils
 import cn from "@/utils/cn";
@@ -206,13 +205,18 @@ function ProductView({ product }) {
 
 export default function Product() {
   const { id } = useParams();
+  const { product, loading } = useProduct(id);
 
-  const product = useMemo(() => {
-    if (!id) return null;
-    return PRODUCTS.find((p) => p.id === id) || null;
-  }, [id]);
+  if (loading) {
+    return (
+      <main className="mx-auto w-full max-w-[1200px] px-4 md:px-6 py-10">
+        <div className="flex flex-col items-center justify-center min-h-[50vh]">
+          <p className="font-ui text-[14px] text-black/60">Loading...</p>
+        </div>
+      </main>
+    );
+  }
 
-  // Loading/Error state
   if (!product) {
     return (
       <main className="mx-auto w-full max-w-[1200px] px-4 md:px-6 py-10">

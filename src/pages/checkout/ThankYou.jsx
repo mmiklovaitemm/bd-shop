@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 
 // HERO images
@@ -12,6 +12,24 @@ import OurSalons from "../about/OurSalons";
 
 export default function ThankYou() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const deliveryType = location.state?.deliveryType || "ship";
+  const pickupLocation = location.state?.pickupLocation || null;
+  const email = location.state?.email || "";
+  const orderId = location.state?.orderId || null;
+
+  const pickupLocationLabel =
+    pickupLocation === "vilnius"
+      ? "Vilnius salon"
+      : pickupLocation === "kaunas"
+        ? "Kaunas salon"
+        : "our salon";
+
+  const message =
+    deliveryType === "pickup"
+      ? `Your order has been received successfully. We’ll contact you by email when it is ready for pickup at ${pickupLocationLabel}.`
+      : "Your order has been received successfully. We’ll send your order details and shipping updates to your email shortly.";
 
   return (
     <>
@@ -43,11 +61,23 @@ export default function ThankYou() {
                     Thank you for your purchase!
                   </h1>
 
-                  <p className="font-ui text-white/80 text-[14px] lg:text-[15px] leading-[1.6] mb-8">
-                    We will send all information to your email.
-                    <br />
-                    Wait for you soon!
+                  {orderId && (
+                    <p className="font-ui text-white/60 text-[13px] lg:text-[14px] mb-3">
+                      Order ID: #{orderId}
+                    </p>
+                  )}
+
+                  <p className="font-ui text-white/80 text-[14px] lg:text-[15px] leading-[1.6] mb-3">
+                    {message}
                   </p>
+
+                  {email ? (
+                    <p className="font-ui text-white/60 text-[13px] lg:text-[14px] mb-8">
+                      Confirmation email: {email}
+                    </p>
+                  ) : (
+                    <div className="mb-8" />
+                  )}
 
                   {/* BUTTON (match design) */}
                   <button
@@ -96,11 +126,23 @@ export default function ThankYou() {
                   Thank you for your purchase!
                 </h1>
 
-                <p className="font-ui text-white/80 text-[14px] leading-[1.6] mb-6">
-                  We will send all information to your email.
-                  <br />
-                  Wait for you soon!
+                {orderId && (
+                  <p className="font-ui text-white/60 text-[13px] mb-3">
+                    Order ID: #{orderId}
+                  </p>
+                )}
+
+                <p className="font-ui text-white/80 text-[14px] leading-[1.6] mb-3">
+                  {message}
                 </p>
+
+                {email ? (
+                  <p className="font-ui text-white/60 text-[13px] leading-[1.5] mb-6">
+                    Confirmation email: {email}
+                  </p>
+                ) : (
+                  <div className="mb-6" />
+                )}
 
                 {/* BUTTON */}
                 <button

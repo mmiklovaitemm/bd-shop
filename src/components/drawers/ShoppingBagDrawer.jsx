@@ -1,14 +1,15 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { apiGet } from "@/lib/api";
 
 import useBagDrawer from "@/store/useBagDrawer";
 import useCart from "@/store/useCart";
 import preventDragHandler from "@/utils/preventDrag";
 
-import { PRODUCTS } from "@/data/products";
-
 import arrowUpRightIcon from "@/assets/ui/arrow-up-right.svg";
 import trashIcon from "@/assets/ui/trash.svg";
+
+const API_ORIGIN = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
 const fmtPrice = (n) =>
   new Intl.NumberFormat("lt-LT", {
@@ -16,8 +17,6 @@ const fmtPrice = (n) =>
     currency: "EUR",
     minimumFractionDigits: 2,
   }).format(Number(n || 0));
-
-const getProductById = (id) => PRODUCTS.find((p) => p.id === id) || null;
 
 const pickVariantImage = (product, color) => {
   if (!product) return "";
@@ -41,6 +40,60 @@ export default function ShoppingBagDrawer() {
   const removeItem = useCart((s) => s.removeItem);
   const updateVariant = useCart((s) => s.updateVariant);
   const updateServiceOption = useCart((s) => s.updateServiceOption);
+
+  const [products, setProducts] = useState([]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    apiGet("/api/products", { signal: controller.signal })
+      .then((data) => {
+        const list = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.products)
+            ? data.products
+            : [];
+        setProducts(list);
+      })
+      .catch(() => setProducts([]));
+
+    return () => controller.abort();
+  }, []);
+
+  const productsById = useMemo(() => {
+    const m = new Map();
+    for (const p of products) m.set(String(p.id), p);
+    return m;
+  }, [products]);
+
+  const getProductById = useCallback(
+    (id) => productsById.get(String(id)) || null,
+    [productsById],
+  );
+  useEffect(() => {
+    items.forEach((item) => {
+      const pid =
+        item.productId ??
+        item.id ??
+        item.product?.id ??
+        item.product?.productId ??
+        String(item.key || "").split("|")[0];
+
+      const product = getProductById(pid) || item.product || null;
+      const availableSizes = product?.sizes || [];
+
+      if (!item.size && availableSizes.length > 0) {
+        updateVariant(item.key, {
+          color: item.color || product?.colors?.[0] || "silver",
+          size: availableSizes[0],
+          image: pickVariantImage(
+            product,
+            item.color || product?.colors?.[0] || "silver",
+          ),
+        });
+      }
+    });
+  }, [items, getProductById, updateVariant]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -75,15 +128,13 @@ export default function ShoppingBagDrawer() {
         const base = Number(item.price) || 0;
         const qty = item.quantity || 1;
 
+        const service = String(item?.serviceOption || "").toLowerCase();
         const isShippingKit =
-          item?.serviceOption === "shipping-kit" ||
-          item?.serviceOption === "shipping_kit" ||
-          String(item?.serviceOption || "")
-            .toLowerCase()
-            .includes("shipping");
+          service === "shipping" ||
+          service === "shipping-kit" ||
+          service === "shipping_kit";
 
-        const fee =
-          item?.category === "personal" && isShippingKit ? SHIPPING_KIT_FEE : 0;
+        const fee = isShippingKit ? SHIPPING_KIT_FEE : 0;
 
         return sum + (base + fee) * qty;
       }, 0),
@@ -153,7 +204,14 @@ export default function ShoppingBagDrawer() {
               items.map((item, idx) => {
                 const isLast = idx === items.length - 1;
 
-                const product = getProductById(item.productId);
+                const pid =
+                  item.productId ??
+                  item.id ??
+                  item.product?.id ??
+                  item.product?.productId ??
+                  String(item.key || "").split("|")[0];
+
+                const product = getProductById(pid) || item.product || null;
                 const availableColors = product?.colors || [];
                 const availableSizes = product?.sizes || [];
                 const currentColor =
@@ -198,14 +256,15 @@ export default function ShoppingBagDrawer() {
                           {(() => {
                             const base = Number(item.price) || 0;
 
-                            const isPersonal = item.category === "personal";
-                            const isShippingKit = String(
+                            const service = String(
                               item.serviceOption || "",
-                            )
-                              .toLowerCase()
-                              .includes("shipping");
+                            ).toLowerCase();
+                            const isShippingKit =
+                              service === "shipping" ||
+                              service === "shipping-kit" ||
+                              service === "shipping_kit";
 
-                            const fee = isPersonal && isShippingKit ? 15 : 0;
+                            const fee = isShippingKit ? 15 : 0;
                             const unitTotal = base + fee;
 
                             return (
@@ -242,7 +301,7 @@ export default function ShoppingBagDrawer() {
                                 <option value="shipping">
                                   Shipping kit (+15€)
                                 </option>
-                                <option value="in-store">In-store</option>
+                                <option value="in_store">In-store</option>
                               </select>
                             </div>
                           ) : null}
@@ -297,11 +356,14 @@ export default function ShoppingBagDrawer() {
                                 onChange={(e) => {
                                   const nextSize = e.target.value || null;
 
-                                  // size nekeičia image, bet paliekam tą patį
                                   updateVariant(item.key, {
                                     color: currentColor,
                                     size: nextSize,
-                                    image: item.image,
+                                    image: pickVariantImage(
+                                      product,
+                                      currentColor,
+                                      nextSize,
+                                    ),
                                   });
                                 }}
                               >
@@ -396,8 +458,8 @@ export default function ShoppingBagDrawer() {
                 e.preventDefault();
                 if (items.length === 0) return;
 
-                close(); // 1) uždarom drawer
-                navigate("/checkout"); // 2) naviguojam į Checkout page
+                close();
+                navigate("/checkout");
               }}
               disabled={items.length === 0}
             >

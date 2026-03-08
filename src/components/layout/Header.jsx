@@ -14,6 +14,9 @@ import useBagDrawer from "@/store/useBagDrawer";
 import useCart from "@/store/useCart";
 import useFavorites from "@/context/useFavorites";
 
+import userIcon from "@/assets/ui/user.svg";
+import useAuth from "@/store/useAuth";
+
 const ICON_HOVER_CLASS =
   "transition-transform duration-300 ease-out lg:hover:-translate-y-[2px]";
 const NAV_LINK_CLASS =
@@ -73,6 +76,7 @@ const CartItem = memo(({ to, icon, label, count }) => (
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const openBag = useBagDrawer((s) => s.open);
+  const user = useAuth((s) => s.user);
 
   // LIVE COUNTS
   const cartCount = useCart((s) =>
@@ -168,6 +172,25 @@ export default function Header() {
             </span>
           </button>
 
+          {user ? (
+            <NavItem to="/account" className="p-1 flex items-center">
+              <img
+                src={userIcon}
+                alt="Account"
+                draggable={false}
+                onDragStart={preventDrag}
+                className={`h-[20px] w-auto select-none ${ICON_HOVER_CLASS}`}
+              />
+            </NavItem>
+          ) : (
+            <NavItem
+              to="/login"
+              className="p-1 font-ui text-[12px] text-black/80 flex items-center"
+            >
+              Log in
+            </NavItem>
+          )}
+
           {/* Languages shown from tablet */}
           <div className="hidden md:flex items-center gap-3">
             {LANGUAGES.map(({ code, isActive }) => (
@@ -233,7 +256,19 @@ export default function Header() {
             </span>
           </button>
 
-          <NavItem to="/account">Log in</NavItem>
+          {user ? (
+            <NavItem to="/account" className="flex items-center">
+              <img
+                src={userIcon}
+                alt="Account"
+                draggable={false}
+                onDragStart={preventDrag}
+                className={`h-4 w-auto select-none ${ICON_HOVER_CLASS}`}
+              />
+            </NavItem>
+          ) : (
+            <NavItem to="/login">Log in</NavItem>
+          )}
 
           <div className="flex items-center gap-2">
             {LANGUAGES.map(({ code, isActive }) => (

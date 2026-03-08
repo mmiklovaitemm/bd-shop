@@ -2,12 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import useCart from "@/store/useCart";
-import {
-  getEmailFromLocalStorage,
-  calcLineTotal as calcLineTotalUtil,
-  calcSubtotal,
-  SHIPPING_KIT_FEE_DEFAULT,
-} from "@/utils/checkout";
+import { getEmailFromLocalStorage } from "@/utils/checkout";
 
 import OrderSummary from "./components/OrderSummary";
 import ContactSection from "./components/ContactSection";
@@ -15,12 +10,16 @@ import DeliveryToggle from "./components/DeliveryToggle";
 import ShippingForm from "./components/ShippingForm";
 import ShippingMethodSelector from "./components/ShippingMethodSelector";
 import PaymentSection from "./components/PaymentSection";
+import PickupSection from "./components/PickupSection";
 
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
+
+const API_ORIGIN = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
 export default function Checkout() {
   const navigate = useNavigate();
   const items = useCart((s) => s.items);
+  const clearCart = useCart((s) => s.clearCart);
 
   // refs for scroll-to-error
   const emailRef = useRef(null);
@@ -36,13 +35,6 @@ export default function Checkout() {
   const cardDateRef = useRef(null);
   const cardCvcRef = useRef(null);
   const cardNameRef = useRef(null);
-
-  const subtotal = useMemo(() => {
-    return calcSubtotal(items, SHIPPING_KIT_FEE_DEFAULT);
-  }, [items]);
-
-  const calcLineTotal = (item) =>
-    calcLineTotalUtil(item, SHIPPING_KIT_FEE_DEFAULT);
 
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
 
@@ -67,7 +59,56 @@ export default function Checkout() {
   const [deliveryType, setDeliveryType] = useState("ship"); // "ship" | "pickup"
 
   // Shipping method (LP vs Omniva)
-  const [shippingMethod, setShippingMethod] = useState("lp"); // "lp" | "omniva"
+  const [shippingMethod, setShippingMethod] = useState("lp"); // "lp" | "omniva"\
+
+  // Pickup salon selection
+  const [pickupLocation, setPickupLocation] = useState("vilnius"); // "vilnius" | "kaunas"
+
+  // Subtotal
+  const SHIPPING_KIT_FEE = 15;
+
+  const subtotal = useMemo(() => {
+    return items.reduce((sum, item) => {
+      const base = Number(item.price) || 0;
+      const qty = Number(item.quantity || 1);
+
+      const service = String(item.serviceOption || "").toLowerCase();
+      const isShippingKit =
+        service === "shipping" ||
+        service === "shipping-kit" ||
+        service === "shipping_kit";
+
+      const fee = isShippingKit ? SHIPPING_KIT_FEE : 0;
+
+      return sum + (base + fee) * qty;
+    }, 0);
+  }, [items]);
+
+  // Delivery price
+  const deliveryPrice = useMemo(() => {
+    if (deliveryType !== "ship") return 0;
+    return shippingMethod === "lp" ? 2 : 2.5;
+  }, [deliveryType, shippingMethod]);
+
+  // Total
+  const total = useMemo(() => {
+    return subtotal + deliveryPrice;
+  }, [subtotal, deliveryPrice]);
+
+  const calcLineTotal = (item) => {
+    const base = Number(item.price) || 0;
+    const qty = Number(item.quantity || 1);
+
+    const service = String(item.serviceOption || "").toLowerCase();
+    const isShippingKit =
+      service === "shipping" ||
+      service === "shipping-kit" ||
+      service === "shipping_kit";
+
+    const fee = isShippingKit ? SHIPPING_KIT_FEE : 0;
+
+    return (base + fee) * qty;
+  };
 
   // Ship form fields
   const [country, setCountry] = useState("Lithuania");
@@ -81,6 +122,7 @@ export default function Checkout() {
 
   // Payment
   const [paymentType, setPaymentType] = useState("card"); // "card" | "bank"
+  const [selectedBank, setSelectedBank] = useState("swedbank");
   const [cardNumber, setCardNumber] = useState("");
   const [cardDate, setCardDate] = useState("");
   const [cardCvc, setCardCvc] = useState("");
@@ -155,7 +197,7 @@ export default function Checkout() {
     return Object.keys(next).length === 0;
   };
 
-  const handlePay = (e) => {
+  const handlePay = async (e) => {
     e.preventDefault();
 
     if (payStatus === "success") return;
@@ -165,11 +207,79 @@ export default function Checkout() {
 
     setIsSubmitting(true);
 
-    // demo submit
-    setTimeout(() => {
+    try {
+      const payload = {
+        items: items.map((it) => ({
+          productId: it.id ?? it.productId ?? null,
+          title: it.title ?? it.name ?? "",
+          price: Number(it.price ?? 0),
+          qty: Number(it.qty ?? it.quantity ?? 1),
+          image: it.image ?? it.img ?? null,
+          color: it.color ?? null,
+          size: it.size ?? null,
+          serviceOption: it.serviceOption ?? null,
+          variant: it.variant ?? null,
+        })),
+
+        contact: {
+          email,
+        },
+
+        delivery: {
+          type: deliveryType,
+          method: deliveryType === "ship" ? shippingMethod : pickupLocation,
+        },
+
+        payment: {
+          type: paymentType,
+          bank: paymentType === "bank" ? selectedBank : null,
+        },
+
+        shipping:
+          deliveryType === "ship"
+            ? {
+                country,
+                firstName,
+                lastName,
+                address,
+                apartment,
+                city,
+                postalCode,
+                phone,
+              }
+            : null,
+      };
+
+      const res = await fetch(`${API_ORIGIN}/api/orders`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(data?.message || "Order creation failed.");
+      }
+
+      clearCart();
       setIsSubmitting(false);
-      navigate("/thank-you");
-    }, 800);
+      navigate("/thank-you", {
+        state: {
+          orderId: data?.orderId ?? null,
+          deliveryType,
+          pickupLocation: deliveryType === "pickup" ? pickupLocation : null,
+          email,
+        },
+      });
+    } catch (err) {
+      setIsSubmitting(false);
+      setErrors((prev) => ({
+        ...prev,
+        submit: err?.message || "Something went wrong.",
+      }));
+    }
   };
 
   return (
@@ -184,6 +294,9 @@ export default function Checkout() {
                 variant="mobile"
                 items={items}
                 subtotal={subtotal}
+                deliveryPrice={deliveryPrice}
+                deliveryType={deliveryType}
+                total={total}
                 isOpen={isSummaryOpen}
                 onToggle={() => setIsSummaryOpen((v) => !v)}
                 calcLineTotal={calcLineTotal}
@@ -191,7 +304,13 @@ export default function Checkout() {
             </div>
 
             <form onSubmit={handlePay} className="px-4 py-6 space-y-8">
-              {/* Success message */}
+              {/* Submit error */}
+              {errors.submit ? (
+                <div className="border border-black bg-black/5 px-4 py-4">
+                  <p className="font-ui text-sm">{errors.submit}</p>
+                </div>
+              ) : null}
+
               {payStatus === "success" ? (
                 <div className="border border-black bg-black/5 px-4 py-4">
                   <p className="font-ui text-sm font-semibold">
@@ -217,7 +336,7 @@ export default function Checkout() {
                 emailRef={emailRef}
               />
 
-              {/* Delivery information toggle */}
+              {/* Delivery */}
               <DeliveryToggle
                 deliveryType={deliveryType}
                 setDeliveryType={setDeliveryType}
@@ -261,17 +380,18 @@ export default function Checkout() {
               ) : null}
 
               {deliveryType === "pickup" ? (
-                <div className="border border-black/20 bg-black/5 px-4 py-4">
-                  <p className="font-ui text-sm text-black/60">
-                    Pickup flow coming next steps.
-                  </p>
-                </div>
+                <PickupSection
+                  pickupLocation={pickupLocation}
+                  setPickupLocation={setPickupLocation}
+                />
               ) : null}
 
               {/* Payment */}
               <PaymentSection
                 paymentType={paymentType}
                 setPaymentType={setPaymentType}
+                selectedBank={selectedBank}
+                setSelectedBank={setSelectedBank}
                 cardNumber={cardNumber}
                 setCardNumber={setCardNumber}
                 cardDate={cardDate}
@@ -300,12 +420,15 @@ export default function Checkout() {
             </form>
           </section>
 
-          {/* RIGHT: Order summary always visible on tablet/desktop */}
+          {/* RIGHT */}
           <div className="hidden md:block">
             <OrderSummary
               variant="desktop"
               items={items}
               subtotal={subtotal}
+              deliveryPrice={deliveryPrice}
+              deliveryType={deliveryType}
+              total={total}
               isOpen={true}
               onToggle={() => {}}
               calcLineTotal={calcLineTotal}

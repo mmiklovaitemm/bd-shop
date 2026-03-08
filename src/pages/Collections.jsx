@@ -1,14 +1,15 @@
+// src/pages/Collections.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+
 import Pagination from "@/components/ui/Pagination";
-
-import { PRODUCTS } from "@/data/products";
-
 import ProductCard from "@/components/ui/ProductCard/ProductCard";
 import AboutStudioSection from "@/components/ui/AboutStudioSection";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 import ProductsToolbar from "@/components/sections/ProductsToolbar";
 import ProductsFilterPanel from "@/components/sections/ProductsFilterPanel";
+
+import { useProducts } from "@/hooks/useProducts";
 
 const CATEGORY_ITEMS = [
   { label: "Rings", value: "rings" },
@@ -61,7 +62,7 @@ const applySizeFilter = (list, selectedSize) => {
   return list.filter((p) => (p.sizes || []).includes(selectedSize));
 };
 
-export default function Products() {
+export default function Collections() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const categoryFromUrl =
@@ -84,6 +85,9 @@ export default function Products() {
   // PAGINATION
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(12);
+
+  // products via hook
+  const { products, loading } = useProducts();
 
   // Responsive page size
   useEffect(() => {
@@ -114,17 +118,17 @@ export default function Products() {
   // PRODUCTS IN CATEGORY
   const productsInCategory = useMemo(() => {
     if (activeCategory === "best-sellers") {
-      return PRODUCTS.filter((p) => p.isBestSeller);
+      return products.filter((p) => p.isBestSeller);
     }
 
     if (activeCategory === "new-collection") {
-      return [...PRODUCTS]
+      return [...products]
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
         .slice(0, 5);
     }
 
-    return PRODUCTS.filter((p) => p.category === activeCategory);
-  }, [activeCategory]);
+    return products.filter((p) => p.category === activeCategory);
+  }, [activeCategory, products]);
 
   const priceBounds = useMemo(() => {
     const prices = productsInCategory.map((p) => p.priceValue);
@@ -306,6 +310,7 @@ export default function Products() {
     );
   };
 
+  // reset pagination on any filter/sort change
   useEffect(() => {
     setPage(1);
     setSearchParams(
@@ -370,6 +375,7 @@ export default function Products() {
   };
 
   const desktopColsClass = isFilterOpen ? "lg:grid-cols-3" : "lg:grid-cols-4";
+  const isEmpty = !loading && pageItems.length === 0;
 
   return (
     <>
@@ -441,40 +447,54 @@ export default function Products() {
           ) : null}
 
           <div>
-            <div
-              className={[
-                "grid grid-cols-2 min-[460px]:grid-cols-2 md:grid-cols-3 gap-x-3 gap-y-5 md:gap-x-4 md:gap-y-6",
-                desktopColsClass,
-              ].join(" ")}
-            >
-              {pageItems.map((product, idx) => (
-                <ProductCard
-                  key={product.id}
-                  product={{ ...product, image: product.thumbnail }}
-                  priority={idx < 4}
-                  onAddToCart={() => {}}
-                  onAddToFavorites={() => {}}
-                  onMediaReady={() => {}}
-                  onImageError={(e) => {
-                    e.currentTarget.src = `${import.meta.env.BASE_URL}products/fallback.png`;
-                  }}
-                />
-              ))}
-            </div>
+            {loading ? (
+              <div className="py-10 text-center">
+                <p className="font-ui text-[13px] text-black/70">Loading...</p>
+              </div>
+            ) : isEmpty ? (
+              <div className="py-10 text-center">
+                <p className="font-ui text-[13px] text-black/70">
+                  No products found.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div
+                  className={[
+                    "grid grid-cols-2 min-[460px]:grid-cols-2 md:grid-cols-3 gap-x-3 gap-y-5 md:gap-x-4 md:gap-y-6",
+                    desktopColsClass,
+                  ].join(" ")}
+                >
+                  {pageItems.map((product, idx) => (
+                    <ProductCard
+                      key={product.id}
+                      product={{ ...product, image: product.thumbnail }}
+                      priority={idx < 4}
+                      onAddToCart={() => {}}
+                      onAddToFavorites={() => {}}
+                      onMediaReady={() => {}}
+                      onImageError={(e) => {
+                        e.currentTarget.src = `${import.meta.env.BASE_URL}products/fallback.png`;
+                      }}
+                    />
+                  ))}
+                </div>
 
-            <div className="mt-8 flex flex-col items-center gap-3">
-              <p className="font-ui text-[13px] text-black/70">
-                Showing {showingCount} of {totalItems}
-              </p>
+                <div className="mt-8 flex flex-col items-center gap-3">
+                  <p className="font-ui text-[13px] text-black/70">
+                    Showing {showingCount} of {totalItems}
+                  </p>
 
-              <Pagination
-                totalItems={totalItems}
-                page={safePage}
-                pageSize={pageSize}
-                onPageChange={handlePageChange}
-                siblingCount={1}
-              />
-            </div>
+                  <Pagination
+                    totalItems={totalItems}
+                    page={safePage}
+                    pageSize={pageSize}
+                    onPageChange={handlePageChange}
+                    siblingCount={1}
+                  />
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
