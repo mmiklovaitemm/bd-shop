@@ -11,10 +11,18 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
+import cors from "cors";
 
 import db from "./db.js";
 
 const app = express();
+
+app.use(
+  cors({
+    origin: "https://bd-shop-gray.vercel.app",
+    credentials: true,
+  }),
+);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
