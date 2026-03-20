@@ -3,6 +3,8 @@ import AddToBagButton from "@/components/ui/AddToBagButton";
 import bagIcon from "@/assets/ui/shopping-bag.svg";
 
 export default function BottomBar({ product, onAddToCart, isDesktop }) {
+  const isSoldOut = Boolean(product?.isSoldOut);
+
   return (
     <div className="absolute bottom-0 left-0 right-0 z-10">
       <div
@@ -30,16 +32,23 @@ export default function BottomBar({ product, onAddToCart, isDesktop }) {
             <p className="font-ui font-normal text-[14px] leading-none whitespace-nowrap text-white">
               {product.price}
             </p>
+
             <div className="pointer-events-auto">
-              <AddToBagButton
-                onClick={(e) => {
-                  e?.stopPropagation?.();
-                  e?.preventDefault?.();
-                  onAddToCart?.(e);
-                }}
-                icon={bagIcon}
-                ariaLabel={`Add ${product.name} to bag`}
-              />
+              {isSoldOut ? (
+                <span className="inline-flex items-center border border-white/40 px-4 py-2 font-ui text-xs uppercase tracking-[0.08em] text-white/70">
+                  Sold out
+                </span>
+              ) : (
+                <AddToBagButton
+                  onClick={(e) => {
+                    e?.stopPropagation?.();
+                    e?.preventDefault?.();
+                    onAddToCart?.(e);
+                  }}
+                  icon={bagIcon}
+                  ariaLabel={`Add ${product.name} to bag`}
+                />
+              )}
             </div>
           </div>
         </div>

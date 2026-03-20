@@ -13,13 +13,18 @@ export default function ActionButtons({
   onToggleWishlist,
   isWishlisted,
 }) {
+  const isSoldOut = Boolean(product?.isSoldOut);
+
   const handleCartClick = useCallback(
     (e) => {
       e.stopPropagation();
       e.preventDefault();
+
+      if (isSoldOut) return;
+
       onAddToCart?.(e);
     },
-    [onAddToCart],
+    [onAddToCart, isSoldOut],
   );
 
   const handleFavoriteClick = useCallback(
@@ -33,13 +38,15 @@ export default function ActionButtons({
 
   return (
     <>
-      <IconButton
-        variant="overlay"
-        icon={bagIcon}
-        onClick={handleCartClick}
-        aria-label={`Add ${product.name} to cart`}
-        className="left-3"
-      />
+      {!isSoldOut && (
+        <IconButton
+          variant="overlay"
+          icon={bagIcon}
+          onClick={handleCartClick}
+          aria-label={`Add ${product.name} to cart`}
+          className="left-3"
+        />
+      )}
 
       <IconButton
         variant="overlay"

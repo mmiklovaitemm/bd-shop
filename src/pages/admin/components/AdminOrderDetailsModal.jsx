@@ -7,6 +7,7 @@ export default function AdminOrderDetailsModal({
   onClose,
   onStatusChange,
   onSelectedOrderChange,
+  savingId,
 }) {
   if (!order) return null;
 
@@ -105,7 +106,8 @@ export default function AdminOrderDetailsModal({
               <StatusPill status={order.status || "Pending"} />
 
               <select
-                className="border border-black bg-white px-3 py-2"
+                className="border border-black bg-white px-3 py-2 disabled:opacity-60"
+                disabled={savingId === order.id}
                 value={order.status || "Pending"}
                 onChange={(e) => {
                   onStatusChange(order.id, e.target.value);
@@ -120,6 +122,10 @@ export default function AdminOrderDetailsModal({
                   </option>
                 ))}
               </select>
+
+              {savingId === order.id ? (
+                <p className="text-xs text-black/50">Saving...</p>
+              ) : null}
             </div>
           </div>
         </div>

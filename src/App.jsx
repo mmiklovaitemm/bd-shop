@@ -21,6 +21,7 @@ import ThankYou from "@/pages/checkout/ThankYou";
 import RequireAuth from "@/components/auth/RequireAuth";
 import AdminOrders from "@/pages/admin/AdminOrders";
 import RequireAdmin from "@/components/auth/RequireAdmin";
+import AdminProducts from "@/pages/admin/AdminProducts";
 
 export default function App() {
   const fetchMe = useAuth((s) => s.fetchMe);
@@ -77,6 +78,15 @@ export default function App() {
           element={
             <RequireAdmin>
               <AdminOrders />
+            </RequireAdmin>
+          }
+        />
+
+        <Route
+          path="/admin/products"
+          element={
+            <RequireAdmin>
+              <AdminProducts />
             </RequireAdmin>
           }
         />

@@ -80,7 +80,7 @@ function ProductView({ product }) {
     (e) => {
       e?.preventDefault?.();
       e?.stopPropagation?.();
-      if (!product) return;
+      if (!product || product.isSoldOut) return;
 
       const img =
         product?.variants?.[selectedColor]?.[0] ||

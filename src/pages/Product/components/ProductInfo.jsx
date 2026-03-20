@@ -207,6 +207,7 @@ const ProductInfo = memo(function ProductInfo({
 
   const isWishlisted = has(product.id);
   const hoverBtnClass = hoverClasses.btn;
+  const isSoldOut = Boolean(product.isSoldOut);
 
   const hasServiceOptions =
     product.category === "personal" &&
@@ -307,18 +308,32 @@ const ProductInfo = memo(function ProductInfo({
 
       <div className="mt-6 flex items-stretch gap-2">
         <div className="flex-1">
-          <AddToBagButton
-            onClick={onAddToBag}
-            icon={bagIcon}
-            label="Add to bag"
-            ariaLabel={`Add ${product.name} to bag`}
-            className="
-              !w-full !h-12 !min-w-0 !justify-center
-              !border-black !bg-black !text-white
-              lg:hover:!scale-[1.02] lg:hover:!-translate-y-0.5
-              active:!scale-[0.99]
-            "
-          />
+          {isSoldOut ? (
+            <button
+              type="button"
+              disabled
+              className="
+                h-12 w-full min-w-0 cursor-not-allowed border border-black/20
+                bg-black/10 px-4 font-ui text-[13px] uppercase tracking-[0.08em]
+                text-black/45
+              "
+            >
+              Sold out
+            </button>
+          ) : (
+            <AddToBagButton
+              onClick={onAddToBag}
+              icon={bagIcon}
+              label="Add to bag"
+              ariaLabel={`Add ${product.name} to bag`}
+              className="
+                !w-full !h-12 !min-w-0 !justify-center
+                !border-black !bg-black !text-white
+                lg:hover:!scale-[1.02] lg:hover:!-translate-y-0.5
+                active:!scale-[0.99]
+              "
+            />
+          )}
         </div>
 
         <button

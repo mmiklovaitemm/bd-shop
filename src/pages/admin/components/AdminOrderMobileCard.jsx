@@ -1,5 +1,8 @@
 import StatusPill from "@/pages/account/StatusPill";
-import { getDeliveryLabel } from "@/pages/admin/helpers/orderHelpers";
+import {
+  getDeliveryLabel,
+  formatAdminOrderDate,
+} from "@/pages/admin/helpers/orderHelpers";
 
 export default function AdminOrderMobileCard({
   order,
@@ -24,9 +27,7 @@ export default function AdminOrderMobileCard({
       <div className="mt-4 grid grid-cols-2 gap-4 font-ui text-sm">
         <div>
           <p className="text-black/50">Date</p>
-          <p className="mt-1">
-            {new Date(order.created_at).toISOString().slice(0, 10)}
-          </p>
+          <p className="mt-1">{formatAdminOrderDate(order.created_at)} </p>
         </div>
 
         <div>
@@ -58,18 +59,24 @@ export default function AdminOrderMobileCard({
       </div>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <select
-          className="border border-black bg-white px-3 py-3 font-ui text-sm"
-          value={order.status || "Pending"}
-          onChange={(e) => onStatusChange(order.id, e.target.value)}
-          disabled={savingId === order.id}
-        >
-          {statusOptions.map((status) => (
-            <option key={status} value={status}>
-              {status}
-            </option>
-          ))}
-        </select>
+        <div>
+          <select
+            className="w-full border border-black bg-white px-3 py-3 font-ui text-sm disabled:opacity-60"
+            value={order.status || "Pending"}
+            onChange={(e) => onStatusChange(order.id, e.target.value)}
+            disabled={savingId === order.id}
+          >
+            {statusOptions.map((status) => (
+              <option key={status} value={status}>
+                {status}
+              </option>
+            ))}
+          </select>
+
+          {savingId === order.id ? (
+            <p className="mt-1 text-xs text-black/50">Saving...</p>
+          ) : null}
+        </div>
 
         <button
           type="button"

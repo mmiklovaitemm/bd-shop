@@ -104,7 +104,7 @@ export default function ProductCard({
       e?.preventDefault?.();
       e?.stopPropagation?.();
 
-      if (!safeProduct?.id) return;
+      if (!safeProduct?.id || safeProduct?.isSoldOut) return;
 
       addToCart({
         product: safeProduct,
@@ -155,6 +155,12 @@ export default function ProductCard({
           draggable={false}
           onDragStart={(e) => e.preventDefault()}
         >
+          {safeProduct.isSoldOut ? (
+            <div className="absolute left-4 top-4 z-[3] border border-black/70 bg-white/90 px-3 py-1 font-ui text-[10px] uppercase tracking-[0.12em] text-black backdrop-blur-sm">
+              Sold out
+            </div>
+          ) : null}
+
           {/* LOADER  */}
           {!loadedMain && (
             <div className="absolute inset-0 z-[1] bg-black/5">

@@ -7,38 +7,85 @@ import cookieParser from "cookie-parser";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import "dotenv/config";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+import { fileURLToPath } from "url";
 
-import products from "./data/products.js";
 import db from "./db.js";
 
 const app = express();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const uploadsDir = path.join(__dirname, "uploads");
+
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, uploadsDir);
+  },
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    const base = path
+      .basename(file.originalname, ext)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+    cb(null, `${Date.now()}-${base}${ext}`);
+  },
+});
+
+const upload = multer({ storage });
 
 // middleware
 app.use(helmet());
 app.use(morgan("dev"));
 app.use(express.json());
 app.use(cookieParser());
+app.use("/uploads", express.static(uploadsDir));
 
-// CORS (cookies require credentials: true)
+// CORS
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:4173",
+  process.env.FRONTEND_ORIGIN,
+].filter(Boolean);
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_ORIGIN || "http://localhost:5173",
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
   }),
 );
 
 const COOKIE_NAME = "access_token";
-const productById = new Map(products.map((p) => [String(p.id), p]));
+
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
+
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  sameSite: IS_PRODUCTION ? "none" : "lax",
+  secure: IS_PRODUCTION,
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+};
 
 function setAuthCookie(res, payload) {
   const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "7d" });
 
-  res.cookie(COOKIE_NAME, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: false, // local dev
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  });
+  res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
 }
 
 // test endpoint
@@ -56,18 +103,377 @@ app.get("/api/db-test", async (req, res) => {
   }
 });
 
-// PRODUCTS
-app.get("/api/products", (req, res) => {
-  res.json(products);
+function mapProductRow(row) {
+  const colors = row.colors ? JSON.parse(row.colors) : [];
+  const variants = row.variants ? JSON.parse(row.variants) : {};
+  const gemstones = row.gemstones ? JSON.parse(row.gemstones) : [];
+  const sizes = row.sizes ? JSON.parse(row.sizes) : [];
+  const details = row.details ? JSON.parse(row.details) : {};
+
+  return {
+    id: row.id,
+    name: row.name,
+    category: row.category,
+    priceValue: Number(row.price_value),
+    price: `€${Number(row.price_value)}`,
+    createdAt: row.created_at,
+    isSoldOut: Boolean(row.is_sold_out),
+    isBestSeller: Boolean(row.is_best_seller),
+    hasGem: Boolean(row.has_gem),
+    surface: row.surface,
+    thumbnail: row.thumbnail,
+    colors,
+    variants,
+    gemstones,
+    sizes,
+    details,
+  };
+}
+
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "http://localhost:5173";
+const FRONTEND_BASE_PATH = process.env.FRONTEND_BASE_PATH || "/";
+
+function joinUrl(origin, path) {
+  const o = String(origin).replace(/\/+$/, "");
+  const p = String(path).replace(/^\/+/, "");
+  return `${o}/${p}`;
+}
+
+function withBase(path) {
+  const base = String(FRONTEND_BASE_PATH)
+    .replace(/^\/?/, "/")
+    .replace(/\/?$/, "/");
+
+  const clean = String(path).replace(/^\/+/, "");
+  return joinUrl(FRONTEND_ORIGIN, `${base}${clean}`);
+}
+
+function normalizeImageList(category, list = []) {
+  return (list || [])
+    .map((item) => String(item || "").trim())
+    .filter(Boolean)
+    .map((item) => {
+      if (/^https?:\/\//i.test(item)) {
+        return item;
+      }
+
+      return withBase(`products/${category}/${item}`);
+    });
+}
+
+app.post("/api/uploads/product-image", upload.single("image"), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "Image file is required." });
+    }
+
+    const fileUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+
+    return res.status(201).json({
+      ok: true,
+      file: {
+        filename: req.file.filename,
+        url: fileUrl,
+      },
+    });
+  } catch (err) {
+    console.error("Upload image error:", err);
+    return res.status(500).json({ message: err.message });
+  }
 });
 
-app.get("/api/products/:id", (req, res) => {
-  const { id } = req.params;
+// PRODUCTS
+app.get("/api/products", async (req, res) => {
+  try {
+    const [rows] = await db.query("SELECT * FROM products");
+    res.json(rows.map(mapProductRow));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to fetch products" });
+  }
+});
 
-  const product = products.find((p) => p.id === id);
-  if (!product) return res.status(404).json({ message: "Product not found" });
+app.get("/api/products/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
 
-  res.json(product);
+    const [rows] = await db.query("SELECT * FROM products WHERE id = ?", [id]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    res.json(mapProductRow(rows[0]));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to fetch product" });
+  }
+});
+
+app.post("/api/products", async (req, res) => {
+  try {
+    const {
+      id,
+      name,
+      category,
+      priceValue,
+      createdAt,
+      description,
+      silverImages = [],
+      goldImages = [],
+      sizes = [],
+      isBestSeller = false,
+      isSoldOut = false,
+    } = req.body || {};
+
+    if (
+      !id ||
+      !name ||
+      !category ||
+      !priceValue ||
+      !createdAt ||
+      !description
+    ) {
+      return res.status(400).json({
+        message:
+          "id, name, category, priceValue, createdAt and description are required.",
+      });
+    }
+
+    const [existing] = await db.query(
+      "SELECT id FROM products WHERE id = ? LIMIT 1",
+      [id],
+    );
+
+    if (existing.length) {
+      return res.status(409).json({ message: "Product id already exists." });
+    }
+
+    const normalizedSilverImages = normalizeImageList(category, silverImages);
+    const normalizedGoldImages = normalizeImageList(category, goldImages);
+
+    const variants = {
+      ...(normalizedSilverImages.length
+        ? { silver: normalizedSilverImages }
+        : {}),
+      ...(normalizedGoldImages.length ? { gold: normalizedGoldImages } : {}),
+    };
+
+    const colors = Object.keys(variants);
+
+    const thumbnail =
+      normalizedSilverImages[0] || normalizedGoldImages[0] || "";
+
+    const details = {
+      detailsText: description,
+    };
+
+    await db.query(
+      `INSERT INTO products (
+        id,
+        name,
+        category,
+        price_value,
+        created_at,
+        is_best_seller,
+        is_sold_out,
+        has_gem,
+        surface,
+        thumbnail,
+        colors,
+        variants,
+        gemstones,
+        sizes,
+        details
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id,
+        name,
+        category,
+        Number(priceValue),
+        createdAt,
+        isBestSeller ? 1 : 0,
+        isSoldOut ? 1 : 0,
+        0,
+        "smooth",
+        thumbnail,
+        JSON.stringify(colors),
+        JSON.stringify(variants),
+        JSON.stringify([]),
+        JSON.stringify(sizes),
+        JSON.stringify(details),
+      ],
+    );
+
+    const [rows] = await db.query(
+      "SELECT * FROM products WHERE id = ? LIMIT 1",
+      [id],
+    );
+
+    return res.status(201).json({
+      product: mapProductRow(rows[0]),
+    });
+  } catch (err) {
+    console.error("Create product error:", err);
+    return res.status(500).json({ message: err.message });
+  }
+});
+
+app.delete("/api/products/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const [existing] = await db.query(
+      "SELECT id, name FROM products WHERE id = ? LIMIT 1",
+      [id],
+    );
+
+    if (!existing.length) {
+      return res.status(404).json({ message: "Product not found." });
+    }
+
+    await db.query("DELETE FROM products WHERE id = ?", [id]);
+
+    return res.json({
+      ok: true,
+      deletedProduct: existing[0],
+    });
+  } catch (err) {
+    console.error("Delete product error:", err);
+    return res.status(500).json({ message: err.message });
+  }
+});
+
+app.put("/api/products/:id", async (req, res) => {
+  try {
+    const { id: routeId } = req.params;
+
+    const {
+      id,
+      name,
+      category,
+      priceValue,
+      createdAt,
+      description,
+      silverImages = [],
+      goldImages = [],
+      sizes = [],
+      isBestSeller = false,
+      isSoldOut = false,
+    } = req.body || {};
+
+    if (
+      !id ||
+      !name ||
+      !category ||
+      !priceValue ||
+      !createdAt ||
+      !description
+    ) {
+      return res.status(400).json({
+        message:
+          "id, name, category, priceValue, createdAt and description are required.",
+      });
+    }
+
+    if (routeId !== id) {
+      return res.status(400).json({
+        message: "Product id in URL and body must match.",
+      });
+    }
+
+    const [existing] = await db.query(
+      "SELECT id FROM products WHERE id = ? LIMIT 1",
+      [id],
+    );
+
+    if (!existing.length) {
+      return res.status(404).json({ message: "Product not found." });
+    }
+
+    const normalizedSilverImages = normalizeImageList(category, silverImages);
+    const normalizedGoldImages = normalizeImageList(category, goldImages);
+
+    const variants = {
+      ...(normalizedSilverImages.length
+        ? { silver: normalizedSilverImages }
+        : {}),
+      ...(normalizedGoldImages.length ? { gold: normalizedGoldImages } : {}),
+    };
+
+    const colors = Object.keys(variants);
+
+    const thumbnail =
+      normalizedSilverImages[0] || normalizedGoldImages[0] || "";
+
+    const [existingRows] = await db.query(
+      "SELECT details FROM products WHERE id = ? LIMIT 1",
+      [id],
+    );
+
+    let existingDetails = {};
+
+    try {
+      existingDetails = existingRows[0]?.details
+        ? JSON.parse(existingRows[0].details)
+        : {};
+    } catch {
+      existingDetails = {};
+    }
+
+    const details = {
+      ...existingDetails,
+      detailsText: description,
+    };
+
+    await db.query(
+      `UPDATE products
+       SET name = ?,
+           category = ?,
+           price_value = ?,
+           created_at = ?,
+           is_best_seller = ?,
+           is_sold_out = ?,
+           has_gem = ?,
+           surface = ?,
+           thumbnail = ?,
+           colors = ?,
+           variants = ?,
+           gemstones = ?,
+           sizes = ?,
+           details = ?
+       WHERE id = ?`,
+      [
+        name,
+        category,
+        Number(priceValue),
+        createdAt,
+        isBestSeller ? 1 : 0,
+        isSoldOut ? 1 : 0,
+        0,
+        "smooth",
+        thumbnail,
+        JSON.stringify(colors),
+        JSON.stringify(variants),
+        JSON.stringify([]),
+        JSON.stringify(sizes),
+        JSON.stringify(details),
+        id,
+      ],
+    );
+
+    const [rows] = await db.query(
+      "SELECT * FROM products WHERE id = ? LIMIT 1",
+      [id],
+    );
+
+    return res.json({
+      product: mapProductRow(rows[0]),
+    });
+  } catch (err) {
+    console.error("Update product error:", err);
+    return res.status(500).json({ message: err.message });
+  }
 });
 
 // AUTH - REGISTER
@@ -206,8 +612,8 @@ app.get("/api/auth/me", async (req, res) => {
 app.post("/api/auth/logout", (req, res) => {
   res.clearCookie(COOKIE_NAME, {
     httpOnly: true,
-    sameSite: "lax",
-    secure: false,
+    sameSite: COOKIE_OPTIONS.sameSite,
+    secure: COOKIE_OPTIONS.secure,
   });
   res.json({ ok: true });
 });
@@ -567,39 +973,53 @@ app.post("/api/orders", async (req, res) => {
     };
     const SHIPPING_KIT_FEE_CENTS = 1500;
 
-    const normalized = items.map((it) => {
-      const productId = getProductId(it);
-      const product = productById.get(productId);
+    const normalized = await Promise.all(
+      items.map(async (it) => {
+        const productId = getProductId(it);
 
-      if (!product) {
-        const name =
-          it?.product_name ?? it?.title ?? it?.name ?? productId ?? "Unknown";
-        throw new Error(`Unknown product in cart: ${name}`);
-      }
+        const [rows] = await db.query(
+          "SELECT id, name, price_value, thumbnail, is_sold_out FROM products WHERE id = ? LIMIT 1",
+          [productId],
+        );
 
-      const qty = getQty(it);
+        const productRow = rows[0];
 
-      const serviceOption = String(
-        it?.serviceOption ?? it?.service_option ?? "",
-      ).trim();
+        if (!productRow) {
+          const name =
+            it?.product_name ?? it?.title ?? it?.name ?? productId ?? "Unknown";
+          throw new Error(`Unknown product in cart: ${name}`);
+        }
 
-      const isShippingKit = serviceOption === "shipping";
+        if (Number(productRow.is_sold_out) === 1) {
+          throw new Error(`Product "${productRow.name}" is sold out.`);
+        }
 
-      const basePriceCents = Math.round(Number(product.priceValue || 0) * 100);
-      const unitPriceCents =
-        basePriceCents + (isShippingKit ? SHIPPING_KIT_FEE_CENTS : 0);
+        const qty = getQty(it);
 
-      return {
-        productId,
-        productName: product.name,
-        unitPriceCents,
-        qty,
-        color: it?.color ?? null,
-        size: it?.size ?? null,
-        serviceOption: serviceOption || null,
-        imageUrl: it?.image_url ?? it?.image ?? product.thumbnail ?? null,
-      };
-    });
+        const serviceOption = String(
+          it?.serviceOption ?? it?.service_option ?? "",
+        ).trim();
+
+        const isShippingKit = serviceOption === "shipping";
+
+        const basePriceCents = Math.round(
+          Number(productRow.price_value || 0) * 100,
+        );
+        const unitPriceCents =
+          basePriceCents + (isShippingKit ? SHIPPING_KIT_FEE_CENTS : 0);
+
+        return {
+          productId,
+          productName: productRow.name,
+          unitPriceCents,
+          qty,
+          color: it?.color ?? null,
+          size: it?.size ?? null,
+          serviceOption: serviceOption || null,
+          imageUrl: it?.image_url ?? it?.image ?? productRow.thumbnail ?? null,
+        };
+      }),
+    );
 
     const itemsTotalCents = normalized.reduce(
       (sum, it) => sum + it.unitPriceCents * it.qty,

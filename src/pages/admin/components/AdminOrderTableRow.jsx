@@ -1,5 +1,8 @@
 import StatusPill from "@/pages/account/StatusPill";
-import { getDeliveryLabel } from "@/pages/admin/helpers/orderHelpers";
+import {
+  getDeliveryLabel,
+  formatAdminOrderDate,
+} from "@/pages/admin/helpers/orderHelpers";
 
 export default function AdminOrderTableRow({
   order,
@@ -12,9 +15,7 @@ export default function AdminOrderTableRow({
     <tr className="border-b border-black/20">
       <td className="px-4 py-3">{order.id}</td>
 
-      <td className="px-4 py-3">
-        {new Date(order.created_at).toISOString().slice(0, 10)}
-      </td>
+      <td className="px-4 py-3">{formatAdminOrderDate(order.created_at)} </td>
 
       <td className="px-4 py-3">{order.contact_email || "-"}</td>
 
@@ -36,7 +37,7 @@ export default function AdminOrderTableRow({
           <StatusPill status={order.status || "Pending"} />
 
           <select
-            className="border border-black bg-white px-3 py-2"
+            className="border border-black bg-white px-3 py-2 disabled:opacity-60"
             value={order.status || "Pending"}
             onChange={(e) => onStatusChange(order.id, e.target.value)}
             disabled={savingId === order.id}
@@ -47,6 +48,10 @@ export default function AdminOrderTableRow({
               </option>
             ))}
           </select>
+
+          {savingId === order.id ? (
+            <span className="text-[11px] text-black/50">Saving...</span>
+          ) : null}
         </div>
       </td>
 

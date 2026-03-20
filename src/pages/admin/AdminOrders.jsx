@@ -103,6 +103,20 @@ export default function AdminOrders() {
     fetchOrders,
   });
 
+  const handleResetFilters = () => {
+    setSearchEmail("");
+    setStatusFilter("all");
+    setDeliveryFilter("all");
+    setSortOrder("newest");
+    setPage(1);
+  };
+
+  const isDefaultFilters =
+    !searchEmail &&
+    statusFilter === "all" &&
+    deliveryFilter === "all" &&
+    sortOrder === "newest";
+
   return (
     <>
       <main className="mx-auto w-full max-w-6xl px-4 py-8">
@@ -131,6 +145,21 @@ export default function AdminOrders() {
           setStatusFilter={handleStatusFilterChange}
           statusOptions={STATUS_OPTIONS}
         />
+
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="font-ui text-sm text-black/60">
+            Showing {filteredOrders.length} of {orders.length} orders
+          </p>
+
+          <button
+            type="button"
+            className="border border-black bg-white px-4 py-2 font-ui text-sm disabled:opacity-50"
+            onClick={handleResetFilters}
+            disabled={isDefaultFilters}
+          >
+            Reset filters
+          </button>
+        </div>
 
         {loading ? (
           <p className="mt-6 font-ui text-sm text-black/60">Loading...</p>
@@ -165,8 +194,7 @@ export default function AdminOrders() {
         {!loading && !error && filteredOrders.length > 0 ? (
           <div className="mt-6 flex flex-col items-center gap-3">
             <p className="font-ui text-[13px] text-black/70">
-              Showing {Math.min(safePage * pageSize, totalItems)} of{" "}
-              {totalItems}
+              Page {safePage} · {pageItems.length} order(s) on this page
             </p>
 
             <Pagination
@@ -186,6 +214,7 @@ export default function AdminOrders() {
             onClose={() => setSelectedOrder(null)}
             onStatusChange={handleStatusChange}
             onSelectedOrderChange={setSelectedOrder}
+            savingId={savingId}
           />
         ) : null}
       </main>
