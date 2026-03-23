@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import useAuth from "@/store/useAuth";
 
@@ -48,6 +48,7 @@ export default function App() {
             </RequireAuth>
           }
         />
+
         <Route
           path="/account/orders"
           element={
@@ -70,6 +71,15 @@ export default function App() {
             <RequireAuth>
               <ChangePassword />
             </RequireAuth>
+          }
+        />
+
+        <Route
+          path="/admin"
+          element={
+            <RequireAdmin>
+              <Navigate to="/admin/orders" replace />
+            </RequireAdmin>
           }
         />
 
