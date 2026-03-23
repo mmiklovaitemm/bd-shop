@@ -1,5 +1,36 @@
 import { useMemo } from "react";
 
+function isVariantObject(value) {
+  return (
+    value &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    Array.isArray(value.images)
+  );
+}
+
+function getImagesFromVariantArray(variantArray) {
+  if (!Array.isArray(variantArray) || !variantArray.length) return [];
+
+  const firstItem = variantArray[0];
+
+  if (typeof firstItem === "string") {
+    return variantArray.filter(Boolean);
+  }
+
+  if (isVariantObject(firstItem)) {
+    const firstAvailableVariant =
+      variantArray.find((item) => Number(item?.stock || 0) > 0) ||
+      variantArray[0];
+
+    return Array.isArray(firstAvailableVariant?.images)
+      ? firstAvailableVariant.images.filter(Boolean)
+      : [];
+  }
+
+  return [];
+}
+
 export default function useProductCardMedia(product) {
   const safeProduct = useMemo(
     () => ({
@@ -19,15 +50,19 @@ export default function useProductCardMedia(product) {
     const variants = safeProduct.variants || {};
     const colorsFromProduct = safeProduct.colors || [];
 
-    const found = colorsFromProduct.find(
-      (c) => (variants?.[c]?.length ?? 0) > 0,
-    );
+    const found = colorsFromProduct.find((color) => {
+      const images = getImagesFromVariantArray(variants?.[color]);
+      return images.length > 0;
+    });
+
     if (found) return found;
 
     const variantKeys = Object.keys(variants);
-    const firstKeyWithImages = variantKeys.find(
-      (k) => (variants?.[k]?.length ?? 0) > 0,
-    );
+    const firstKeyWithImages = variantKeys.find((key) => {
+      const images = getImagesFromVariantArray(variants?.[key]);
+      return images.length > 0;
+    });
+
     if (firstKeyWithImages) return firstKeyWithImages;
 
     return "silver";
@@ -35,7 +70,7 @@ export default function useProductCardMedia(product) {
 
   const { mainSrc, hoverSrc } = useMemo(() => {
     const variants = safeProduct.variants || {};
-    const arr = variants?.[baseColor] || [];
+    const images = getImagesFromVariantArray(variants?.[baseColor]);
 
     const imageValue = safeProduct.image;
 
@@ -46,9 +81,8 @@ export default function useProductCardMedia(product) {
           ? imageValue.src || imageValue.url || ""
           : "";
 
-    const main = arr[0] || safeProduct.thumbnail || imageSrc || "";
-
-    const hover = arr[1] || null;
+    const main = images[0] || safeProduct.thumbnail || imageSrc || "";
+    const hover = images[1] || null;
 
     return { mainSrc: main, hoverSrc: hover };
   }, [
@@ -62,6 +96,7 @@ export default function useProductCardMedia(product) {
     if (typeof safeProduct.image === "string") {
       return { srcSet: undefined, sizes: undefined };
     }
+
     return {
       srcSet: safeProduct.image?.srcSet,
       sizes: safeProduct.image?.sizes,
