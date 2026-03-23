@@ -99,8 +99,8 @@ app.get("/api/db-test", async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT
-        DATABASE() AS current_database,
-        USER() AS current_user,
+        DATABASE() AS db_name,
+        USER() AS db_user,
         @@hostname AS db_host
     `);
 
