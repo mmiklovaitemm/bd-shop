@@ -338,7 +338,6 @@ app.post("/api/products", requireAdmin, async (req, res) => {
         price_value,
         created_at,
         is_best_seller,
-        is_sold_out,
         has_gem,
         surface,
         thumbnail,
@@ -497,7 +496,6 @@ app.put("/api/products/:id", requireAdmin, async (req, res) => {
        price_value = ?,
        created_at = ?,
        is_best_seller = ?,
-       is_sold_out = ?,
        has_gem = ?,
        surface = ?,
        thumbnail = ?,
@@ -877,7 +875,6 @@ app.patch("/api/orders/:id/status", requireAdmin, async (req, res) => {
         await connection.query(
           `UPDATE products
            SET stock_quantity = stock_quantity + ?,
-               is_sold_out = 0
            WHERE id = ?`,
           [qty, productId],
         );
