@@ -11,7 +11,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
-import { requireAdmin } from "./middleware/auth.js";
+import { requireAuth, requireAdmin } from "./middleware/auth.js";
 
 import db from "./db.js";
 
@@ -719,12 +719,9 @@ app.post("/api/auth/change-password", async (req, res) => {
 });
 
 // AUTH - UPDATE PROFILE
-app.patch("/api/auth/profile", async (req, res) => {
+app.patch("/api/auth/profile", requireAuth, async (req, res) => {
   try {
-    const token = req.cookies[COOKIE_NAME];
-    if (!token) return res.status(401).json({ message: "Unauthorized." });
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = req.user.userId;
 
     const { firstName, lastName } = req.body || {};
 
@@ -733,12 +730,12 @@ app.patch("/api/auth/profile", async (req, res) => {
 
     await db.query(
       "UPDATE users SET first_name = ?, last_name = ? WHERE id = ?",
-      [cleanFirst, cleanLast, decoded.userId],
+      [cleanFirst, cleanLast, userId],
     );
 
     const [rows] = await db.query(
       "SELECT id, email, first_name, last_name FROM users WHERE id = ? LIMIT 1",
-      [decoded.userId],
+      [userId],
     );
 
     const user = rows[0];
@@ -757,13 +754,8 @@ app.patch("/api/auth/profile", async (req, res) => {
 });
 
 // AUTH - ORDERS
-app.get("/api/orders", async (req, res) => {
+app.get("/api/orders", requireAuth, async (req, res) => {
   try {
-    const token = req.cookies[COOKIE_NAME];
-    if (!token) return res.status(401).json({ orders: [] });
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
     const [orders] = await db.query(
       `SELECT
       id, user_id, created_at, status, total_cents, currency,
@@ -774,7 +766,7 @@ app.get("/api/orders", async (req, res) => {
       FROM orders
       WHERE user_id = ?
       ORDER BY created_at DESC`,
-      [decoded.userId],
+      [req.user.userId],
     );
 
     if (!orders.length) {
@@ -785,8 +777,8 @@ app.get("/api/orders", async (req, res) => {
 
     const [items] = await db.query(
       `SELECT id, order_id, product_id, product_name, price_cents, quantity, color, size, service_option, image_url
-   FROM order_items
-   WHERE order_id IN (?)`,
+       FROM order_items
+       WHERE order_id IN (?)`,
       [orderIds],
     );
 
@@ -913,7 +905,7 @@ app.patch("/api/orders/:id/status", requireAdmin, async (req, res) => {
 });
 
 // ORDERS - CREATE
-app.post("/api/orders", async (req, res) => {
+app.post("/api/orders", requireAuth, async (req, res) => {
   try {
     const token = req.cookies[COOKIE_NAME];
     if (!token) return res.status(401).json({ message: "Unauthorized." });
@@ -922,7 +914,7 @@ app.post("/api/orders", async (req, res) => {
       return res.status(500).json({ message: "JWT_SECRET is not set." });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = req.user.userId;
     const { items, contact, delivery, shipping, payment } = req.body || {};
     const email = String(contact?.email || "")
       .trim()
@@ -1108,7 +1100,7 @@ app.post("/api/orders", async (req, res) => {
          ship_city, ship_postal_code, ship_phone, payment_type, payment_bank)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        decoded.userId,
+        userId,
         status,
         totalCents,
         currency,
