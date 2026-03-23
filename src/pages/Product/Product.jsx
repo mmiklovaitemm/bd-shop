@@ -27,45 +27,147 @@ import { useProduct } from "@/hooks/useProducts";
 import cn from "@/utils/cn";
 import preventDragHandler from "@/utils/preventDrag";
 
+// Helpers
+function isVariantObject(value) {
+  return (
+    value &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    Array.isArray(value.images)
+  );
+}
+
+function hasVariantLevelStock(product) {
+  return Object.values(product?.variants || {}).some(
+    (value) =>
+      Array.isArray(value) && value.length > 0 && isVariantObject(value[0]),
+  );
+}
+
 function ProductView({ product }) {
   const { addToCart } = useAddToCart();
   const openBag = useBagDrawer((s) => s.open);
 
-  // UI state
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
 
-  // Lightbox state
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [activeImgIndex, setActiveImgIndex] = useState(0);
 
-  // Product selection state
   const [quantity, setQuantity] = useState(1);
   const [selectedColor, setSelectedColor] = useState(
     product?.colors?.[0] || "silver",
   );
   const [selectedSize, setSelectedSize] = useState(product?.sizes?.[0] || null);
-
   const [selectedService, setSelectedService] = useState(
     product?.details?.serviceOptions?.[0]?.value || null,
   );
 
-  // Memoized images based on selected color
+  const usesVariantLevelStock = useMemo(
+    () => hasVariantLevelStock(product),
+    [product],
+  );
+
+  const availableColors = useMemo(() => {
+    if (!usesVariantLevelStock) return product?.colors || [];
+
+    return (product?.colors || []).filter((color) => {
+      const entries = product?.variants?.[color] || [];
+      return entries.some((variant) => Number(variant?.stock || 0) > 0);
+    });
+  }, [product, usesVariantLevelStock]);
+
+  const effectiveSelectedColor = useMemo(() => {
+    if (!usesVariantLevelStock) return selectedColor;
+
+    if (availableColors.includes(selectedColor)) {
+      return selectedColor;
+    }
+
+    return availableColors[0] || product?.colors?.[0] || "silver";
+  }, [availableColors, product, selectedColor, usesVariantLevelStock]);
+
+  const effectiveColorEntries = useMemo(() => {
+    if (!usesVariantLevelStock) return [];
+
+    return Array.isArray(product?.variants?.[effectiveSelectedColor])
+      ? product.variants[effectiveSelectedColor]
+      : [];
+  }, [product, effectiveSelectedColor, usesVariantLevelStock]);
+
+  const effectiveAvailableSizes = useMemo(() => {
+    if (!usesVariantLevelStock) return product?.sizes || [];
+
+    return effectiveColorEntries
+      .filter((variant) => Number(variant?.stock || 0) > 0)
+      .map((variant) => String(variant?.size))
+      .filter(Boolean);
+  }, [product, effectiveColorEntries, usesVariantLevelStock]);
+
+  const effectiveSelectedSize = useMemo(() => {
+    if (!usesVariantLevelStock) return selectedSize;
+
+    if (effectiveAvailableSizes.includes(String(selectedSize))) {
+      return selectedSize;
+    }
+
+    return effectiveAvailableSizes[0] || null;
+  }, [effectiveAvailableSizes, selectedSize, usesVariantLevelStock]);
+
+  const selectedVariant = useMemo(() => {
+    if (!usesVariantLevelStock) return null;
+
+    return (
+      effectiveColorEntries.find(
+        (variant) => String(variant?.size) === String(effectiveSelectedSize),
+      ) || null
+    );
+  }, [effectiveColorEntries, effectiveSelectedSize, usesVariantLevelStock]);
+
+  const currentStock = useMemo(() => {
+    if (!usesVariantLevelStock) {
+      return Math.max(0, Number(product?.stockQuantity) || 0);
+    }
+
+    return Math.max(0, Number(selectedVariant?.stock) || 0);
+  }, [product, selectedVariant, usesVariantLevelStock]);
+
+  const isCurrentSelectionSoldOut = currentStock <= 0;
+
   const images = useMemo(() => {
     if (!product) return [];
 
-    const defaultColor = product.colors?.[0] || "silver";
+    if (usesVariantLevelStock) {
+      if (selectedVariant?.images?.length) {
+        return selectedVariant.images.filter(Boolean);
+      }
 
-    const base = (product.variants?.[defaultColor] || []).filter(Boolean);
-    const selectedArr = (product.variants?.[selectedColor] || []).filter(
-      Boolean,
-    );
+      const fallbackColor = availableColors[0] || product?.colors?.[0];
+      const fallbackVariant = (product?.variants?.[fallbackColor] || []).find(
+        (variant) =>
+          Array.isArray(variant?.images) && variant.images.length > 0,
+      );
+
+      return fallbackVariant?.images?.filter(Boolean) || [];
+    }
+
+    const defaultColor = product?.colors?.[0] || "silver";
+    const base = (product?.variants?.[defaultColor] || []).filter(Boolean);
+    const selectedArr = (
+      product?.variants?.[effectiveSelectedColor] || []
+    ).filter(Boolean);
 
     const merged = base.map((img, idx) => selectedArr[idx] || img);
     const extras = selectedArr.slice(base.length);
 
     return [...merged, ...extras].filter(Boolean);
-  }, [product, selectedColor]);
+  }, [
+    product,
+    effectiveSelectedColor,
+    selectedVariant,
+    usesVariantLevelStock,
+    availableColors,
+  ]);
 
   const openLightbox = useCallback((index) => {
     setActiveImgIndex(index);
@@ -80,13 +182,15 @@ function ProductView({ product }) {
     (e) => {
       e?.preventDefault?.();
       e?.stopPropagation?.();
-      if (!product || product.isSoldOut) return;
 
-      const img =
-        product?.variants?.[selectedColor]?.[0] ||
-        product?.variants?.[product?.colors?.[0]]?.[0] ||
-        product?.thumbnail ||
-        "";
+      if (!product || isCurrentSelectionSoldOut) return;
+
+      const img = usesVariantLevelStock
+        ? selectedVariant?.images?.[0] || product?.thumbnail || ""
+        : product?.variants?.[effectiveSelectedColor]?.[0] ||
+          product?.variants?.[product?.colors?.[0]]?.[0] ||
+          product?.thumbnail ||
+          "";
 
       if (product.category === "personal" && !selectedService) {
         alert("Please choose service option.");
@@ -96,8 +200,8 @@ function ProductView({ product }) {
       addToCart({
         product,
         category: product.category,
-        color: selectedColor || "silver",
-        size: selectedSize || null,
+        color: effectiveSelectedColor || "silver",
+        size: effectiveSelectedSize || null,
         quantity: quantity || 1,
         image: img,
         serviceOption: selectedService || null,
@@ -109,19 +213,21 @@ function ProductView({ product }) {
       addToCart,
       openBag,
       product,
-      selectedColor,
-      selectedSize,
       quantity,
       selectedService,
+      isCurrentSelectionSoldOut,
+      usesVariantLevelStock,
+      selectedVariant,
+      effectiveSelectedColor,
+      effectiveSelectedSize,
     ],
   );
 
   return (
     <main
-      className="mx-auto w-full md:max-w-[1200px] lg:max-w-none px-4 md:px-1 lg:px-2 py-4 md:py-4 select-none"
+      className="mx-auto w-full px-4 py-4 select-none md:max-w-[1200px] md:px-1 md:py-4 lg:max-w-none lg:px-2"
       onDragStart={preventDragHandler}
     >
-      {/* Back Navigation */}
       <div className="mb-4">
         <Link
           to="/collections"
@@ -139,15 +245,14 @@ function ProductView({ product }) {
               aria-hidden="true"
               draggable={false}
               onDragStart={preventDragHandler}
-              className="h-3 w-3 transition-transform duration-200 ease-out select-none"
+              className="h-3 w-3 select-none transition-transform duration-200 ease-out"
             />
             <span>Back</span>
           </span>
         </Link>
       </div>
 
-      {/* Product Layout */}
-      <div className="md:grid md:grid-cols-[1fr_360px] lg:grid-cols-[1fr_420px] md:gap-8 lg:gap-10 md:items-start md:mb-5">
+      <div className="md:mb-5 md:grid md:grid-cols-[1fr_360px] md:items-start md:gap-8 lg:grid-cols-[1fr_420px] lg:gap-10">
         <ImageGallery
           images={images}
           product={product}
@@ -157,8 +262,13 @@ function ProductView({ product }) {
 
         <ProductInfo
           product={product}
-          selectedSize={selectedSize}
-          selectedColor={selectedColor}
+          selectedSize={effectiveSelectedSize}
+          selectedColor={effectiveSelectedColor}
+          availableSizes={effectiveAvailableSizes}
+          availableColors={availableColors}
+          currentStock={currentStock}
+          isCurrentSelectionSoldOut={isCurrentSelectionSoldOut}
+          usesVariantLevelStock={usesVariantLevelStock}
           setSelectedSize={setSelectedSize}
           setSelectedColor={setSelectedColor}
           quantity={quantity}
@@ -172,13 +282,12 @@ function ProductView({ product }) {
         />
       </div>
 
-      {/* Modals */}
       <DetailsPanel
         isOpen={isDetailsOpen}
         onClose={() => setIsDetailsOpen(false)}
         product={product}
-        selectedColor={selectedColor}
-        selectedSize={selectedSize}
+        selectedColor={effectiveSelectedColor}
+        selectedSize={effectiveSelectedSize}
       />
 
       {product?.category === "personal" && (
@@ -209,8 +318,8 @@ export default function Product() {
 
   if (loading) {
     return (
-      <main className="mx-auto w-full max-w-[1200px] px-4 md:px-6 py-10">
-        <div className="flex flex-col items-center justify-center min-h-[50vh]">
+      <main className="mx-auto w-full max-w-[1200px] px-4 py-10 md:px-6">
+        <div className="flex min-h-[50vh] flex-col items-center justify-center">
           <p className="font-ui text-[14px] text-black/60">Loading...</p>
         </div>
       </main>
@@ -219,14 +328,14 @@ export default function Product() {
 
   if (!product) {
     return (
-      <main className="mx-auto w-full max-w-[1200px] px-4 md:px-6 py-10">
-        <div className="flex flex-col items-center justify-center min-h-[50vh]">
+      <main className="mx-auto w-full max-w-[1200px] px-4 py-10 md:px-6">
+        <div className="flex min-h-[50vh] flex-col items-center justify-center">
           <p className="font-ui text-[14px] text-black/60">
             {id ? "Product not found." : "Invalid product URL."}
           </p>
           <Link
             to="/collections"
-            className="mt-4 inline-block font-ui text-[14px] text-black underline hover:text-black/70 transition-colors"
+            className="mt-4 inline-block font-ui text-[14px] text-black underline transition-colors hover:text-black/70"
           >
             Back to Collections
           </Link>
