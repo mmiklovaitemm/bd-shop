@@ -173,7 +173,8 @@ function mapProductRow(row) {
     priceValue: Number(row.price_value),
     price: `€${Number(row.price_value)}`,
     createdAt: row.created_at,
-    isSoldOut: Boolean(row.is_sold_out),
+    stockQuantity: Number(row.stock_quantity ?? 0),
+    isSoldOut: Number(row.stock_quantity) <= 0,
     isBestSeller: Boolean(row.is_best_seller),
     hasGem: Boolean(row.has_gem),
     surface: row.surface,
@@ -284,7 +285,7 @@ app.post("/api/products", requireAdmin, async (req, res) => {
       goldImages = [],
       sizes = [],
       isBestSeller = false,
-      isSoldOut = false,
+      stockQuantity = 0,
     } = req.body || {};
 
     if (
@@ -345,8 +346,9 @@ app.post("/api/products", requireAdmin, async (req, res) => {
         variants,
         gemstones,
         sizes,
-        details
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        details,
+        stock_quantity
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         name,
@@ -354,7 +356,7 @@ app.post("/api/products", requireAdmin, async (req, res) => {
         Number(priceValue),
         createdAt,
         isBestSeller ? 1 : 0,
-        isSoldOut ? 1 : 0,
+        Math.max(0, Number(stockQuantity) || 0) <= 0 ? 1 : 0,
         0,
         "smooth",
         thumbnail,
@@ -363,6 +365,7 @@ app.post("/api/products", requireAdmin, async (req, res) => {
         JSON.stringify([]),
         JSON.stringify(sizes),
         JSON.stringify(details),
+        Math.max(0, Number(stockQuantity) || 0),
       ],
     );
 
@@ -420,7 +423,7 @@ app.put("/api/products/:id", requireAdmin, async (req, res) => {
       goldImages = [],
       sizes = [],
       isBestSeller = false,
-      isSoldOut = false,
+      stockQuantity = 0,
     } = req.body || {};
 
     if (
@@ -489,28 +492,29 @@ app.put("/api/products/:id", requireAdmin, async (req, res) => {
 
     await db.query(
       `UPDATE products
-       SET name = ?,
-           category = ?,
-           price_value = ?,
-           created_at = ?,
-           is_best_seller = ?,
-           is_sold_out = ?,
-           has_gem = ?,
-           surface = ?,
-           thumbnail = ?,
-           colors = ?,
-           variants = ?,
-           gemstones = ?,
-           sizes = ?,
-           details = ?
-       WHERE id = ?`,
+   SET name = ?,
+       category = ?,
+       price_value = ?,
+       created_at = ?,
+       is_best_seller = ?,
+       is_sold_out = ?,
+       has_gem = ?,
+       surface = ?,
+       thumbnail = ?,
+       colors = ?,
+       variants = ?,
+       gemstones = ?,
+       sizes = ?,
+       details = ?,
+       stock_quantity = ?
+   WHERE id = ?`,
       [
         name,
         category,
         Number(priceValue),
         createdAt,
         isBestSeller ? 1 : 0,
-        isSoldOut ? 1 : 0,
+        Math.max(0, Number(stockQuantity) || 0) <= 0 ? 1 : 0,
         0,
         "smooth",
         thumbnail,
@@ -519,6 +523,7 @@ app.put("/api/products/:id", requireAdmin, async (req, res) => {
         JSON.stringify([]),
         JSON.stringify(sizes),
         JSON.stringify(details),
+        Math.max(0, Number(stockQuantity) || 0),
         id,
       ],
     );
@@ -814,6 +819,8 @@ app.get("/api/admin/orders", requireAdmin, async (req, res) => {
 
 // ORDERS - UPDATE STATUS
 app.patch("/api/orders/:id/status", requireAdmin, async (req, res) => {
+  let connection;
+
   try {
     const orderId = Number(req.params.id);
     const nextStatus = String(req.body?.status || "").trim();
@@ -834,33 +841,88 @@ app.patch("/api/orders/:id/status", requireAdmin, async (req, res) => {
       return res.status(400).json({ message: "Invalid status." });
     }
 
-    const [result] = await db.query(
-      "UPDATE orders SET status = ? WHERE id = ?",
-      [nextStatus, orderId],
-    );
+    connection = await db.getConnection();
+    await connection.beginTransaction();
 
-    if (!result.affectedRows) {
-      return res.status(404).json({ message: "Order not found." });
-    }
-
-    const [rows] = await db.query(
+    const [orderRows] = await connection.query(
       "SELECT id, status FROM orders WHERE id = ? LIMIT 1",
       [orderId],
     );
+
+    if (!orderRows.length) {
+      await connection.rollback();
+      return res.status(404).json({ message: "Order not found." });
+    }
+
+    const currentOrder = orderRows[0];
+    const previousStatus = String(currentOrder.status || "").trim();
+
+    const shouldRestoreStock =
+      previousStatus !== "Canceled" && nextStatus === "Canceled";
+
+    if (shouldRestoreStock) {
+      const [items] = await connection.query(
+        `SELECT product_id, quantity
+         FROM order_items
+         WHERE order_id = ?`,
+        [orderId],
+      );
+
+      for (const item of items) {
+        const qty = Math.max(0, Number(item.quantity) || 0);
+        const productId = String(item.product_id || "").trim();
+
+        if (!productId || qty <= 0) continue;
+
+        await connection.query(
+          `UPDATE products
+           SET stock_quantity = stock_quantity + ?,
+               is_sold_out = 0
+           WHERE id = ?`,
+          [qty, productId],
+        );
+      }
+    }
+
+    await connection.query("UPDATE orders SET status = ? WHERE id = ?", [
+      nextStatus,
+      orderId,
+    ]);
+
+    const [rows] = await connection.query(
+      "SELECT id, status FROM orders WHERE id = ? LIMIT 1",
+      [orderId],
+    );
+
+    await connection.commit();
 
     return res.json({
       ok: true,
       order: rows[0],
     });
   } catch (err) {
+    if (connection) {
+      await connection.rollback();
+    }
+
     console.log("Update order status error:", err);
     return res.status(500).json({ message: err.message });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
   }
 });
 
 // ORDERS - CREATE
 app.post("/api/orders", requireAuth, async (req, res) => {
+  let connection;
+
   try {
+    connection = await db.getConnection();
+
+    await connection.beginTransaction();
+
     const userId = req.user.userId;
     const { items, contact, delivery, shipping, payment } = req.body || {};
     const email = String(contact?.email || "")
@@ -868,15 +930,17 @@ app.post("/api/orders", requireAuth, async (req, res) => {
       .toLowerCase();
 
     if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
+      await connection.rollback();
       return res.status(400).json({ message: "Valid email is required." });
     }
 
-    const deliveryType = String(delivery?.type || "").trim(); // "ship" | "pickup"
+    const deliveryType = String(delivery?.type || "").trim();
     const deliveryMethodRaw = String(delivery?.method || "")
       .trim()
       .toLowerCase();
 
     if (!["ship", "pickup"].includes(deliveryType)) {
+      await connection.rollback();
       return res.status(400).json({ message: "Invalid delivery type." });
     }
 
@@ -884,44 +948,53 @@ app.post("/api/orders", requireAuth, async (req, res) => {
 
     if (deliveryType === "ship") {
       if (!["lp", "omniva"].includes(deliveryMethodRaw)) {
+        await connection.rollback();
         return res.status(400).json({ message: "Invalid shipping method." });
       }
 
       deliveryMethod = deliveryMethodRaw;
 
       if (!shipping) {
+        await connection.rollback();
         return res
           .status(400)
           .json({ message: "Shipping information is required." });
       }
 
       if (!String(shipping.firstName || "").trim()) {
+        await connection.rollback();
         return res.status(400).json({ message: "First name is required." });
       }
 
       if (!String(shipping.lastName || "").trim()) {
+        await connection.rollback();
         return res.status(400).json({ message: "Last name is required." });
       }
 
       if (!String(shipping.address || "").trim()) {
+        await connection.rollback();
         return res.status(400).json({ message: "Address is required." });
       }
 
       if (!String(shipping.city || "").trim()) {
+        await connection.rollback();
         return res.status(400).json({ message: "City is required." });
       }
 
       if (!String(shipping.postalCode || "").trim()) {
+        await connection.rollback();
         return res.status(400).json({ message: "Postal code is required." });
       }
 
       if (!String(shipping.phone || "").trim()) {
+        await connection.rollback();
         return res.status(400).json({ message: "Phone is required." });
       }
     }
 
     if (deliveryType === "pickup") {
       if (!["vilnius", "kaunas"].includes(deliveryMethodRaw)) {
+        await connection.rollback();
         return res.status(400).json({ message: "Invalid pickup location." });
       }
 
@@ -936,6 +1009,7 @@ app.post("/api/orders", requireAuth, async (req, res) => {
       .toLowerCase();
 
     if (!["card", "bank"].includes(paymentType)) {
+      await connection.rollback();
       return res.status(400).json({ message: "Invalid payment type." });
     }
 
@@ -943,6 +1017,7 @@ app.post("/api/orders", requireAuth, async (req, res) => {
 
     if (paymentType === "bank") {
       if (!["swedbank", "seb", "luminor", "revolut"].includes(paymentBankRaw)) {
+        await connection.rollback();
         return res.status(400).json({ message: "Invalid bank selection." });
       }
 
@@ -950,6 +1025,7 @@ app.post("/api/orders", requireAuth, async (req, res) => {
     }
 
     if (!Array.isArray(items) || items.length === 0) {
+      await connection.rollback();
       return res.status(400).json({ message: "Cart is empty." });
     }
 
@@ -961,58 +1037,61 @@ app.post("/api/orders", requireAuth, async (req, res) => {
     const getProductId = (it) => {
       const direct = it?.productId ?? it?.product_id ?? it?.id;
       if (direct) return String(direct);
+
       const key = String(it?.key || "");
       return key ? key.split("|")[0] : "";
     };
+
     const SHIPPING_KIT_FEE_CENTS = 1500;
 
-    const normalized = await Promise.all(
-      items.map(async (it) => {
-        const productId = getProductId(it);
+    const normalized = [];
 
-        const [rows] = await db.query(
-          "SELECT id, name, price_value, thumbnail, is_sold_out FROM products WHERE id = ? LIMIT 1",
-          [productId],
-        );
+    for (const it of items) {
+      const productId = getProductId(it);
+      const qty = getQty(it);
 
-        const productRow = rows[0];
+      const [rows] = await connection.query(
+        `SELECT id, name, price_value, thumbnail, stock_quantity
+         FROM products
+         WHERE id = ?
+         LIMIT 1`,
+        [productId],
+      );
 
-        if (!productRow) {
-          const name =
-            it?.product_name ?? it?.title ?? it?.name ?? productId ?? "Unknown";
-          throw new Error(`Unknown product in cart: ${name}`);
-        }
+      const productRow = rows[0];
 
-        if (Number(productRow.is_sold_out) === 1) {
-          throw new Error(`Product "${productRow.name}" is sold out.`);
-        }
+      if (!productRow) {
+        throw new Error("Product not found.");
+      }
 
-        const qty = getQty(it);
+      if (Number(productRow.stock_quantity) < qty) {
+        throw new Error(`Not enough stock for "${productRow.name}"`);
+      }
 
-        const serviceOption = String(
-          it?.serviceOption ?? it?.service_option ?? "",
-        ).trim();
+      const serviceOption = String(
+        it?.serviceOption ?? it?.service_option ?? "",
+      ).trim();
 
-        const isShippingKit = serviceOption === "shipping";
+      const isShippingKit = serviceOption === "shipping";
 
-        const basePriceCents = Math.round(
-          Number(productRow.price_value || 0) * 100,
-        );
-        const unitPriceCents =
-          basePriceCents + (isShippingKit ? SHIPPING_KIT_FEE_CENTS : 0);
+      const basePriceCents = Math.round(
+        Number(productRow.price_value || 0) * 100,
+      );
 
-        return {
-          productId,
-          productName: productRow.name,
-          unitPriceCents,
-          qty,
-          color: it?.color ?? null,
-          size: it?.size ?? null,
-          serviceOption: serviceOption || null,
-          imageUrl: it?.image_url ?? it?.image ?? productRow.thumbnail ?? null,
-        };
-      }),
-    );
+      const unitPriceCents =
+        basePriceCents + (isShippingKit ? SHIPPING_KIT_FEE_CENTS : 0);
+
+      normalized.push({
+        productId,
+        productName: productRow.name,
+        unitPriceCents,
+        qty,
+        color: it?.color ?? null,
+        size: it?.size ?? null,
+        serviceOption: serviceOption || null,
+        imageUrl: it?.image_url ?? it?.image ?? productRow.thumbnail ?? null,
+      });
+    }
 
     const itemsTotalCents = normalized.reduce(
       (sum, it) => sum + it.unitPriceCents * it.qty,
@@ -1022,10 +1101,8 @@ app.post("/api/orders", requireAuth, async (req, res) => {
     const calcDeliveryFeeCents = ({ type, method }) => {
       if (type === "pickup") return 0;
       if (type !== "ship") return 0;
-
       if (method === "lp") return 200;
       if (method === "omniva") return 250;
-
       return 299;
     };
 
@@ -1039,7 +1116,7 @@ app.post("/api/orders", requireAuth, async (req, res) => {
     const status = "Pending";
     const currency = "EUR";
 
-    const [orderResult] = await db.query(
+    const [orderResult] = await connection.query(
       `INSERT INTO orders
         (user_id, status, total_cents, currency,
          contact_email, delivery_type, delivery_method, delivery_fee_cents,
@@ -1051,12 +1128,10 @@ app.post("/api/orders", requireAuth, async (req, res) => {
         status,
         totalCents,
         currency,
-
         email,
         deliveryType,
         deliveryMethod,
         deliveryFeeCents,
-
         shipping?.country ?? null,
         shipping?.firstName ?? null,
         shipping?.lastName ?? null,
@@ -1072,6 +1147,19 @@ app.post("/api/orders", requireAuth, async (req, res) => {
 
     const orderId = orderResult.insertId;
 
+    for (const it of normalized) {
+      const [updateResult] = await connection.query(
+        `UPDATE products
+         SET stock_quantity = stock_quantity - ?
+         WHERE id = ? AND stock_quantity >= ?`,
+        [it.qty, it.productId, it.qty],
+      );
+
+      if (updateResult.affectedRows === 0) {
+        throw new Error(`Not enough stock for "${it.productName}"`);
+      }
+    }
+
     const values = normalized.map((it) => [
       orderId,
       it.productId,
@@ -1084,17 +1172,27 @@ app.post("/api/orders", requireAuth, async (req, res) => {
       it.imageUrl,
     ]);
 
-    await db.query(
+    await connection.query(
       `INSERT INTO order_items
-    (order_id, product_id, product_name, price_cents, quantity, color, size, service_option, image_url)
-   VALUES ?`,
+       (order_id, product_id, product_name, price_cents, quantity, color, size, service_option, image_url)
+       VALUES ?`,
       [values],
     );
 
+    await connection.commit();
+
     return res.status(201).json({ ok: true, orderId });
   } catch (err) {
+    if (connection) {
+      await connection.rollback();
+    }
+
     console.log("Create order error:", err);
     return res.status(500).json({ message: err.message });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
   }
 });
 

@@ -47,8 +47,8 @@ export default function AdminProductCreateModal({
     silverImages: initialData?.variants?.silver?.join("\n") || "",
     goldImages: initialData?.variants?.gold?.join("\n") || "",
     sizes: initialData?.sizes?.join(", ") || "",
+    stockQuantity: initialData?.stockQuantity ?? "",
     isBestSeller: initialData?.isBestSeller || false,
-    isSoldOut: initialData?.isSoldOut || false,
   });
 
   const [error, setError] = useState("");
@@ -161,8 +161,8 @@ export default function AdminProductCreateModal({
         .split(",")
         .map((item) => item.trim())
         .filter(Boolean),
+      stockQuantity: Math.max(0, Number(form.stockQuantity) || 0),
       isBestSeller: form.isBestSeller,
-      isSoldOut: form.isSoldOut,
     };
 
     if (!payload.id) {
@@ -273,6 +273,19 @@ export default function AdminProductCreateModal({
                 value={form.priceValue}
                 onChange={(e) => handleChange("priceValue", e.target.value)}
                 placeholder="95"
+                className="h-12 w-full border border-black px-4 outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-black/70">Stock quantity</label>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={form.stockQuantity}
+                onChange={(e) => handleChange("stockQuantity", e.target.value)}
+                placeholder="3"
                 className="h-12 w-full border border-black px-4 outline-none"
               />
             </div>
@@ -418,16 +431,6 @@ export default function AdminProductCreateModal({
               className="h-4 w-4"
             />
             <span>Best seller</span>
-          </label>
-
-          <label className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              checked={form.isSoldOut}
-              onChange={(e) => handleChange("isSoldOut", e.target.checked)}
-              className="h-4 w-4"
-            />
-            <span>Sold out</span>
           </label>
 
           {error ? (

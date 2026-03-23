@@ -6,7 +6,6 @@ export default function AdminOrderDetailsModal({
   statusOptions,
   onClose,
   onStatusChange,
-  onSelectedOrderChange,
   savingId,
 }) {
   if (!order) return null;
@@ -24,6 +23,15 @@ export default function AdminOrderDetailsModal({
       : order.delivery_method === "kaunas"
         ? "Kaunas salon"
         : "-";
+
+  const currentStatus = order.status || "Pending";
+
+  const availableStatusOptions =
+    currentStatus === "Canceled"
+      ? ["Canceled"]
+      : currentStatus === "Completed"
+        ? ["Completed", "Canceled"]
+        : statusOptions;
 
   return (
     <div
@@ -107,16 +115,13 @@ export default function AdminOrderDetailsModal({
 
               <select
                 className="border border-black bg-white px-3 py-2 disabled:opacity-60"
-                disabled={savingId === order.id}
-                value={order.status || "Pending"}
+                disabled={savingId === order.id || currentStatus === "Canceled"}
+                value={currentStatus}
                 onChange={(e) => {
                   onStatusChange(order.id, e.target.value);
-                  onSelectedOrderChange((prev) =>
-                    prev ? { ...prev, status: e.target.value } : prev,
-                  );
                 }}
               >
-                {statusOptions.map((status) => (
+                {availableStatusOptions.map((status) => (
                   <option key={status} value={status}>
                     {status}
                   </option>
@@ -125,6 +130,12 @@ export default function AdminOrderDetailsModal({
 
               {savingId === order.id ? (
                 <p className="text-xs text-black/50">Saving...</p>
+              ) : null}
+
+              {currentStatus === "Canceled" ? (
+                <p className="text-xs text-red-600">
+                  This order is canceled. Stock has already been restored.
+                </p>
               ) : null}
             </div>
           </div>

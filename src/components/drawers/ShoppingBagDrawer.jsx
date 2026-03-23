@@ -44,6 +44,8 @@ export default function ShoppingBagDrawer() {
   const [products, setProducts] = useState([]);
 
   useEffect(() => {
+    if (!isOpen) return;
+
     const controller = new AbortController();
 
     apiGet("/api/products", { signal: controller.signal })
@@ -58,7 +60,7 @@ export default function ShoppingBagDrawer() {
       .catch(() => setProducts([]));
 
     return () => controller.abort();
-  }, []);
+  }, [isOpen]);
 
   const productsById = useMemo(() => {
     const m = new Map();
@@ -223,6 +225,15 @@ export default function ShoppingBagDrawer() {
 
                 const hasSizes = availableSizes.length > 0;
                 const hasColors = availableColors.length > 0;
+                const stockQuantity = Math.max(
+                  0,
+                  Number(product?.stockQuantity) || 0,
+                );
+                const isSoldOut =
+                  Boolean(product?.isSoldOut) || stockQuantity <= 0;
+                const itemQuantity = Math.max(1, Number(item.quantity || 1));
+                const reachedMaxStock =
+                  itemQuantity >= stockQuantity && stockQuantity > 0;
 
                 return (
                   <div
@@ -253,6 +264,17 @@ export default function ShoppingBagDrawer() {
                           <p className="font-display text-[18px] leading-tight">
                             {item.name}
                           </p>
+
+                          {isSoldOut ? (
+                            <p className="mt-1 font-ui text-[12px] uppercase tracking-[0.08em] text-red-600">
+                              Sold out
+                            </p>
+                          ) : stockQuantity > 0 ? (
+                            <p className="mt-1 font-ui text-[12px] text-black/55">
+                              In stock: {stockQuantity}
+                            </p>
+                          ) : null}
+
                           {(() => {
                             const base = Number(item.price) || 0;
 
@@ -388,9 +410,11 @@ export default function ShoppingBagDrawer() {
                             <button
                               type="button"
                               aria-label="Decrease quantity"
-                              className="w-9 grid place-items-center font-ui text-[18px] select-none bg-black/5 lg:hover:bg-black/10"
+                              disabled={itemQuantity <= 1}
+                              className="w-9 grid place-items-center font-ui text-[18px] select-none bg-black/5 lg:hover:bg-black/10 disabled:opacity-40 disabled:cursor-not-allowed"
                               onClick={(e) => {
                                 e.preventDefault();
+                                if (itemQuantity <= 1) return;
                                 dec(item.key);
                               }}
                             >
@@ -398,15 +422,17 @@ export default function ShoppingBagDrawer() {
                             </button>
 
                             <div className="w-9 grid place-items-center font-ui text-[13px] border-x border-black bg-white">
-                              {item.quantity || 1}
+                              {itemQuantity}
                             </div>
 
                             <button
                               type="button"
                               aria-label="Increase quantity"
-                              className="w-9 grid place-items-center font-ui text-[18px] select-none bg-black/5 lg:hover:bg-black/10"
+                              disabled={isSoldOut || reachedMaxStock}
+                              className="w-9 grid place-items-center font-ui text-[18px] select-none bg-black/5 lg:hover:bg-black/10 disabled:opacity-40 disabled:cursor-not-allowed"
                               onClick={(e) => {
                                 e.preventDefault();
+                                if (isSoldOut || reachedMaxStock) return;
                                 inc(item.key);
                               }}
                             >

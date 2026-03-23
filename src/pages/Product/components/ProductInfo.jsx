@@ -299,9 +299,18 @@ const ProductInfo = memo(function ProductInfo({
 
       <div className="mt-5">
         <p className="font-ui text-[13px] text-black/70">Quantity:</p>
+
         <QuantitySelector
           quantity={quantity}
-          onQuantityChange={setQuantity}
+          onQuantityChange={(updater) => {
+            setQuantity((prev) => {
+              const next =
+                typeof updater === "function" ? updater(prev) : Number(updater);
+
+              const maxStock = Math.max(1, Number(product.stockQuantity) || 1);
+              return Math.min(maxStock, Math.max(1, next));
+            });
+          }}
           hoverBtnClass={hoverBtnClass}
         />
       </div>

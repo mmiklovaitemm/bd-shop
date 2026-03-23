@@ -7,7 +7,7 @@ import FullWidthDivider from "@/components/ui/FullWidthDivider";
 // Icons
 import backIcon from "@/assets/ui/product_page_back_icon.svg";
 
-// Components (extracted)
+// Components
 import ImageGallery from "@/pages/Product/components/ImageGallery";
 import Lightbox from "@/pages/Product/components/Lightbox";
 import DetailsPanel from "@/pages/Product/components/DetailsPanel";

@@ -11,6 +11,15 @@ export default function AdminOrderTableRow({
   onStatusChange,
   onViewDetails,
 }) {
+  const currentStatus = order.status || "Pending";
+
+  const availableStatusOptions =
+    currentStatus === "Canceled"
+      ? ["Canceled"]
+      : currentStatus === "Completed"
+        ? ["Completed", "Canceled"]
+        : statusOptions;
+
   return (
     <tr className="border-b border-black/20">
       <td className="px-4 py-3">{order.id}</td>
@@ -38,11 +47,11 @@ export default function AdminOrderTableRow({
 
           <select
             className="border border-black bg-white px-3 py-2 disabled:opacity-60"
-            value={order.status || "Pending"}
+            value={currentStatus}
             onChange={(e) => onStatusChange(order.id, e.target.value)}
-            disabled={savingId === order.id}
+            disabled={savingId === order.id || currentStatus === "Canceled"}
           >
-            {statusOptions.map((status) => (
+            {availableStatusOptions.map((status) => (
               <option key={status} value={status}>
                 {status}
               </option>
@@ -51,6 +60,10 @@ export default function AdminOrderTableRow({
 
           {savingId === order.id ? (
             <span className="text-[11px] text-black/50">Saving...</span>
+          ) : null}
+
+          {currentStatus === "Canceled" ? (
+            <span className="text-[11px] text-red-600">Stock restored</span>
           ) : null}
         </div>
       </td>

@@ -197,6 +197,53 @@ export default function Checkout() {
     return Object.keys(next).length === 0;
   };
 
+  const validateCartStock = async () => {
+    const products = await fetch(`${API_ORIGIN}/api/products`, {
+      credentials: "include",
+    }).then((res) => res.json());
+
+    const list = Array.isArray(products)
+      ? products
+      : Array.isArray(products?.products)
+        ? products.products
+        : [];
+
+    const productsById = new Map(list.map((p) => [String(p.id), p]));
+    const stockErrors = [];
+
+    for (const item of items) {
+      const productId =
+        item.id ??
+        item.productId ??
+        item.product?.id ??
+        item.product?.productId ??
+        null;
+
+      const qty = Number(item.qty ?? item.quantity ?? 1);
+      const product = productsById.get(String(productId));
+
+      if (!product) {
+        stockErrors.push(
+          `Product "${item.name || item.title || productId}" no longer exists.`,
+        );
+        continue;
+      }
+
+      if (product.isSoldOut || Number(product.stockQuantity || 0) <= 0) {
+        stockErrors.push(`Product "${product.name}" is sold out.`);
+        continue;
+      }
+
+      if (qty > Number(product.stockQuantity || 0)) {
+        stockErrors.push(
+          `Only ${product.stockQuantity} left for "${product.name}", but your bag has ${qty}.`,
+        );
+      }
+    }
+
+    return stockErrors;
+  };
+
   const handlePay = async (e) => {
     e.preventDefault();
 
@@ -208,6 +255,17 @@ export default function Checkout() {
     setIsSubmitting(true);
 
     try {
+      const stockErrors = await validateCartStock();
+
+      if (stockErrors.length > 0) {
+        setErrors((prev) => ({
+          ...prev,
+          submit: stockErrors[0],
+        }));
+        setIsSubmitting(false);
+        return;
+      }
+
       const payload = {
         items: items.map((it) => ({
           productId: it.id ?? it.productId ?? null,
@@ -265,6 +323,7 @@ export default function Checkout() {
 
       clearCart();
       setIsSubmitting(false);
+
       navigate("/thank-you", {
         state: {
           orderId: data?.orderId ?? null,
