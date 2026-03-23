@@ -1,3 +1,5 @@
+import { getStockBadge } from "@/pages/admin/helpers/orderHelpers";
+
 function formatAdminDate(value) {
   if (!value) return "-";
   return String(value).slice(0, 10);
@@ -33,6 +35,7 @@ export default function AdminProductsTable({
             <th className="px-4 py-3">Name</th>
             <th className="px-4 py-3">Category</th>
             <th className="px-4 py-3">Price</th>
+            <th className="px-4 py-3">Stock</th>
             <th className="px-4 py-3">Best seller</th>
             <th className="px-4 py-3">Created</th>
             <th className="px-4 py-3">Edit</th>
@@ -51,6 +54,7 @@ export default function AdminProductsTable({
                   className="h-4 w-4"
                 />
               </td>
+
               <td className="px-4 py-3">
                 {product.thumbnail ? (
                   <img
@@ -66,19 +70,24 @@ export default function AdminProductsTable({
               </td>
 
               <td className="px-4 py-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span>{product.name}</span>
-
-                  {product.isSoldOut ? (
-                    <span className="inline-block border border-red-600 bg-red-600 px-2 py-1 text-xs text-white">
-                      Sold out
-                    </span>
-                  ) : null}
-                </div>
+                <span>{product.name}</span>
               </td>
 
               <td className="px-4 py-3">{product.category || "-"}</td>
               <td className="px-4 py-3">€{product.priceValue}</td>
+              <td className="px-4 py-3">
+                {(() => {
+                  const stock = getStockBadge(product);
+
+                  return (
+                    <span
+                      className={`inline-block px-2 py-1 text-xs ${stock.className}`}
+                    >
+                      {stock.label}
+                    </span>
+                  );
+                })()}
+              </td>
               <td className="px-4 py-3">
                 {product.isBestSeller ? (
                   <span className="inline-block border border-black bg-black px-2 py-1 text-xs text-white">

@@ -7,6 +7,8 @@ import AdminProductsTable from "@/pages/admin/components/AdminProductsTable";
 import AdminProductDeleteModal from "@/pages/admin/components/AdminProductDeleteModal";
 import AdminProductBulkDeleteModal from "@/pages/admin/components/AdminProductBulkDeleteModal";
 
+import { getStockBadge } from "@/pages/admin/helpers/orderHelpers";
+
 const API_ORIGIN = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
 export default function AdminProducts() {
@@ -442,11 +444,17 @@ export default function AdminProducts() {
                           </span>
                         ) : null}
 
-                        {product.isSoldOut ? (
-                          <span className="border border-red-600 bg-red-600 px-2 py-1 text-[10px] text-white">
-                            Sold out
-                          </span>
-                        ) : null}
+                        {(() => {
+                          const stock = getStockBadge(product);
+
+                          return (
+                            <span
+                              className={`border px-2 py-1 text-[10px] ${stock.className}`}
+                            >
+                              {stock.label}
+                            </span>
+                          );
+                        })()}
                       </div>
                     </div>
 
@@ -467,6 +475,13 @@ export default function AdminProducts() {
                         {product.createdAt
                           ? String(product.createdAt).slice(0, 10)
                           : "-"}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-black/50">Stock</p>
+                      <p className="mt-1">
+                        {Math.max(0, Number(product.stockQuantity) || 0)}
                       </p>
                     </div>
                   </div>
