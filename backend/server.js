@@ -110,12 +110,26 @@ app.get("/api/db-test", async (req, res) => {
   }
 });
 
+function safeJsonParse(value, fallback) {
+  if (value === null || value === undefined) return fallback;
+  if (typeof value !== "string") return value;
+
+  const trimmed = value.trim();
+  if (!trimmed) return fallback;
+
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    return fallback;
+  }
+}
+
 function mapProductRow(row) {
-  const colors = row.colors ? JSON.parse(row.colors) : [];
-  const variants = row.variants ? JSON.parse(row.variants) : {};
-  const gemstones = row.gemstones ? JSON.parse(row.gemstones) : [];
-  const sizes = row.sizes ? JSON.parse(row.sizes) : [];
-  const details = row.details ? JSON.parse(row.details) : {};
+  const colors = safeJsonParse(row.colors, []);
+  const variants = safeJsonParse(row.variants, {});
+  const gemstones = safeJsonParse(row.gemstones, []);
+  const sizes = safeJsonParse(row.sizes, []);
+  const details = safeJsonParse(row.details, {});
 
   return {
     id: row.id,
