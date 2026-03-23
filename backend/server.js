@@ -124,12 +124,47 @@ function safeJsonParse(value, fallback) {
   }
 }
 
+function normalizeFrontendAssetUrl(value) {
+  if (!value) return "";
+
+  const raw = String(value).trim();
+  if (!raw) return "";
+
+  if (raw.includes("/uploads/")) {
+    return raw;
+  }
+
+  const productsMatch = raw.match(/\/products\/(.+)$/);
+  if (productsMatch) {
+    return withBase(`products/${productsMatch[1]}`);
+  }
+
+  if (raw.startsWith("products/")) {
+    return withBase(raw);
+  }
+
+  if (raw.startsWith("/products/")) {
+    return withBase(raw.replace(/^\/+/, ""));
+  }
+
+  return raw;
+}
+
 function mapProductRow(row) {
   const colors = safeJsonParse(row.colors, []);
-  const variants = safeJsonParse(row.variants, {});
+  const variantsRaw = safeJsonParse(row.variants, {});
   const gemstones = safeJsonParse(row.gemstones, []);
   const sizes = safeJsonParse(row.sizes, []);
   const details = safeJsonParse(row.details, {});
+
+  const variants = Object.fromEntries(
+    Object.entries(variantsRaw || {}).map(([color, images]) => [
+      color,
+      Array.isArray(images)
+        ? images.map((img) => normalizeFrontendAssetUrl(img))
+        : [],
+    ]),
+  );
 
   return {
     id: row.id,
@@ -142,7 +177,7 @@ function mapProductRow(row) {
     isBestSeller: Boolean(row.is_best_seller),
     hasGem: Boolean(row.has_gem),
     surface: row.surface,
-    thumbnail: row.thumbnail,
+    thumbnail: normalizeFrontendAssetUrl(row.thumbnail),
     colors,
     variants,
     gemstones,
