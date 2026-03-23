@@ -7,7 +7,7 @@ import AdminProductsTable from "@/pages/admin/components/AdminProductsTable";
 import AdminProductDeleteModal from "@/pages/admin/components/AdminProductDeleteModal";
 import AdminProductBulkDeleteModal from "@/pages/admin/components/AdminProductBulkDeleteModal";
 
-import { getStockBadge } from "@/pages/admin/helpers/orderHelpers";
+import { getStockBadge } from "@/pages/admin/helpers/productHelpers";
 
 const API_ORIGIN = import.meta.env.VITE_API_URL || "http://localhost:4000";
 

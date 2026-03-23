@@ -1,4 +1,4 @@
-import { getStockBadge } from "@/pages/admin/helpers/orderHelpers";
+import { getStockBadge } from "@/pages/admin/helpers/productHelpers";
 
 function formatAdminDate(value) {
   if (!value) return "-";

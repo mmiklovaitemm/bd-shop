@@ -1,5 +1,7 @@
 import { useState } from "react";
 
+import { getImageTextFromVariant } from "@/pages/admin/helpers/productHelpers";
+
 export default function AdminProductCreateModal({
   onClose,
   onCreate,
@@ -44,8 +46,8 @@ export default function AdminProductCreateModal({
       ? String(initialData.createdAt).slice(0, 10)
       : "",
     description: initialData?.details?.detailsText || "",
-    silverImages: initialData?.variants?.silver?.join("\n") || "",
-    goldImages: initialData?.variants?.gold?.join("\n") || "",
+    silverImages: getImageTextFromVariant(initialData?.variants?.silver),
+    goldImages: getImageTextFromVariant(initialData?.variants?.gold),
     sizes: initialData?.sizes?.join(", ") || "",
     stockQuantity: initialData?.stockQuantity ?? "",
     isBestSeller: initialData?.isBestSeller || false,
