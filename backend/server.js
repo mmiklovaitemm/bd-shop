@@ -52,10 +52,9 @@ app.use("/uploads", express.static(uploadsDir));
 
 // CORS
 const allowedOrigins = [
+  process.env.FRONTEND_ORIGIN,
   "http://localhost:5173",
   "http://localhost:4173",
-  "https://bd-shop-gray.vercel.app",
-  process.env.FRONTEND_ORIGIN,
 ].filter(Boolean);
 
 app.use(
