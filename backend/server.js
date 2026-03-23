@@ -158,33 +158,56 @@ function mapProductRow(row) {
   const details = safeJsonParse(row.details, {});
 
   const variants = Object.fromEntries(
-    Object.entries(variantsRaw || {}).map(([color, colorVariants]) => [
-      color,
-      Array.isArray(colorVariants)
-        ? colorVariants.map((variant) => ({
-            size: String(variant?.size || "").trim(),
-            stock: Math.max(0, Number(variant?.stock) || 0),
-            images: Array.isArray(variant?.images)
-              ? variant.images.map((img) => normalizeFrontendAssetUrl(img))
-              : [],
-          }))
-        : [],
-    ]),
+    Object.entries(variantsRaw || {}).map(([color, value]) => {
+      if (!Array.isArray(value)) {
+        return [color, []];
+      }
+
+      const isOldFormat = value.length > 0 && typeof value[0] === "string";
+
+      if (isOldFormat) {
+        const normalizedImages = value.map((img) =>
+          normalizeFrontendAssetUrl(img),
+        );
+
+        return [color, normalizedImages];
+      }
+
+      const normalizedVariantObjects = value.map((variant) => ({
+        size: String(variant?.size || "").trim(),
+        stock: Math.max(0, Number(variant?.stock) || 0),
+        images: Array.isArray(variant?.images)
+          ? variant.images.map((img) => normalizeFrontendAssetUrl(img))
+          : [],
+      }));
+
+      return [color, normalizedVariantObjects];
+    }),
   );
 
-  const totalStockQuantity = Object.values(variants).reduce(
-    (total, colorVariants) => {
-      if (!Array.isArray(colorVariants)) return total;
-
-      return (
-        total +
-        colorVariants.reduce((sum, variant) => {
-          return sum + Math.max(0, Number(variant?.stock) || 0);
-        }, 0)
-      );
-    },
-    0,
+  const hasVariantLevelStock = Object.values(variants).some(
+    (value) =>
+      Array.isArray(value) &&
+      value.length > 0 &&
+      typeof value[0] === "object" &&
+      value[0] !== null &&
+      "stock" in value[0],
   );
+
+  const totalStockQuantity = hasVariantLevelStock
+    ? Object.values(variants).reduce((total, colorVariants) => {
+        if (!Array.isArray(colorVariants)) return total;
+        if (!colorVariants.length) return total;
+        if (typeof colorVariants[0] === "string") return total;
+
+        return (
+          total +
+          colorVariants.reduce((sum, variant) => {
+            return sum + Math.max(0, Number(variant?.stock) || 0);
+          }, 0)
+        );
+      }, 0)
+    : Math.max(0, Number(row.stock_quantity) || 0);
 
   return {
     id: row.id,
