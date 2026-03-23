@@ -81,6 +81,7 @@ const COOKIE_OPTIONS = {
   sameSite: IS_PRODUCTION ? "none" : "lax",
   secure: IS_PRODUCTION,
   maxAge: 7 * 24 * 60 * 60 * 1000,
+  normalizeImageList,
 };
 
 function setAuthCookie(res, payload) {
@@ -250,11 +251,36 @@ function withBase(path) {
 
 function normalizeImageList(category, list = []) {
   return (list || [])
-    .map((item) => String(item || "").trim())
+    .map((item) => {
+      if (typeof item === "string") {
+        return item.trim();
+      }
+
+      if (item && typeof item === "object") {
+        if (typeof item.url === "string") return item.url.trim();
+        if (typeof item.src === "string") return item.src.trim();
+        if (typeof item.path === "string") return item.path.trim();
+        if (typeof item.value === "string") return item.value.trim();
+      }
+
+      return "";
+    })
     .filter(Boolean)
     .map((item) => {
       if (/^https?:\/\//i.test(item)) {
         return item;
+      }
+
+      if (item.includes("/uploads/")) {
+        return item;
+      }
+
+      if (item.startsWith("/products/")) {
+        return withBase(item.replace(/^\/+/, ""));
+      }
+
+      if (item.startsWith("products/")) {
+        return withBase(item);
       }
 
       return withBase(`products/${category}/${item}`);
