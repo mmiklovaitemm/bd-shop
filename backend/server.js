@@ -11,6 +11,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
+import { requireAdmin } from "./middleware/auth.js";
 
 import db from "./db.js";
 
@@ -572,7 +573,7 @@ app.post("/api/auth/register", async (req, res) => {
       role: "user",
     };
 
-    setAuthCookie(res, { userId: user.id });
+    setAuthCookie(res, { userId: user.id, role: "user" });
 
     return res.status(201).json({ user });
   } catch (err) {
@@ -610,7 +611,10 @@ app.post("/api/auth/login", async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials." });
     }
 
-    setAuthCookie(res, { userId: user.id });
+    setAuthCookie(res, {
+      userId: user.id,
+      role: user.role || "user",
+    });
 
     return res.json({
       user: {
@@ -863,22 +867,8 @@ app.get("/api/admin/orders", async (req, res) => {
 });
 
 // ORDERS - UPDATE STATUS
-app.patch("/api/orders/:id/status", async (req, res) => {
+app.patch("/api/orders/:id/status", requireAdmin, async (req, res) => {
   try {
-    const token = req.cookies[COOKIE_NAME];
-    if (!token) return res.status(401).json({ message: "Unauthorized." });
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    const [users] = await db.query(
-      "SELECT id, role FROM users WHERE id = ? LIMIT 1",
-      [decoded.userId],
-    );
-
-    if (!users.length || users[0].role !== "admin") {
-      return res.status(403).json({ message: "Forbidden." });
-    }
-
     const orderId = Number(req.params.id);
     const nextStatus = String(req.body?.status || "").trim();
 
