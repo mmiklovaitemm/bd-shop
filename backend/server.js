@@ -97,7 +97,13 @@ app.get("/health", (req, res) => {
 // DB test
 app.get("/api/db-test", async (req, res) => {
   try {
-    const [rows] = await db.query("SELECT 1 AS ok");
+    const [rows] = await db.query(`
+      SELECT
+        DATABASE() AS current_database,
+        USER() AS current_user,
+        @@hostname AS db_host
+    `);
+
     res.json({ ok: true, rows });
   } catch (err) {
     res.status(500).json({ ok: false, message: err.message });
