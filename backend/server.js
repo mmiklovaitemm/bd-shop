@@ -158,12 +158,32 @@ function mapProductRow(row) {
   const details = safeJsonParse(row.details, {});
 
   const variants = Object.fromEntries(
-    Object.entries(variantsRaw || {}).map(([color, images]) => [
+    Object.entries(variantsRaw || {}).map(([color, colorVariants]) => [
       color,
-      Array.isArray(images)
-        ? images.map((img) => normalizeFrontendAssetUrl(img))
+      Array.isArray(colorVariants)
+        ? colorVariants.map((variant) => ({
+            size: String(variant?.size || "").trim(),
+            stock: Math.max(0, Number(variant?.stock) || 0),
+            images: Array.isArray(variant?.images)
+              ? variant.images.map((img) => normalizeFrontendAssetUrl(img))
+              : [],
+          }))
         : [],
     ]),
+  );
+
+  const totalStockQuantity = Object.values(variants).reduce(
+    (total, colorVariants) => {
+      if (!Array.isArray(colorVariants)) return total;
+
+      return (
+        total +
+        colorVariants.reduce((sum, variant) => {
+          return sum + Math.max(0, Number(variant?.stock) || 0);
+        }, 0)
+      );
+    },
+    0,
   );
 
   return {
@@ -173,8 +193,8 @@ function mapProductRow(row) {
     priceValue: Number(row.price_value),
     price: `€${Number(row.price_value)}`,
     createdAt: row.created_at,
-    stockQuantity: Number(row.stock_quantity ?? 0),
-    isSoldOut: Number(row.stock_quantity) <= 0,
+    stockQuantity: totalStockQuantity,
+    isSoldOut: totalStockQuantity <= 0,
     isBestSeller: Boolean(row.is_best_seller),
     hasGem: Boolean(row.has_gem),
     surface: row.surface,
@@ -216,6 +236,98 @@ function normalizeImageList(category, list = []) {
 
       return withBase(`products/${category}/${item}`);
     });
+}
+
+function getRandomInt(min, max) {
+  const minCeil = Math.ceil(min);
+  const maxFloor = Math.floor(max);
+  return Math.floor(Math.random() * (maxFloor - minCeil + 1)) + minCeil;
+}
+
+function shuffleArray(array) {
+  const copy = [...array];
+
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+
+  return copy;
+}
+
+function buildVariantsWithStock({
+  normalizedSilverImages = [],
+  normalizedGoldImages = [],
+  sizes = [],
+}) {
+  const cleanSizes = Array.isArray(sizes)
+    ? sizes.map((size) => String(size).trim()).filter(Boolean)
+    : [];
+
+  const variantPool = [];
+
+  if (normalizedSilverImages.length) {
+    for (const size of cleanSizes) {
+      variantPool.push({
+        color: "silver",
+        size,
+        images: normalizedSilverImages,
+      });
+    }
+  }
+
+  if (normalizedGoldImages.length) {
+    for (const size of cleanSizes) {
+      variantPool.push({
+        color: "gold",
+        size,
+        images: normalizedGoldImages,
+      });
+    }
+  }
+
+  const shuffled = shuffleArray(variantPool);
+
+  const outOfStockCount =
+    shuffled.length <= 1 ? 0 : Math.min(getRandomInt(1, 2), shuffled.length);
+
+  const outOfStockKeys = new Set(
+    shuffled
+      .slice(0, outOfStockCount)
+      .map((item) => `${item.color}__${item.size}`),
+  );
+
+  const grouped = {};
+
+  for (const item of variantPool) {
+    const key = `${item.color}__${item.size}`;
+    const isOutOfStock = outOfStockKeys.has(key);
+
+    if (!grouped[item.color]) {
+      grouped[item.color] = [];
+    }
+
+    grouped[item.color].push({
+      size: item.size,
+      stock: isOutOfStock ? 0 : getRandomInt(2, 10),
+      images: item.images,
+    });
+  }
+
+  return grouped;
+}
+
+function getTotalStockFromVariants(variants = {}) {
+  return Object.values(variants).reduce((total, colorVariants) => {
+    if (!Array.isArray(colorVariants)) return total;
+
+    return (
+      total +
+      colorVariants.reduce((sum, variant) => {
+        return sum + Math.max(0, Number(variant?.stock) || 0);
+      }, 0)
+    );
+  }, 0);
 }
 
 app.post(
@@ -285,7 +397,6 @@ app.post("/api/products", requireAdmin, async (req, res) => {
       goldImages = [],
       sizes = [],
       isBestSeller = false,
-      stockQuantity = 0,
     } = req.body || {};
 
     if (
@@ -314,14 +425,14 @@ app.post("/api/products", requireAdmin, async (req, res) => {
     const normalizedSilverImages = normalizeImageList(category, silverImages);
     const normalizedGoldImages = normalizeImageList(category, goldImages);
 
-    const variants = {
-      ...(normalizedSilverImages.length
-        ? { silver: normalizedSilverImages }
-        : {}),
-      ...(normalizedGoldImages.length ? { gold: normalizedGoldImages } : {}),
-    };
+    const variants = buildVariantsWithStock({
+      normalizedSilverImages,
+      normalizedGoldImages,
+      sizes,
+    });
 
     const colors = Object.keys(variants);
+    const totalStockQuantity = getTotalStockFromVariants(variants);
 
     const thumbnail =
       normalizedSilverImages[0] || normalizedGoldImages[0] || "";
@@ -363,7 +474,7 @@ app.post("/api/products", requireAdmin, async (req, res) => {
         JSON.stringify([]),
         JSON.stringify(sizes),
         JSON.stringify(details),
-        Math.max(0, Number(stockQuantity) || 0),
+        totalStockQuantity,
       ],
     );
 
@@ -421,7 +532,6 @@ app.put("/api/products/:id", requireAdmin, async (req, res) => {
       goldImages = [],
       sizes = [],
       isBestSeller = false,
-      stockQuantity = 0,
     } = req.body || {};
 
     if (
@@ -456,14 +566,14 @@ app.put("/api/products/:id", requireAdmin, async (req, res) => {
     const normalizedSilverImages = normalizeImageList(category, silverImages);
     const normalizedGoldImages = normalizeImageList(category, goldImages);
 
-    const variants = {
-      ...(normalizedSilverImages.length
-        ? { silver: normalizedSilverImages }
-        : {}),
-      ...(normalizedGoldImages.length ? { gold: normalizedGoldImages } : {}),
-    };
+    const variants = buildVariantsWithStock({
+      normalizedSilverImages,
+      normalizedGoldImages,
+      sizes,
+    });
 
     const colors = Object.keys(variants);
+    const totalStockQuantity = getTotalStockFromVariants(variants);
 
     const thumbnail =
       normalizedSilverImages[0] || normalizedGoldImages[0] || "";
@@ -519,7 +629,7 @@ app.put("/api/products/:id", requireAdmin, async (req, res) => {
         JSON.stringify([]),
         JSON.stringify(sizes),
         JSON.stringify(details),
-        Math.max(0, Number(stockQuantity) || 0),
+        totalStockQuantity,
         id,
       ],
     );
