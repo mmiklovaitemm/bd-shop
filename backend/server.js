@@ -769,22 +769,8 @@ app.get("/api/orders", requireAuth, async (req, res) => {
 });
 
 // ADMIN - ALL ORDERS
-app.get("/api/admin/orders", async (req, res) => {
+app.get("/api/admin/orders", requireAdmin, async (req, res) => {
   try {
-    const token = req.cookies[COOKIE_NAME];
-    if (!token) return res.status(401).json({ orders: [] });
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    const [users] = await db.query(
-      "SELECT id, role FROM users WHERE id = ? LIMIT 1",
-      [decoded.userId],
-    );
-
-    if (!users.length || users[0].role !== "admin") {
-      return res.status(403).json({ message: "Forbidden." });
-    }
-
     const [orders] = await db.query(
       `SELECT
         id, user_id, created_at, status, total_cents, currency,
