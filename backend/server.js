@@ -868,7 +868,16 @@ app.patch("/api/orders/:id/status", async (req, res) => {
     const token = req.cookies[COOKIE_NAME];
     if (!token) return res.status(401).json({ message: "Unauthorized." });
 
-    jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const [users] = await db.query(
+      "SELECT id, role FROM users WHERE id = ? LIMIT 1",
+      [decoded.userId],
+    );
+
+    if (!users.length || users[0].role !== "admin") {
+      return res.status(403).json({ message: "Forbidden." });
+    }
 
     const orderId = Number(req.params.id);
     const nextStatus = String(req.body?.status || "").trim();
