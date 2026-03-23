@@ -78,7 +78,7 @@ const ProductBenefits = memo(function ProductBenefits() {
   ];
 
   return (
-    <div className="mt-6 mb-6 border-t border-black pt-5 grid grid-cols-2 gap-y-4 md:gap-6 gap-x-6">
+    <div className="mt-6 mb-6 grid grid-cols-2 gap-x-6 gap-y-4 border-t border-black pt-5 md:gap-6">
       {benefits.map((benefit, index) => (
         <BenefitItem key={index} icon={benefit.icon} text={benefit.text} />
       ))}
@@ -88,29 +88,37 @@ const ProductBenefits = memo(function ProductBenefits() {
 
 const SizeSelector = memo(function SizeSelector({
   sizes,
+  availableSizes,
   selectedSize,
   onSelectSize,
   hoverBtnClass,
+  usesVariantLevelStock,
 }) {
   if (!sizes?.length) {
-    return <p className="font-ui text-[13px] text-black/50 mt-2">One size</p>;
+    return <p className="mt-2 font-ui text-[13px] text-black/50">One size</p>;
   }
 
   return (
     <div className="mt-2 flex flex-wrap gap-2">
       {sizes.map((size) => {
         const isActive = selectedSize === size;
+        const isAvailable = !usesVariantLevelStock
+          ? true
+          : availableSizes.includes(String(size));
+
         return (
           <button
             key={size}
             type="button"
-            onClick={() => onSelectSize(size)}
+            disabled={!isAvailable}
+            onClick={() => isAvailable && onSelectSize(size)}
             className={cn(
-              "h-10 min-w-12 px-3 border font-ui text-[13px] select-none",
+              "h-10 min-w-12 border px-3 font-ui text-[13px] select-none",
               hoverBtnClass,
               isActive
-                ? "bg-black text-white border-black"
+                ? "border-black bg-black text-white"
                 : "bg-white text-black border-black/40 lg:hover:bg-black/5",
+              !isAvailable ? "cursor-not-allowed opacity-35" : "",
             )}
           >
             {size}
@@ -123,16 +131,21 @@ const SizeSelector = memo(function SizeSelector({
 
 const ColorSelector = memo(function ColorSelector({
   colors,
+  availableColors,
   variants,
   selectedColor,
   onSelectColor,
   hoverBtnClass,
+  usesVariantLevelStock,
 }) {
   return (
     <div className="mt-2 flex flex-wrap gap-2">
       {colors.map((color) => {
         const isActive = selectedColor === color;
-        const hasVariant = (variants?.[color] || []).length > 0;
+        const hasVariant = !usesVariantLevelStock
+          ? (variants?.[color] || []).length > 0
+          : availableColors.includes(color);
+
         const colorClasses = getVariantColorStyles(color, isActive);
 
         return (
@@ -142,9 +155,9 @@ const ColorSelector = memo(function ColorSelector({
             disabled={!hasVariant}
             onClick={() => hasVariant && onSelectColor(color)}
             className={cn(
-              "h-10 px-4 border font-ui text-[13px] select-none",
+              "h-10 border px-4 font-ui text-[13px] select-none",
               hoverBtnClass,
-              !hasVariant ? "opacity-40 cursor-not-allowed" : "",
+              !hasVariant ? "cursor-not-allowed opacity-40" : "",
               colorClasses,
             )}
           >
@@ -162,10 +175,10 @@ const QuantitySelector = memo(function QuantitySelector({
   hoverBtnClass,
 }) {
   return (
-    <div className="mt-2 inline-flex items-center border border-black/30 h-10 select-none">
+    <div className="mt-2 inline-flex h-10 items-center border border-black/30 select-none">
       <button
         type="button"
-        className={cn("w-10 h-10 text-[18px] select-none", hoverBtnClass)}
+        className={cn("h-10 w-10 text-[18px] select-none", hoverBtnClass)}
         onClick={() => onQuantityChange((q) => Math.max(1, q - 1))}
         aria-label="Decrease quantity"
       >
@@ -176,7 +189,7 @@ const QuantitySelector = memo(function QuantitySelector({
       </div>
       <button
         type="button"
-        className={cn("w-10 h-10 text-[18px] select-none", hoverBtnClass)}
+        className={cn("h-10 w-10 text-[18px] select-none", hoverBtnClass)}
         onClick={() => onQuantityChange((q) => q + 1)}
         aria-label="Increase quantity"
       >
@@ -190,6 +203,11 @@ const ProductInfo = memo(function ProductInfo({
   product,
   selectedSize,
   selectedColor,
+  availableSizes = [],
+  availableColors = [],
+  currentStock = 0,
+  isCurrentSelectionSoldOut = false,
+  usesVariantLevelStock = false,
   setSelectedSize,
   setSelectedColor,
   quantity,
@@ -207,7 +225,9 @@ const ProductInfo = memo(function ProductInfo({
 
   const isWishlisted = has(product.id);
   const hoverBtnClass = hoverClasses.btn;
-  const isSoldOut = Boolean(product.isSoldOut);
+  const isSoldOut = usesVariantLevelStock
+    ? Boolean(isCurrentSelectionSoldOut)
+    : Boolean(product.isSoldOut);
 
   const hasServiceOptions =
     product.category === "personal" &&
@@ -215,8 +235,8 @@ const ProductInfo = memo(function ProductInfo({
 
   return (
     <div className="md:pt-1">
-      <div className="mt-5 md:mt-0 flex items-end justify-between gap-4">
-        <h1 className="font-display font-medium text-[28px] leading-none">
+      <div className="mt-5 flex items-end justify-between gap-4 md:mt-0">
+        <h1 className="font-display text-[28px] font-medium leading-none">
           {product.name}
         </h1>
         <p className="font-ui text-[16px] text-black/90">{product.price}</p>
@@ -226,9 +246,11 @@ const ProductInfo = memo(function ProductInfo({
         <p className="font-ui text-[13px] text-black/70">Size:</p>
         <SizeSelector
           sizes={product.sizes}
+          availableSizes={availableSizes}
           selectedSize={selectedSize}
           onSelectSize={setSelectedSize}
           hoverBtnClass={hoverBtnClass}
+          usesVariantLevelStock={usesVariantLevelStock}
         />
       </div>
 
@@ -236,12 +258,24 @@ const ProductInfo = memo(function ProductInfo({
         <p className="font-ui text-[13px] text-black/70">Color:</p>
         <ColorSelector
           colors={product.colors}
+          availableColors={availableColors}
           variants={product.variants}
           selectedColor={selectedColor}
           onSelectColor={setSelectedColor}
           hoverBtnClass={hoverBtnClass}
+          usesVariantLevelStock={usesVariantLevelStock}
         />
       </div>
+
+      {usesVariantLevelStock && (
+        <div className="mt-3">
+          <p className="font-ui text-[12px] text-black/55">
+            {isSoldOut
+              ? "Selected variant is sold out"
+              : `In stock: ${currentStock}`}
+          </p>
+        </div>
+      )}
 
       {hasServiceOptions && (
         <div className="mt-5">
@@ -307,7 +341,10 @@ const ProductInfo = memo(function ProductInfo({
               const next =
                 typeof updater === "function" ? updater(prev) : Number(updater);
 
-              const maxStock = Math.max(1, Number(product.stockQuantity) || 1);
+              const maxStock = usesVariantLevelStock
+                ? Math.max(1, Number(currentStock) || 1)
+                : Math.max(1, Number(product.stockQuantity) || 1);
+
               return Math.min(maxStock, Math.max(1, next));
             });
           }}
@@ -349,7 +386,7 @@ const ProductInfo = memo(function ProductInfo({
           type="button"
           aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
           className={cn(
-            "h-12 w-12 border-[0.5px] border-black/25 flex items-center justify-center bg-white select-none",
+            "flex h-12 w-12 items-center justify-center border-[0.5px] border-black/25 bg-white select-none",
             hoverClasses.iconBtn,
           )}
           onClick={(e) => {
@@ -361,7 +398,7 @@ const ProductInfo = memo(function ProductInfo({
           <FiHeart
             className={cn(
               "h-5 w-5 transition-colors duration-200",
-              isWishlisted ? "text-red-600 fill-red-600" : "text-black/25",
+              isWishlisted ? "fill-red-600 text-red-600" : "text-black/25",
             )}
             strokeWidth={1.5}
           />
@@ -374,7 +411,7 @@ const ProductInfo = memo(function ProductInfo({
             type="button"
             onClick={onOpenDetails}
             className={cn(
-              "group w-full flex items-center justify-between font-ui text-[13px] text-black select-none",
+              "group flex w-full items-center justify-between font-ui text-[13px] text-black select-none",
               hoverBtnClass,
             )}
           >
@@ -387,7 +424,7 @@ const ProductInfo = memo(function ProductInfo({
               aria-hidden="true"
               draggable={false}
               onDragStart={preventDragHandler}
-              className="h-4 w-4 transition-transform duration-200 ease-out lg:group-hover:translate-x-[1px] lg:group-hover:-translate-y-[1px] select-none"
+              className="h-4 w-4 select-none transition-transform duration-200 ease-out lg:group-hover:translate-x-[1px] lg:group-hover:-translate-y-[1px]"
             />
           </button>
         </div>
@@ -400,7 +437,7 @@ const ProductInfo = memo(function ProductInfo({
               type="button"
               onClick={onOpenHowItWorks}
               className={cn(
-                "group w-full flex items-center justify-between font-ui text-[13px] text-black select-none",
+                "group flex w-full items-center justify-between font-ui text-[13px] text-black select-none",
                 hoverBtnClass,
               )}
             >
@@ -414,7 +451,7 @@ const ProductInfo = memo(function ProductInfo({
                 aria-hidden="true"
                 draggable={false}
                 onDragStart={preventDragHandler}
-                className="h-4 w-4 transition-transform duration-200 ease-out lg:group-hover:translate-x-[1px] lg:group-hover:-translate-y-[1px] select-none"
+                className="h-4 w-4 select-none transition-transform duration-200 ease-out lg:group-hover:translate-x-[1px] lg:group-hover:-translate-y-[1px]"
               />
             </button>
           </div>
