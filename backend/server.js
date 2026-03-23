@@ -217,26 +217,31 @@ function normalizeImageList(category, list = []) {
     });
 }
 
-app.post("/api/uploads/product-image", upload.single("image"), (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ message: "Image file is required." });
+app.post(
+  "/api/uploads/product-image",
+  requireAdmin,
+  upload.single("image"),
+  (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "Image file is required." });
+      }
+
+      const fileUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+
+      return res.status(201).json({
+        ok: true,
+        file: {
+          filename: req.file.filename,
+          url: fileUrl,
+        },
+      });
+    } catch (err) {
+      console.error("Upload image error:", err);
+      return res.status(500).json({ message: err.message });
     }
-
-    const fileUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
-
-    return res.status(201).json({
-      ok: true,
-      file: {
-        filename: req.file.filename,
-        url: fileUrl,
-      },
-    });
-  } catch (err) {
-    console.error("Upload image error:", err);
-    return res.status(500).json({ message: err.message });
-  }
-});
+  },
+);
 
 // PRODUCTS
 app.get("/api/products", async (req, res) => {
@@ -266,7 +271,7 @@ app.get("/api/products/:id", async (req, res) => {
   }
 });
 
-app.post("/api/products", async (req, res) => {
+app.post("/api/products", requireAdmin, async (req, res) => {
   try {
     const {
       id,
@@ -375,7 +380,7 @@ app.post("/api/products", async (req, res) => {
   }
 });
 
-app.delete("/api/products/:id", async (req, res) => {
+app.delete("/api/products/:id", requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -400,7 +405,7 @@ app.delete("/api/products/:id", async (req, res) => {
   }
 });
 
-app.put("/api/products/:id", async (req, res) => {
+app.put("/api/products/:id", requireAdmin, async (req, res) => {
   try {
     const { id: routeId } = req.params;
 
@@ -631,19 +636,13 @@ app.post("/api/auth/login", async (req, res) => {
 });
 
 // AUTH - ME
-app.get("/api/auth/me", async (req, res) => {
+app.get("/api/auth/me", requireAuth, async (req, res) => {
   try {
-    const token = req.cookies.access_token;
-
-    if (!token) {
-      return res.status(401).json({ user: null });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = req.user.userId;
 
     const [rows] = await db.query(
       "SELECT id, email, first_name, last_name, role FROM users WHERE id = ? LIMIT 1",
-      [decoded.userId],
+      [userId],
     );
 
     if (!rows.length) {
@@ -862,13 +861,6 @@ app.patch("/api/orders/:id/status", requireAdmin, async (req, res) => {
 // ORDERS - CREATE
 app.post("/api/orders", requireAuth, async (req, res) => {
   try {
-    const token = req.cookies[COOKIE_NAME];
-    if (!token) return res.status(401).json({ message: "Unauthorized." });
-
-    if (!process.env.JWT_SECRET) {
-      return res.status(500).json({ message: "JWT_SECRET is not set." });
-    }
-
     const userId = req.user.userId;
     const { items, contact, delivery, shipping, payment } = req.body || {};
     const email = String(contact?.email || "")
