@@ -678,12 +678,9 @@ app.post("/api/auth/logout", (req, res) => {
 });
 
 // AUTH - CHANGE PASSWORD
-app.post("/api/auth/change-password", async (req, res) => {
+app.post("/api/auth/change-password", requireAuth, async (req, res) => {
   try {
-    const token = req.cookies[COOKIE_NAME];
-    if (!token) return res.status(401).json({ message: "Unauthorized." });
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = req.user.userId;
 
     const { currentPassword, newPassword } = req.body || {};
     if (!currentPassword || !newPassword) {
@@ -694,60 +691,32 @@ app.post("/api/auth/change-password", async (req, res) => {
 
     const [rows] = await db.query(
       "SELECT id, password_hash FROM users WHERE id = ? LIMIT 1",
-      [decoded.userId],
+      [userId],
     );
-    if (!rows.length) return res.status(401).json({ message: "Unauthorized." });
+
+    if (!rows.length) {
+      return res.status(401).json({ message: "Unauthorized." });
+    }
 
     const user = rows[0];
+
     const ok = await bcrypt.compare(
       String(currentPassword),
       user.password_hash,
     );
-    if (!ok)
+
+    if (!ok) {
       return res.status(401).json({ message: "Wrong current password." });
+    }
 
     const newHash = await bcrypt.hash(String(newPassword), 10);
+
     await db.query("UPDATE users SET password_hash = ? WHERE id = ?", [
       newHash,
-      user.id,
+      userId,
     ]);
 
     res.json({ ok: true });
-  } catch (err) {
-    return res.status(500).json({ message: err.message });
-  }
-});
-
-// AUTH - UPDATE PROFILE
-app.patch("/api/auth/profile", requireAuth, async (req, res) => {
-  try {
-    const userId = req.user.userId;
-
-    const { firstName, lastName } = req.body || {};
-
-    const cleanFirst = firstName ? String(firstName).trim() : null;
-    const cleanLast = lastName ? String(lastName).trim() : null;
-
-    await db.query(
-      "UPDATE users SET first_name = ?, last_name = ? WHERE id = ?",
-      [cleanFirst, cleanLast, userId],
-    );
-
-    const [rows] = await db.query(
-      "SELECT id, email, first_name, last_name FROM users WHERE id = ? LIMIT 1",
-      [userId],
-    );
-
-    const user = rows[0];
-
-    res.json({
-      user: {
-        id: user.id,
-        email: user.email,
-        firstName: user.first_name,
-        lastName: user.last_name,
-      },
-    });
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
