@@ -347,7 +347,7 @@ app.post("/api/products", requireAdmin, async (req, res) => {
         sizes,
         details,
         stock_quantity
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         name,
@@ -355,7 +355,6 @@ app.post("/api/products", requireAdmin, async (req, res) => {
         Number(priceValue),
         createdAt,
         isBestSeller ? 1 : 0,
-        Math.max(0, Number(stockQuantity) || 0) <= 0 ? 1 : 0,
         0,
         "smooth",
         thumbnail,
@@ -512,7 +511,6 @@ app.put("/api/products/:id", requireAdmin, async (req, res) => {
         Number(priceValue),
         createdAt,
         isBestSeller ? 1 : 0,
-        Math.max(0, Number(stockQuantity) || 0) <= 0 ? 1 : 0,
         0,
         "smooth",
         thumbnail,
@@ -874,8 +872,8 @@ app.patch("/api/orders/:id/status", requireAdmin, async (req, res) => {
 
         await connection.query(
           `UPDATE products
-           SET stock_quantity = stock_quantity + ?,
-           WHERE id = ?`,
+            SET stock_quantity = stock_quantity + ?
+            WHERE id = ?`,
           [qty, productId],
         );
       }
