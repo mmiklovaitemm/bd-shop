@@ -44,46 +44,51 @@ function hasVariantLevelStock(product) {
   );
 }
 
-function getFirstAvailableColor(product) {
+function getAvailableColors(product, usesVariantLevelStock) {
   const colors = product?.colors || [];
-  const variants = product?.variants || {};
 
-  for (const color of colors) {
-    const value = variants[color];
+  if (!usesVariantLevelStock) return colors;
 
-    if (!Array.isArray(value) || !value.length) continue;
-
-    if (isVariantObject(value[0])) {
-      const hasAvailable = value.some(
-        (variant) => Number(variant?.stock || 0) > 0,
-      );
-      if (hasAvailable) return color;
-    }
-
-    if (typeof value[0] === "string" && value.length > 0) {
-      return color;
-    }
-  }
-
-  return colors[0] || "silver";
+  return colors.filter((color) => {
+    const entries = product?.variants?.[color] || [];
+    return entries.some((variant) => Number(variant?.stock || 0) > 0);
+  });
 }
 
-function getFirstAvailableSize(product, color) {
-  const variants = product?.variants || {};
-  const value = variants[color];
+function getAvailableSizesForColor(product, color, usesVariantLevelStock) {
+  if (!product) return [];
 
-  if (!Array.isArray(value) || !value.length) {
-    return product?.sizes?.[0] || null;
+  if (!usesVariantLevelStock) {
+    return (product?.sizes || []).map(String);
   }
 
-  if (isVariantObject(value[0])) {
-    const firstAvailable = value.find(
-      (variant) => Number(variant?.stock || 0) > 0,
-    );
-    return firstAvailable?.size ?? null;
+  const entries = Array.isArray(product?.variants?.[color])
+    ? product.variants[color]
+    : [];
+
+  return entries
+    .filter((variant) => Number(variant?.stock || 0) > 0)
+    .map((variant) => String(variant?.size))
+    .filter(Boolean);
+}
+
+function getFirstAvailableColor(product, usesVariantLevelStock) {
+  const availableColors = getAvailableColors(product, usesVariantLevelStock);
+  return availableColors[0] || product?.colors?.[0] || "silver";
+}
+
+function getFirstAvailableSize(product, color, usesVariantLevelStock) {
+  const availableSizes = getAvailableSizesForColor(
+    product,
+    color,
+    usesVariantLevelStock,
+  );
+
+  if (availableSizes.length > 0) {
+    return availableSizes[0];
   }
 
-  return product?.sizes?.[0] || null;
+  return product?.sizes?.[0] ? String(product.sizes[0]) : null;
 }
 
 function ProductView({ product }) {
@@ -98,39 +103,40 @@ function ProductView({ product }) {
 
   const [quantity, setQuantity] = useState(1);
 
-  const [selectedColor, setSelectedColor] = useState(() =>
-    getFirstAvailableColor(product),
-  );
-  const [selectedSize, setSelectedSize] = useState(() =>
-    getFirstAvailableSize(product, getFirstAvailableColor(product)),
-  );
-
-  const [selectedService, setSelectedService] = useState(
-    product?.details?.serviceOptions?.[0]?.value || null,
-  );
-
   const usesVariantLevelStock = useMemo(
     () => hasVariantLevelStock(product),
     [product],
   );
 
-  const availableColors = useMemo(() => {
-    if (!usesVariantLevelStock) return product?.colors || [];
+  const availableColors = useMemo(
+    () => getAvailableColors(product, usesVariantLevelStock),
+    [product, usesVariantLevelStock],
+  );
 
-    return (product?.colors || []).filter((color) => {
-      const entries = product?.variants?.[color] || [];
-      return entries.some((variant) => Number(variant?.stock || 0) > 0);
-    });
-  }, [product, usesVariantLevelStock]);
+  const initialColor = useMemo(
+    () => getFirstAvailableColor(product, usesVariantLevelStock),
+    [product, usesVariantLevelStock],
+  );
+
+  const [selectedColor, setSelectedColor] = useState(initialColor);
+
+  const initialSize = useMemo(
+    () => getFirstAvailableSize(product, initialColor, usesVariantLevelStock),
+    [product, initialColor, usesVariantLevelStock],
+  );
+
+  const [selectedSize, setSelectedSize] = useState(initialSize);
+
+  const [selectedService, setSelectedService] = useState(
+    product?.details?.serviceOptions?.[0]?.value || null,
+  );
 
   const effectiveSelectedColor = useMemo(() => {
-    if (!usesVariantLevelStock) return selectedColor;
-
     if (availableColors.includes(selectedColor)) {
       return selectedColor;
     }
 
-    return availableColors[0] || product?.colors?.[0] || "silver";
+    return getFirstAvailableColor(product, usesVariantLevelStock);
   }, [availableColors, product, selectedColor, usesVariantLevelStock]);
 
   const effectiveColorEntries = useMemo(() => {
@@ -142,23 +148,33 @@ function ProductView({ product }) {
   }, [product, effectiveSelectedColor, usesVariantLevelStock]);
 
   const effectiveAvailableSizes = useMemo(() => {
-    if (!usesVariantLevelStock) return product?.sizes || [];
-
-    return effectiveColorEntries
-      .filter((variant) => Number(variant?.stock || 0) > 0)
-      .map((variant) => String(variant?.size))
-      .filter(Boolean);
-  }, [product, effectiveColorEntries, usesVariantLevelStock]);
+    return getAvailableSizesForColor(
+      product,
+      effectiveSelectedColor,
+      usesVariantLevelStock,
+    );
+  }, [product, effectiveSelectedColor, usesVariantLevelStock]);
 
   const effectiveSelectedSize = useMemo(() => {
-    if (!usesVariantLevelStock) return selectedSize;
+    const normalizedSelectedSize =
+      selectedSize == null ? null : String(selectedSize);
 
-    if (effectiveAvailableSizes.includes(String(selectedSize))) {
-      return selectedSize;
+    if (effectiveAvailableSizes.includes(normalizedSelectedSize)) {
+      return normalizedSelectedSize;
     }
 
-    return effectiveAvailableSizes[0] || null;
-  }, [effectiveAvailableSizes, selectedSize, usesVariantLevelStock]);
+    return getFirstAvailableSize(
+      product,
+      effectiveSelectedColor,
+      usesVariantLevelStock,
+    );
+  }, [
+    effectiveAvailableSizes,
+    effectiveSelectedColor,
+    product,
+    selectedSize,
+    usesVariantLevelStock,
+  ]);
 
   const selectedVariant = useMemo(() => {
     if (!usesVariantLevelStock) return null;
@@ -188,7 +204,9 @@ function ProductView({ product }) {
         return selectedVariant.images.filter(Boolean);
       }
 
-      const fallbackColor = availableColors[0] || product?.colors?.[0];
+      const fallbackColor =
+        availableColors[0] || product?.colors?.[0] || "silver";
+
       const fallbackVariant = (product?.variants?.[fallbackColor] || []).find(
         (variant) =>
           Array.isArray(variant?.images) && variant.images.length > 0,
@@ -257,25 +275,28 @@ function ProductView({ product }) {
     },
     [
       addToCart,
+      effectiveSelectedColor,
+      effectiveSelectedSize,
+      isCurrentSelectionSoldOut,
       openBag,
       product,
       quantity,
       selectedService,
-      isCurrentSelectionSoldOut,
-      usesVariantLevelStock,
       selectedVariant,
-      effectiveSelectedColor,
-      effectiveSelectedSize,
+      usesVariantLevelStock,
     ],
   );
 
   const handleSelectColor = useCallback(
     (color) => {
-      setSelectedColor(color);
+      const nextColor = color;
+      const nextSize = getFirstAvailableSize(
+        product,
+        nextColor,
+        usesVariantLevelStock,
+      );
 
-      if (!usesVariantLevelStock) return;
-
-      const nextSize = getFirstAvailableSize(product, color);
+      setSelectedColor(nextColor);
       setSelectedSize(nextSize);
       setQuantity(1);
     },
@@ -283,7 +304,7 @@ function ProductView({ product }) {
   );
 
   const handleSelectSize = useCallback((size) => {
-    setSelectedSize(size);
+    setSelectedSize(size == null ? null : String(size));
     setQuantity(1);
   }, []);
 
