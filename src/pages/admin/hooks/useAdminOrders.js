@@ -12,7 +12,7 @@ export default function useAdminOrders() {
       setError("");
       setLoading(true);
 
-      const res = await fetch(`${API_ORIGIN}/api/admin/orders`, {
+      const res = await fetch(`${API_ORIGIN}/api/orders/admin/all`, {
         credentials: "include",
       });
 
