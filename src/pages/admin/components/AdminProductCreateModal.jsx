@@ -196,6 +196,7 @@ export default function AdminProductCreateModal({
         .split(",")
         .map((item) => item.trim())
         .filter(Boolean),
+      stockQuantity: stockValue,
       variantStock,
       isBestSeller: form.isBestSeller,
     };

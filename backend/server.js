@@ -578,6 +578,179 @@ app.delete("/api/products/:id", requireAdmin, async (req, res) => {
   }
 });
 
+// Helper
+function applyTotalStockToVariants(variants = {}, totalStock = 0) {
+  const safeTotal = Math.max(0, Number(totalStock) || 0);
+  const nextVariants = structuredClone(variants || {});
+
+  const entries = [];
+
+  for (const [color, colorVariants] of Object.entries(nextVariants)) {
+    if (!Array.isArray(colorVariants)) continue;
+
+    colorVariants.forEach((variant, index) => {
+      entries.push({ color, index, variant });
+    });
+  }
+
+  if (entries.length === 0) {
+    return nextVariants;
+  }
+
+  const baseStock = Math.floor(safeTotal / entries.length);
+  let remainder = safeTotal % entries.length;
+
+  for (const entry of entries) {
+    const stock = baseStock + (remainder > 0 ? 1 : 0);
+    nextVariants[entry.color][entry.index].stock = stock;
+
+    if (remainder > 0) {
+      remainder -= 1;
+    }
+  }
+
+  return nextVariants;
+}
+
+app.put("/api/products/:id", requireAdmin, async (req, res) => {
+  try {
+    const { id: routeId } = req.params;
+
+    const {
+      id,
+      name,
+      category,
+      priceValue,
+      createdAt,
+      description,
+      silverImages = [],
+      goldImages = [],
+      sizes = [],
+      stockQuantity = null,
+      variantStock = {},
+      isBestSeller = false,
+    } = req.body || {};
+
+    if (
+      !id ||
+      !name ||
+      !category ||
+      !priceValue ||
+      !createdAt ||
+      !description
+    ) {
+      return res.status(400).json({
+        message:
+          "id, name, category, priceValue, createdAt and description are required.",
+      });
+    }
+
+    if (routeId !== id) {
+      return res.status(400).json({
+        message: "Product id in URL and body must match.",
+      });
+    }
+
+    const [existingRows] = await db.query(
+      "SELECT id, variants, details FROM products WHERE id = ? LIMIT 1",
+      [id],
+    );
+
+    if (!existingRows.length) {
+      return res.status(404).json({ message: "Product not found." });
+    }
+
+    const existingProduct = existingRows[0];
+
+    const normalizedSilverImages = normalizeImageList(category, silverImages);
+    const normalizedGoldImages = normalizeImageList(category, goldImages);
+
+    const variants = buildVariantsPreservingStock({
+      existingVariantsRaw: existingProduct.variants,
+      normalizedSilverImages,
+      normalizedGoldImages,
+      sizes,
+      variantStock,
+    });
+
+    const finalVariants =
+      stockQuantity === null ||
+      stockQuantity === undefined ||
+      stockQuantity === ""
+        ? variants
+        : applyTotalStockToVariants(variants, stockQuantity);
+
+    const colors = Object.keys(finalVariants);
+    const totalStockQuantity = getTotalStockFromVariants(finalVariants);
+
+    const thumbnail =
+      normalizedSilverImages[0] || normalizedGoldImages[0] || "";
+
+    let existingDetails = {};
+
+    try {
+      existingDetails = existingProduct?.details
+        ? JSON.parse(existingProduct.details)
+        : {};
+    } catch {
+      existingDetails = {};
+    }
+
+    const details = {
+      ...existingDetails,
+      detailsText: description,
+    };
+
+    await db.query(
+      `UPDATE products
+       SET name = ?,
+           category = ?,
+           price_value = ?,
+           created_at = ?,
+           is_best_seller = ?,
+           has_gem = ?,
+           surface = ?,
+           thumbnail = ?,
+           colors = ?,
+           variants = ?,
+           gemstones = ?,
+           sizes = ?,
+           details = ?,
+           stock_quantity = ?
+       WHERE id = ?`,
+      [
+        name,
+        category,
+        Number(priceValue),
+        createdAt,
+        isBestSeller ? 1 : 0,
+        0,
+        "smooth",
+        thumbnail,
+        JSON.stringify(colors),
+        JSON.stringify(finalVariants),
+        JSON.stringify([]),
+        JSON.stringify(sizes),
+        JSON.stringify(details),
+        totalStockQuantity,
+        id,
+      ],
+    );
+
+    const [rows] = await db.query(
+      "SELECT * FROM products WHERE id = ? LIMIT 1",
+      [id],
+    );
+
+    return res.json({
+      product: mapProductRow(rows[0]),
+    });
+  } catch (err) {
+    console.error("Update product error:", err);
+    return res.status(500).json({ message: err.message });
+  }
+});
+
 app.put("/api/products/:id", requireAdmin, async (req, res) => {
   try {
     const { id: routeId } = req.params;
