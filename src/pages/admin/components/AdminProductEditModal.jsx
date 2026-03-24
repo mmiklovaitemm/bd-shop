@@ -46,10 +46,10 @@ export default function AdminProductEditModal({
       result[color] = {};
 
       for (const variant of colorVariants) {
-        const size = String(variant?.size || "").trim();
-        if (!size) continue;
+        const rawSize = String(variant?.size || "").trim();
+        const sizeKey = rawSize || "default";
 
-        result[color][size] = Math.max(0, Number(variant?.stock) || 0);
+        result[color][sizeKey] = Math.max(0, Number(variant?.stock) || 0);
       }
     }
 
@@ -347,8 +347,9 @@ export default function AdminProductEditModal({
   };
 
   const renderVariantStockSection = (color) => {
-    if (!parsedSizes.length) return null;
     if (!form.variantStock?.[color]) return null;
+
+    const colorSizes = parsedSizes.length ? parsedSizes : ["default"];
 
     return (
       <div className="border border-black p-4">
@@ -357,9 +358,12 @@ export default function AdminProductEditModal({
         </h3>
 
         <div className="grid gap-3 md:grid-cols-2">
-          {parsedSizes.map((size) => (
+          {colorSizes.map((size) => (
             <div key={`${color}-${size}`}>
-              <label className="mb-2 block text-black/70">Size {size}</label>
+              <label className="mb-2 block text-black/70">
+                {size === "default" ? "Stock quantity" : `Size ${size}`}
+              </label>
+
               <input
                 type="number"
                 min="0"
