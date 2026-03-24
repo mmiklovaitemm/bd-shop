@@ -31,12 +31,6 @@ const LANGUAGE_BUTTON_CLASS =
 const HEADER_HEIGHT = "h-[64px]";
 const MAX_WIDTH = "max-w-[1320px]";
 
-const NAV_ITEMS = [
-  { to: "/collections", label: "Collections" },
-  { to: "/about", label: "About us" },
-  { to: "/contact", label: "Contacts" },
-];
-
 // Language options
 const LANGUAGES = [
   { code: "EN", value: "en" },
@@ -251,7 +245,7 @@ export default function Header() {
               className={`h-4 w-auto select-none ${ICON_HOVER_CLASS}`}
             />
 
-            <span className="font-ui text-[12px] text-black/80 select-none lg:text-[15px]">
+            <span className="font-ui text-[12px] text-black/80 select-none lg:text-[14px]">
               {t.bag} ({cartCount})
             </span>
           </button>
@@ -271,8 +265,13 @@ export default function Header() {
           )}
 
           <div className="flex items-center gap-2">
-            {LANGUAGES.map(({ code, isActive }) => (
-              <LanguageButton key={code} code={code} isActive={isActive} />
+            {LANGUAGES.map(({ code, value }) => (
+              <LanguageButton
+                key={code}
+                code={code}
+                isActive={lang === value}
+                onClick={() => setLang(value)}
+              />
             ))}
           </div>
         </div>
