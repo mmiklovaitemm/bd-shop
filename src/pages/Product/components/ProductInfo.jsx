@@ -79,8 +79,12 @@ const ProductBenefits = memo(function ProductBenefits() {
 
   return (
     <div className="mt-6 mb-6 grid grid-cols-2 gap-x-6 gap-y-4 border-t border-black pt-5 md:gap-6">
-      {benefits.map((benefit, index) => (
-        <BenefitItem key={index} icon={benefit.icon} text={benefit.text} />
+      {benefits.map((benefit) => (
+        <BenefitItem
+          key={`${benefit.text}-${benefit.icon}`}
+          icon={benefit.icon}
+          text={benefit.text}
+        />
       ))}
     </div>
   );
@@ -98,20 +102,24 @@ const SizeSelector = memo(function SizeSelector({
     return <p className="mt-2 font-ui text-[13px] text-black/50">One size</p>;
   }
 
+  const normalizedSelectedSize =
+    selectedSize == null ? null : String(selectedSize);
+
   return (
     <div className="mt-2 flex flex-wrap gap-2">
       {sizes.map((size) => {
-        const isActive = selectedSize === size;
+        const normalizedSize = String(size);
+        const isActive = normalizedSelectedSize === normalizedSize;
         const isAvailable = !usesVariantLevelStock
           ? true
-          : availableSizes.includes(String(size));
+          : availableSizes.includes(normalizedSize);
 
         return (
           <button
-            key={size}
+            key={normalizedSize}
             type="button"
             disabled={!isAvailable}
-            onClick={() => isAvailable && onSelectSize(size)}
+            onClick={() => isAvailable && onSelectSize(normalizedSize)}
             className={cn(
               "h-10 min-w-12 border px-3 font-ui text-[13px] select-none",
               hoverBtnClass,
@@ -225,6 +233,7 @@ const ProductInfo = memo(function ProductInfo({
 
   const isWishlisted = has(product.id);
   const hoverBtnClass = hoverClasses.btn;
+
   const isSoldOut = usesVariantLevelStock
     ? Boolean(isCurrentSelectionSoldOut)
     : Boolean(product.isSoldOut);
@@ -342,8 +351,10 @@ const ProductInfo = memo(function ProductInfo({
                 typeof updater === "function" ? updater(prev) : Number(updater);
 
               const maxStock = usesVariantLevelStock
-                ? Math.max(1, Number(currentStock) || 1)
-                : Math.max(1, Number(product.stockQuantity) || 1);
+                ? Math.max(0, Number(currentStock) || 0)
+                : Math.max(0, Number(product.stockQuantity) || 0);
+
+              if (maxStock <= 0) return 1;
 
               return Math.min(maxStock, Math.max(1, next));
             });
