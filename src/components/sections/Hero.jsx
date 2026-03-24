@@ -128,17 +128,22 @@ export default function Hero() {
 
           <div className="pointer-events-none absolute inset-0">
             <div className="relative mx-auto h-full max-w-[1320px] px-4 md:px-6">
+              {/* MOBILE / TABLET */}
               <h1 className="absolute bottom-7 left-7 font-display text-[60px] leading-[74px] tracking-wider text-white lg:hidden">
                 {t.heroTitleLine1} <br />
                 {t.heroTitleLine2} <br />
                 {t.heroTitleLine3}
               </h1>
 
+              {/* DESKTOP */}
               <div className="absolute bottom-10 left-10 right-10 hidden items-end gap-8 lg:flex">
-                <h1 className="whitespace-nowrap font-display text-[72px] leading-none text-white xl:text-[88px]">
-                  {t.heroTitleDesktop}
+                <h1 className="font-display text-white text-[72px] xl:text-[88px] leading-[0.92] tracking-wide shrink-0">
+                  <span className="block">{t.heroTitleLine1}</span>
+                  <span className="block">{t.heroTitleLine2}</span>
+                  <span className="block">{t.heroTitleLine3}</span>
                 </h1>
-                <div className="flex-1 translate-y-[-12px] bg-white/80 h-px" />
+
+                <div className="mb-[10px] h-px flex-1 bg-white/80" />
               </div>
             </div>
           </div>
