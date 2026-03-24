@@ -81,7 +81,6 @@ const COOKIE_OPTIONS = {
   sameSite: IS_PRODUCTION ? "none" : "lax",
   secure: IS_PRODUCTION,
   maxAge: 7 * 24 * 60 * 60 * 1000,
-  normalizeImageList,
 };
 
 function setAuthCookie(res, payload) {
@@ -287,80 +286,37 @@ function normalizeImageList(category, list = []) {
     });
 }
 
-function getRandomInt(min, max) {
-  const minCeil = Math.ceil(min);
-  const maxFloor = Math.floor(max);
-  return Math.floor(Math.random() * (maxFloor - minCeil + 1)) + minCeil;
-}
-
-function shuffleArray(array) {
-  const copy = [...array];
-
-  for (let i = copy.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-
-  return copy;
-}
-
 function buildVariantsWithStock({
   normalizedSilverImages = [],
   normalizedGoldImages = [],
   sizes = [],
+  variantStock = {},
 }) {
   const cleanSizes = Array.isArray(sizes)
     ? sizes.map((size) => String(size).trim()).filter(Boolean)
     : [];
 
-  const variantPool = [];
+  const grouped = {};
+
+  const getStock = (color, size) => {
+    const rawValue = variantStock?.[color]?.[size];
+    return Math.max(0, Number(rawValue) || 0);
+  };
 
   if (normalizedSilverImages.length) {
-    for (const size of cleanSizes) {
-      variantPool.push({
-        color: "silver",
-        size,
-        images: normalizedSilverImages,
-      });
-    }
+    grouped.silver = cleanSizes.map((size) => ({
+      size,
+      stock: getStock("silver", size),
+      images: normalizedSilverImages,
+    }));
   }
 
   if (normalizedGoldImages.length) {
-    for (const size of cleanSizes) {
-      variantPool.push({
-        color: "gold",
-        size,
-        images: normalizedGoldImages,
-      });
-    }
-  }
-
-  const shuffled = shuffleArray(variantPool);
-
-  const outOfStockCount =
-    shuffled.length <= 1 ? 0 : Math.min(getRandomInt(1, 2), shuffled.length);
-
-  const outOfStockKeys = new Set(
-    shuffled
-      .slice(0, outOfStockCount)
-      .map((item) => `${item.color}__${item.size}`),
-  );
-
-  const grouped = {};
-
-  for (const item of variantPool) {
-    const key = `${item.color}__${item.size}`;
-    const isOutOfStock = outOfStockKeys.has(key);
-
-    if (!grouped[item.color]) {
-      grouped[item.color] = [];
-    }
-
-    grouped[item.color].push({
-      size: item.size,
-      stock: isOutOfStock ? 0 : getRandomInt(2, 10),
-      images: item.images,
-    });
+    grouped.gold = cleanSizes.map((size) => ({
+      size,
+      stock: getStock("gold", size),
+      images: normalizedGoldImages,
+    }));
   }
 
   return grouped;
@@ -377,6 +333,58 @@ function getTotalStockFromVariants(variants = {}) {
       }, 0)
     );
   }, 0);
+}
+
+function buildVariantsPreservingStock({
+  existingVariantsRaw = {},
+  normalizedSilverImages = [],
+  normalizedGoldImages = [],
+  sizes = [],
+  variantStock = {},
+}) {
+  const existingVariants = safeJsonParse(existingVariantsRaw, {}) || {};
+
+  const cleanSizes = Array.isArray(sizes)
+    ? sizes.map((size) => String(size).trim()).filter(Boolean)
+    : [];
+
+  const getIncomingStock = (color, size) => {
+    const rawValue = variantStock?.[color]?.[size];
+    return Math.max(0, Number(rawValue) || 0);
+  };
+
+  const colorConfigs = [
+    { color: "silver", images: normalizedSilverImages },
+    { color: "gold", images: normalizedGoldImages },
+  ];
+
+  for (const { color, images } of colorConfigs) {
+    if (!images.length) continue;
+
+    const existingColorVariants = Array.isArray(existingVariants[color])
+      ? existingVariants[color]
+      : [];
+
+    nextVariants[color] = cleanSizes.map((size) => {
+      const existingVariant = existingColorVariants.find((variant) => {
+        if (!variant || typeof variant !== "object" || Array.isArray(variant)) {
+          return false;
+        }
+
+        return String(variant?.size || "").trim() === size;
+      });
+
+      return {
+        size,
+        stock: existingVariant
+          ? Math.max(0, Number(existingVariant?.stock) || 0)
+          : getIncomingStock(color, size),
+        images,
+      };
+    });
+  }
+
+  return nextVariants;
 }
 
 app.post(
@@ -445,6 +453,7 @@ app.post("/api/products", requireAdmin, async (req, res) => {
       silverImages = [],
       goldImages = [],
       sizes = [],
+      variantStock = {},
       isBestSeller = false,
     } = req.body || {};
 
@@ -478,6 +487,7 @@ app.post("/api/products", requireAdmin, async (req, res) => {
       normalizedSilverImages,
       normalizedGoldImages,
       sizes,
+      variantStock,
     });
 
     const colors = Object.keys(variants);
@@ -580,6 +590,7 @@ app.put("/api/products/:id", requireAdmin, async (req, res) => {
       silverImages = [],
       goldImages = [],
       sizes = [],
+      variantStock = {},
       isBestSeller = false,
     } = req.body || {};
 
@@ -603,22 +614,26 @@ app.put("/api/products/:id", requireAdmin, async (req, res) => {
       });
     }
 
-    const [existing] = await db.query(
-      "SELECT id FROM products WHERE id = ? LIMIT 1",
+    const [existingRows] = await db.query(
+      "SELECT id, variants, details FROM products WHERE id = ? LIMIT 1",
       [id],
     );
 
-    if (!existing.length) {
+    if (!existingRows.length) {
       return res.status(404).json({ message: "Product not found." });
     }
+
+    const existingProduct = existingRows[0];
 
     const normalizedSilverImages = normalizeImageList(category, silverImages);
     const normalizedGoldImages = normalizeImageList(category, goldImages);
 
-    const variants = buildVariantsWithStock({
+    const variants = buildVariantsPreservingStock({
+      existingVariantsRaw: existingProduct.variants,
       normalizedSilverImages,
       normalizedGoldImages,
       sizes,
+      variantStock,
     });
 
     const colors = Object.keys(variants);
@@ -627,16 +642,11 @@ app.put("/api/products/:id", requireAdmin, async (req, res) => {
     const thumbnail =
       normalizedSilverImages[0] || normalizedGoldImages[0] || "";
 
-    const [existingRows] = await db.query(
-      "SELECT details FROM products WHERE id = ? LIMIT 1",
-      [id],
-    );
-
     let existingDetails = {};
 
     try {
-      existingDetails = existingRows[0]?.details
-        ? JSON.parse(existingRows[0].details)
+      existingDetails = existingProduct?.details
+        ? JSON.parse(existingProduct.details)
         : {};
     } catch {
       existingDetails = {};
@@ -649,21 +659,21 @@ app.put("/api/products/:id", requireAdmin, async (req, res) => {
 
     await db.query(
       `UPDATE products
-   SET name = ?,
-       category = ?,
-       price_value = ?,
-       created_at = ?,
-       is_best_seller = ?,
-       has_gem = ?,
-       surface = ?,
-       thumbnail = ?,
-       colors = ?,
-       variants = ?,
-       gemstones = ?,
-       sizes = ?,
-       details = ?,
-       stock_quantity = ?
-   WHERE id = ?`,
+       SET name = ?,
+           category = ?,
+           price_value = ?,
+           created_at = ?,
+           is_best_seller = ?,
+           has_gem = ?,
+           surface = ?,
+           thumbnail = ?,
+           colors = ?,
+           variants = ?,
+           gemstones = ?,
+           sizes = ?,
+           details = ?,
+           stock_quantity = ?
+       WHERE id = ?`,
       [
         name,
         category,
@@ -1129,7 +1139,8 @@ app.patch("/api/orders/:id/status", requireAdmin, async (req, res) => {
           `SELECT id, stock_quantity, variants
           FROM products
           WHERE id = ?
-          LIMIT 1`,
+          LIMIT 1
+          FOR UPDATE`,
           [productId],
         );
 
@@ -1205,11 +1216,11 @@ app.post("/api/orders", requireAuth, async (req, res) => {
 
   try {
     connection = await db.getConnection();
-
     await connection.beginTransaction();
 
     const userId = req.user.userId;
     const { items, contact, delivery, shipping, payment } = req.body || {};
+
     const email = String(contact?.email || "")
       .trim()
       .toLowerCase();
@@ -1321,25 +1332,29 @@ app.post("/api/orders", requireAuth, async (req, res) => {
 
     const getProductId = (it) => {
       const direct = it?.productId ?? it?.product_id ?? it?.id;
-      if (direct) return String(direct);
+      if (direct) return String(direct).trim();
 
-      const key = String(it?.key || "");
+      const key = String(it?.key || "").trim();
       return key ? key.split("|")[0] : "";
     };
 
     const SHIPPING_KIT_FEE_CENTS = 1500;
-
     const normalized = [];
 
     for (const it of items) {
       const productId = getProductId(it);
       const qty = getQty(it);
 
+      if (!productId) {
+        throw new Error("Product not found.");
+      }
+
       const [rows] = await connection.query(
         `SELECT id, name, price_value, thumbnail, stock_quantity, variants
-        FROM products
-        WHERE id = ?
-        LIMIT 1`,
+         FROM products
+         WHERE id = ?
+         LIMIT 1
+         FOR UPDATE`,
         [productId],
       );
 
@@ -1356,7 +1371,11 @@ app.post("/api/orders", requireAuth, async (req, res) => {
       const usesVariantLevelStock =
         hasVariantLevelStockStructure(parsedVariants);
 
-      if (usesVariantLevelStock && color && size) {
+      if (usesVariantLevelStock && (!color || !size)) {
+        throw new Error(`Missing color or size for "${productRow.name}"`);
+      }
+
+      if (usesVariantLevelStock) {
         const colorVariants = parsedVariants[color];
 
         if (!Array.isArray(colorVariants) || !colorVariants.length) {
@@ -1376,8 +1395,10 @@ app.post("/api/orders", requireAuth, async (req, res) => {
             `Not enough stock for selected variant of "${productRow.name}"`,
           );
         }
-      } else if (Number(productRow.stock_quantity) < qty) {
-        throw new Error(`Not enough stock for "${productRow.name}"`);
+      } else {
+        if (Number(productRow.stock_quantity || 0) < qty) {
+          throw new Error(`Not enough stock for "${productRow.name}"`);
+        }
       }
 
       const serviceOption = String(
@@ -1462,9 +1483,10 @@ app.post("/api/orders", requireAuth, async (req, res) => {
     for (const it of normalized) {
       const [productRows] = await connection.query(
         `SELECT id, stock_quantity, variants
-     FROM products
-     WHERE id = ?
-     LIMIT 1`,
+         FROM products
+         WHERE id = ?
+         LIMIT 1
+         FOR UPDATE`,
         [it.productId],
       );
 
@@ -1478,7 +1500,11 @@ app.post("/api/orders", requireAuth, async (req, res) => {
       const usesVariantLevelStock =
         hasVariantLevelStockStructure(parsedVariants);
 
-      if (usesVariantLevelStock && it.color && it.size) {
+      if (usesVariantLevelStock) {
+        if (!it.color || !it.size) {
+          throw new Error(`Missing color or size for "${it.productName}"`);
+        }
+
         const nextVariants = decreaseVariantStock(
           parsedVariants,
           it.color,
@@ -1490,15 +1516,15 @@ app.post("/api/orders", requireAuth, async (req, res) => {
 
         await connection.query(
           `UPDATE products
-       SET variants = ?, stock_quantity = ?
-       WHERE id = ?`,
+           SET variants = ?, stock_quantity = ?
+           WHERE id = ?`,
           [JSON.stringify(nextVariants), nextTotalStock, it.productId],
         );
       } else {
         const [updateResult] = await connection.query(
           `UPDATE products
-       SET stock_quantity = stock_quantity - ?
-       WHERE id = ? AND stock_quantity >= ?`,
+           SET stock_quantity = stock_quantity - ?
+           WHERE id = ? AND stock_quantity >= ?`,
           [it.qty, it.productId, it.qty],
         );
 
@@ -1536,7 +1562,20 @@ app.post("/api/orders", requireAuth, async (req, res) => {
     }
 
     console.log("Create order error:", err);
-    return res.status(500).json({ message: err.message });
+
+    const message = String(err?.message || "");
+
+    if (
+      message.includes("Not enough stock") ||
+      message.includes("Variant color not found") ||
+      message.includes("Variant size not found") ||
+      message.includes("Missing color or size") ||
+      message.includes("Product not found")
+    ) {
+      return res.status(409).json({ message });
+    }
+
+    return res.status(500).json({ message });
   } finally {
     if (connection) {
       connection.release();

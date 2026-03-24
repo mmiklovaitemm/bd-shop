@@ -106,6 +106,8 @@ export default function AdminProducts() {
     try {
       const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
+      console.log("DATA:", data);
+
       const res = await fetch(`${API_URL}/api/products`, {
         method: "POST",
         headers: {

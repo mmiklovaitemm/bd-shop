@@ -9,8 +9,6 @@ import preventDragHandler from "@/utils/preventDrag";
 import arrowUpRightIcon from "@/assets/ui/arrow-up-right.svg";
 import trashIcon from "@/assets/ui/trash.svg";
 
-const API_ORIGIN = import.meta.env.VITE_API_URL || "http://localhost:4000";
-
 const fmtPrice = (n) =>
   new Intl.NumberFormat("lt-LT", {
     style: "currency",
@@ -18,16 +16,155 @@ const fmtPrice = (n) =>
     minimumFractionDigits: 2,
   }).format(Number(n || 0));
 
-const pickVariantImage = (product, color) => {
-  if (!product) return "";
-  const c = color || product.colors?.[0] || "silver";
+function isVariantObject(value) {
   return (
-    product?.variants?.[c]?.[0] ||
-    product?.variants?.[product?.colors?.[0]]?.[0] ||
-    product?.thumbnail ||
-    ""
+    value &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    Array.isArray(value.images)
   );
-};
+}
+
+function usesVariantLevelStock(product) {
+  return Object.values(product?.variants || {}).some(
+    (value) =>
+      Array.isArray(value) && value.length > 0 && isVariantObject(value[0]),
+  );
+}
+
+function getAvailableColors(product) {
+  const colors = product?.colors || [];
+
+  if (!usesVariantLevelStock(product)) {
+    return colors.filter(
+      (color) => (product?.variants?.[color] || []).length > 0,
+    );
+  }
+
+  return colors.filter((color) => {
+    const entries = product?.variants?.[color] || [];
+    return entries.some((variant) => Number(variant?.stock || 0) > 0);
+  });
+}
+
+function getColorEntries(product, color) {
+  if (!product) return [];
+
+  return Array.isArray(product?.variants?.[color])
+    ? product.variants[color]
+    : [];
+}
+
+function getAvailableSizesForColor(product, color) {
+  if (!product) return [];
+
+  if (!usesVariantLevelStock(product)) {
+    return (product?.sizes || []).map(String);
+  }
+
+  return getColorEntries(product, color)
+    .filter((variant) => Number(variant?.stock || 0) > 0)
+    .map((variant) => String(variant?.size))
+    .filter(Boolean);
+}
+
+function getFirstAvailableColor(product) {
+  const availableColors = getAvailableColors(product);
+  return availableColors[0] || product?.colors?.[0] || "silver";
+}
+
+function getFirstAvailableSize(product, color) {
+  const availableSizes = getAvailableSizesForColor(product, color);
+
+  if (availableSizes.length > 0) {
+    return availableSizes[0];
+  }
+
+  return product?.sizes?.[0] ? String(product.sizes[0]) : null;
+}
+
+function getSelectedVariant(product, color, size) {
+  if (!product || !usesVariantLevelStock(product)) return null;
+
+  const entries = getColorEntries(product, color);
+  return (
+    entries.find((variant) => String(variant?.size) === String(size)) || null
+  );
+}
+
+function getVariantStock(product, color, size) {
+  if (!product) return 0;
+
+  if (!usesVariantLevelStock(product)) {
+    return Math.max(0, Number(product?.stockQuantity) || 0);
+  }
+
+  const selectedVariant = getSelectedVariant(product, color, size);
+  return Math.max(0, Number(selectedVariant?.stock) || 0);
+}
+
+function pickVariantImage(product, color, size = null) {
+  if (!product) return "";
+
+  const fallbackColor = color || getFirstAvailableColor(product);
+
+  if (!usesVariantLevelStock(product)) {
+    return (
+      product?.variants?.[fallbackColor]?.[0] ||
+      product?.variants?.[product?.colors?.[0]]?.[0] ||
+      product?.thumbnail ||
+      ""
+    );
+  }
+
+  const exactVariant = getSelectedVariant(product, fallbackColor, size);
+  if (exactVariant?.images?.length) {
+    return exactVariant.images[0] || product?.thumbnail || "";
+  }
+
+  const firstAvailableVariant = getColorEntries(product, fallbackColor).find(
+    (variant) =>
+      Number(variant?.stock || 0) > 0 &&
+      Array.isArray(variant?.images) &&
+      variant.images.length > 0,
+  );
+
+  if (firstAvailableVariant?.images?.length) {
+    return firstAvailableVariant.images[0] || product?.thumbnail || "";
+  }
+
+  const firstImageVariant = getColorEntries(product, fallbackColor).find(
+    (variant) => Array.isArray(variant?.images) && variant.images.length > 0,
+  );
+
+  if (firstImageVariant?.images?.length) {
+    return firstImageVariant.images[0] || product?.thumbnail || "";
+  }
+
+  return product?.thumbnail || "";
+}
+
+function getEffectiveColor(product, item) {
+  const availableColors = getAvailableColors(product);
+  const currentColor = item?.color || product?.colors?.[0] || "silver";
+
+  if (availableColors.includes(currentColor)) {
+    return currentColor;
+  }
+
+  return getFirstAvailableColor(product);
+}
+
+function getEffectiveSize(product, color, item) {
+  const currentSize = item?.size == null ? null : String(item.size);
+  const availableSizes = getAvailableSizesForColor(product, color);
+
+  if (availableSizes.includes(currentSize)) {
+    return currentSize;
+  }
+
+  return getFirstAvailableSize(product, color);
+}
 
 export default function ShoppingBagDrawer() {
   const navigate = useNavigate();
@@ -64,7 +201,9 @@ export default function ShoppingBagDrawer() {
 
   const productsById = useMemo(() => {
     const m = new Map();
-    for (const p of products) m.set(String(p.id), p);
+    for (const p of products) {
+      m.set(String(p.id), p);
+    }
     return m;
   }, [products]);
 
@@ -72,7 +211,10 @@ export default function ShoppingBagDrawer() {
     (id) => productsById.get(String(id)) || null,
     [productsById],
   );
+
   useEffect(() => {
+    if (!isOpen) return;
+
     items.forEach((item) => {
       const pid =
         item.productId ??
@@ -82,20 +224,28 @@ export default function ShoppingBagDrawer() {
         String(item.key || "").split("|")[0];
 
       const product = getProductById(pid) || item.product || null;
-      const availableSizes = product?.sizes || [];
+      if (!product) return;
 
-      if (!item.size && availableSizes.length > 0) {
+      const nextColor = getEffectiveColor(product, item);
+      const nextSize = getEffectiveSize(product, nextColor, item);
+      const nextImage = pickVariantImage(product, nextColor, nextSize);
+
+      const normalizedItemSize = item?.size == null ? null : String(item.size);
+      const currentImage = item?.image || "";
+      const shouldUpdate =
+        item.color !== nextColor ||
+        normalizedItemSize !== nextSize ||
+        currentImage !== nextImage;
+
+      if (shouldUpdate) {
         updateVariant(item.key, {
-          color: item.color || product?.colors?.[0] || "silver",
-          size: availableSizes[0],
-          image: pickVariantImage(
-            product,
-            item.color || product?.colors?.[0] || "silver",
-          ),
+          color: nextColor,
+          size: nextSize,
+          image: nextImage,
         });
       }
     });
-  }, [items, getProductById, updateVariant]);
+  }, [isOpen, items, getProductById, updateVariant]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -151,7 +301,6 @@ export default function ShoppingBagDrawer() {
       ].join(" ")}
       onDragStart={preventDragHandler}
     >
-      {/* overlay */}
       <button
         type="button"
         aria-label="Close bag"
@@ -162,7 +311,6 @@ export default function ShoppingBagDrawer() {
         ].join(" ")}
       />
 
-      {/* panel */}
       <aside
         data-bag-panel
         className={[
@@ -171,7 +319,6 @@ export default function ShoppingBagDrawer() {
           isOpen ? "translate-x-0" : "translate-x-full",
         ].join(" ")}
       >
-        {/* HEADER */}
         <div className="h-16 px-6 flex items-center justify-between border-b border-black">
           <p className="font-display text-[20px] leading-none">Bag</p>
 
@@ -194,9 +341,7 @@ export default function ShoppingBagDrawer() {
           </button>
         </div>
 
-        {/* BODY */}
         <div className="flex flex-col h-[calc(100vh-64px)]">
-          {/* ITEMS */}
           <div className="flex-1 overflow-y-auto">
             {items.length === 0 ? (
               <div className="px-6 py-10 text-center font-ui text-[14px] text-black/60">
@@ -214,26 +359,32 @@ export default function ShoppingBagDrawer() {
                   String(item.key || "").split("|")[0];
 
                 const product = getProductById(pid) || item.product || null;
-                const availableColors = product?.colors || [];
-                const availableSizes = product?.sizes || [];
-                const currentColor =
-                  item.color || availableColors[0] || "silver";
 
-                const currentSize =
-                  item.size ||
-                  (availableSizes.length ? availableSizes[0] : null);
+                const availableColors = getAvailableColors(product);
+                const currentColor = getEffectiveColor(product, item);
+                const availableSizes = getAvailableSizesForColor(
+                  product,
+                  currentColor,
+                );
+                const currentSize = getEffectiveSize(
+                  product,
+                  currentColor,
+                  item,
+                );
 
                 const hasSizes = availableSizes.length > 0;
                 const hasColors = availableColors.length > 0;
-                const stockQuantity = Math.max(
-                  0,
-                  Number(product?.stockQuantity) || 0,
+
+                const variantStock = getVariantStock(
+                  product,
+                  currentColor,
+                  currentSize,
                 );
-                const isSoldOut =
-                  Boolean(product?.isSoldOut) || stockQuantity <= 0;
+
+                const isSoldOut = variantStock <= 0;
                 const itemQuantity = Math.max(1, Number(item.quantity || 1));
                 const reachedMaxStock =
-                  itemQuantity >= stockQuantity && stockQuantity > 0;
+                  variantStock > 0 ? itemQuantity >= variantStock : true;
 
                 return (
                   <div
@@ -245,7 +396,6 @@ export default function ShoppingBagDrawer() {
                     ].join(" ")}
                   >
                     <div className="grid grid-cols-[90px_1fr] gap-5">
-                      {/* image */}
                       <div className="w-[90px] h-[110px] bg-black/5 overflow-hidden">
                         <img
                           src={item.image}
@@ -257,9 +407,7 @@ export default function ShoppingBagDrawer() {
                         />
                       </div>
 
-                      {/* content */}
                       <div className="min-w-0">
-                        {/* top row */}
                         <div className="flex items-start justify-between gap-3">
                           <p className="font-display text-[18px] leading-tight">
                             {item.name}
@@ -269,11 +417,11 @@ export default function ShoppingBagDrawer() {
                             <p className="mt-1 font-ui text-[12px] uppercase tracking-[0.08em] text-red-600">
                               Sold out
                             </p>
-                          ) : stockQuantity > 0 ? (
+                          ) : (
                             <p className="mt-1 font-ui text-[12px] text-black/55">
-                              In stock: {stockQuantity}
+                              In stock: {variantStock}
                             </p>
-                          ) : null}
+                          )}
 
                           {(() => {
                             const base = Number(item.price) || 0;
@@ -305,10 +453,9 @@ export default function ShoppingBagDrawer() {
                           })()}
                         </div>
 
-                        {/* VARIANT CONTROLS */}
                         <div className="mt-3 grid grid-cols-2 gap-3">
                           {product?.category === "personal" ? (
-                            <div className=" bg-black/5 px-3 py-2">
+                            <div className="bg-black/5 px-3 py-2">
                               <p className="font-ui text-[12px] text-black/50">
                                 Service option
                               </p>
@@ -328,7 +475,6 @@ export default function ShoppingBagDrawer() {
                             </div>
                           ) : null}
 
-                          {/* COLOR */}
                           <div className="bg-black/5 px-3 py-2">
                             <p className="font-ui text-[12px] text-black/50">
                               Color
@@ -340,14 +486,19 @@ export default function ShoppingBagDrawer() {
                                 value={currentColor}
                                 onChange={(e) => {
                                   const nextColor = e.target.value;
+                                  const nextSize = getFirstAvailableSize(
+                                    product,
+                                    nextColor,
+                                  );
                                   const nextImage = pickVariantImage(
                                     product,
                                     nextColor,
+                                    nextSize,
                                   );
 
                                   updateVariant(item.key, {
                                     color: nextColor,
-                                    size: currentSize,
+                                    size: nextSize,
                                     image: nextImage,
                                   });
                                 }}
@@ -365,7 +516,6 @@ export default function ShoppingBagDrawer() {
                             )}
                           </div>
 
-                          {/* SIZE */}
                           <div className="bg-black/5 px-3 py-2">
                             <p className="font-ui text-[12px] text-black/50">
                               Size
@@ -403,9 +553,7 @@ export default function ShoppingBagDrawer() {
                           </div>
                         </div>
 
-                        {/* qty + trash */}
                         <div className="mt-4 flex items-center justify-between gap-4">
-                          {/* qty control */}
                           <div className="inline-flex items-stretch border border-black h-10 bg-white">
                             <button
                               type="button"
@@ -440,7 +588,6 @@ export default function ShoppingBagDrawer() {
                             </button>
                           </div>
 
-                          {/* trash */}
                           <button
                             type="button"
                             aria-label="Remove item"
@@ -461,7 +608,6 @@ export default function ShoppingBagDrawer() {
                           </button>
                         </div>
 
-                        {/* optional note bar */}
                         {item.note ? (
                           <div className="mt-5 bg-black/55 text-white font-ui text-[13px] px-4 py-3">
                             {item.note}
@@ -475,7 +621,6 @@ export default function ShoppingBagDrawer() {
             )}
           </div>
 
-          {/* FOOTER */}
           <div className="border-t border-black p-6">
             <button
               type="button"

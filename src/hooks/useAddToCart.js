@@ -12,10 +12,12 @@ export default function useAddToCart() {
       if (!product?.id) return;
 
       const priceNumber = parsePriceToNumber(product.price);
+      const safeQuantity = Math.max(1, Number(quantity) || 1);
 
       const safeColor = color || "silver";
-      const safeSize = size || "nosize";
+      const safeSize = size == null ? "nosize" : String(size);
       const safeServiceOption = serviceOption || "no-service";
+      const safeImage = image || product.thumbnail || "";
 
       const key = `${product.id}|${safeColor}|${safeSize}|${safeServiceOption}`;
 
@@ -24,12 +26,12 @@ export default function useAddToCart() {
         productId: product.id,
         name: product.name,
         price: priceNumber,
-        image,
+        image: safeImage,
         color: safeColor,
-        size: size || null,
-        quantity,
+        size: size == null ? null : String(size),
+        quantity: safeQuantity,
         category: product.category,
-        serviceOption,
+        serviceOption: serviceOption || null,
       });
 
       openBag();
