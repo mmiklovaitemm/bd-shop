@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import preventDragHandler from "@/utils/preventDrag";
+import useLanguage from "@/context/useLanguage";
 
 import warrantyIcon from "@/assets/ui/warranty.svg";
 import returnIcon from "@/assets/ui/return-box.svg";
@@ -8,20 +9,21 @@ import deliveryIcon from "@/assets/ui/delivery.svg";
 import qualityIcon from "@/assets/ui/star.svg";
 
 export default function AnnouncementBar() {
+  const { t } = useLanguage();
+
   const items = useMemo(
     () => [
-      { icon: warrantyIcon, text: "2 Year Warranty" },
-      { icon: qualityIcon, text: "High Quality" },
-      { icon: deliveryIcon, text: "Fast Delivery" },
-      { icon: returnIcon, text: "90 - Day Return" },
+      { icon: warrantyIcon, text: t.warranty },
+      { icon: qualityIcon, text: t.highQuality },
+      { icon: deliveryIcon, text: t.fastDelivery },
+      { icon: returnIcon, text: t.return90Days },
     ],
-    [],
+    [t],
   );
 
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
-    // mobile only
     const mq = window.matchMedia("(min-width: 768px)");
     if (mq.matches) return;
 

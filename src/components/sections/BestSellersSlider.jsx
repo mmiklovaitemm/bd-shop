@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 import HorizontalSliderSection from "@/components/sections/HorizontalSliderSection";
 import ProductCard from "@/components/ui/ProductCard/ProductCard";
+import useLanguage from "@/context/useLanguage";
 
 import seeAllArrow from "@/assets/ui/see-all-arrow-right.svg";
 import { BEST_SELLERS } from "@/data/bestSellers";
@@ -12,13 +13,14 @@ const withBase = (path) =>
 
 export default function BestSellersSlider({ items = BEST_SELLERS }) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const SeeAllButton = useMemo(
     () => (
       <button
         type="button"
         onClick={() => navigate("/collections?category=best-sellers")}
-        aria-label="See all best sellers"
+        aria-label={t.seeAllBestSellers}
         className="
           group inline-flex items-center gap-2
           font-display text-[18px] font-normal text-black
@@ -29,7 +31,7 @@ export default function BestSellersSlider({ items = BEST_SELLERS }) {
         "
       >
         <span className="inline-block transition-transform duration-300 ease-out will-change-transform lg:group-hover:translate-x-1 lg:group-hover:-translate-y-1">
-          See all
+          {t.seeAll}
         </span>
 
         <img
@@ -44,16 +46,16 @@ export default function BestSellersSlider({ items = BEST_SELLERS }) {
         />
       </button>
     ),
-    [navigate],
+    [navigate, t],
   );
 
   return (
     <HorizontalSliderSection
-      title="Best sellers"
+      title={t.bestSellers}
       leftWidthPx={260}
       leftBottomSlot={<div className="lg:mt-[3rem]">{SeeAllButton}</div>}
       mobileBottomSlot={
-        <div className="mt-6 flex justify-end px-1 mb-[-0.5rem] lg:hidden">
+        <div className="mb-[-0.5rem] mt-6 flex justify-end px-1 lg:hidden">
           {SeeAllButton}
         </div>
       }
@@ -71,7 +73,7 @@ export default function BestSellersSlider({ items = BEST_SELLERS }) {
         return (
           <div
             key={product.id}
-            className="shrink-0 w-[260px] md:w-[280px] lg:w-[300px]"
+            className="w-[260px] shrink-0 md:w-[280px] lg:w-[300px]"
           >
             <ProductCard
               product={normalized}

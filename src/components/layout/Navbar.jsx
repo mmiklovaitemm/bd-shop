@@ -1,4 +1,5 @@
 import { NavLink } from "react-router-dom";
+import useLanguage from "@/context/useLanguage";
 
 const base =
   "rounded-xl px-3 py-2 text-sm font-medium transition hover:bg-neutral-100";
@@ -17,6 +18,8 @@ function Link({ to, children, end }) {
 }
 
 export default function Navbar() {
+  const { t } = useLanguage();
+
   return (
     <header className="border-b border-neutral-200 bg-white">
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4">
@@ -26,13 +29,13 @@ export default function Navbar() {
 
         <nav className="flex items-center gap-2">
           <Link to="/" end>
-            Home
+            {t.home}
           </Link>
-          <Link to="/products">Products</Link>
-          <Link to="/favorites">Favorites</Link>
-          <Link to="/about">About</Link>
-          <Link to="/contact">Contact</Link>
-          <Link to="/account">Account</Link>
+          <Link to="/products">{t.products}</Link>
+          <Link to="/favorites">{t.favorites}</Link>
+          <Link to="/about">{t.aboutUs}</Link>
+          <Link to="/contact">{t.contacts}</Link>
+          <Link to="/account">{t.account}</Link>
         </nav>
       </div>
     </header>

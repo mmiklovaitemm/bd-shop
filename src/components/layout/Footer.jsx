@@ -6,6 +6,8 @@ import facebookIcon from "@/assets/ui/facebook.svg";
 import tiktokIcon from "@/assets/ui/tiktok.svg";
 import instagramIcon from "@/assets/ui/instagram.svg";
 
+import useLanguage from "@/context/useLanguage";
+
 const linkClass =
   "inline-block w-fit font-ui text-[14px] text-black/80 transition-all duration-300 ease-out lg:hover:text-black lg:hover:-translate-y-[2px]";
 
@@ -48,6 +50,8 @@ function SocialButtons({ className = "", onDragStart }) {
 }
 
 function LanguageToggle({ onDragStart }) {
+  const { lang, setLang } = useLanguage();
+
   const base = "h-8 w-8 border text-[12px] font-ui ui-interact select-none";
 
   return (
@@ -55,8 +59,13 @@ function LanguageToggle({ onDragStart }) {
       <button
         type="button"
         draggable={false}
+        onClick={() => setLang("en")}
         onDragStart={onDragStart}
-        className={`${base} bg-black text-white border-black active:bg-black/80`}
+        className={`${base} ${
+          lang === "en"
+            ? "bg-black text-white border-black"
+            : "bg-white text-black border-black/60"
+        }`}
       >
         EN
       </button>
@@ -64,8 +73,13 @@ function LanguageToggle({ onDragStart }) {
       <button
         type="button"
         draggable={false}
+        onClick={() => setLang("lt")}
         onDragStart={onDragStart}
-        className={`${base} bg-white text-black border-black/60 active:bg-black/5`}
+        className={`${base} ${
+          lang === "lt"
+            ? "bg-black text-white border-black"
+            : "bg-white text-black border-black/60"
+        }`}
       >
         LT
       </button>
@@ -74,6 +88,8 @@ function LanguageToggle({ onDragStart }) {
 }
 
 export default function Footer() {
+  const { t } = useLanguage();
+
   const preventDrag = useCallback((e) => {
     e.preventDefault();
   }, []);
@@ -92,46 +108,44 @@ export default function Footer() {
       <div className="mx-auto w-full max-w-[1200px] px-6 py-10 md:py-10">
         <div className="grid grid-cols-1 md:[grid-template-columns:190px_120px_minmax(360px,1fr)] md:gap-6 lg:grid-cols-3 lg:gap-0 md:items-center">
           {/* RIGHT (subscribe) */}
-          <div className="order-1 md:order-3 flex md:justify-end">
-            <div className="w-full max-w-[360px] md:w-[360px] lg:w-[380px] min-w-0">
-              <h3 className="font-display text-[18px] text-black font-bold">
-                Subscribe &amp; save
+          <div className="order-1 flex md:order-3 md:justify-end">
+            <div className="min-w-0 w-full max-w-[360px] md:w-[360px] lg:w-[380px]">
+              <h3 className="font-display text-[18px] font-bold text-black">
+                {t.subscribeTitle}
               </h3>
 
-              <p className="mt-2 text-[14px] leading-[20px] text-black font-ui">
-                Subscribe to our email newsletter and receive the best offers
-                and discounts
+              <p className="mt-2 font-ui text-[14px] leading-[20px] text-black">
+                {t.subscribeText}
               </p>
 
               <form className="mt-4 flex w-full">
                 <input
                   type="email"
-                  placeholder="Email"
+                  placeholder={t.emailPlaceholder}
                   className="h-11 w-full min-w-0 border border-black/50 px-4 text-[14px] outline-none placeholder:text-black/30"
                 />
                 <button
                   type="submit"
                   draggable={false}
                   onDragStart={preventDrag}
-                  className="h-11 shrink-0 bg-black px-6 text-[14px] font-medium text-white ui-interact active:bg-black/80 select-none"
+                  className="ui-interact h-11 shrink-0 bg-black px-6 text-[14px] font-medium text-white active:bg-black/80 select-none"
                 >
-                  Subscribe
+                  {t.subscribeButton}
                 </button>
               </form>
             </div>
           </div>
 
           {/* LEFT (logo + socials desktop) */}
-          <div className="order-2 md:order-1 mt-10 md:mt-0">
+          <div className="order-2 mt-10 md:order-1 md:mt-0">
             <img
               src={logoIcon}
               alt="umstudio logo"
               draggable={false}
               onDragStart={preventDrag}
-              className="h-10 w-auto md:h-8 select-none"
+              className="h-10 w-auto select-none md:h-8"
             />
 
-            {/* socials - desktop/tablet (nuo md rodom, bet hover veiks tik lg+) */}
             <SocialButtons
               className="mt-6 hidden md:flex md:mt-[4rem] lg:mt-[4rem]"
               onDragStart={preventDrag}
@@ -139,7 +153,7 @@ export default function Footer() {
           </div>
 
           {/* MIDDLE (links + mobile bottom row) */}
-          <div className="order-3 md:order-2 mt-10 md:mt-0">
+          <div className="order-3 mt-10 md:order-2 md:mt-0">
             <nav>
               <ul className="space-y-6">
                 <li>
@@ -147,17 +161,17 @@ export default function Footer() {
                     to="/collections"
                     className={`${linkClass} select-none`}
                   >
-                    Collections
+                    {t.collections}
                   </NavLink>
                 </li>
                 <li>
                   <NavLink to="/about" className={`${linkClass} select-none`}>
-                    About us
+                    {t.aboutUs}
                   </NavLink>
                 </li>
                 <li>
                   <NavLink to="/contact" className={`${linkClass} select-none`}>
-                    Contacts
+                    {t.contacts}
                   </NavLink>
                 </li>
               </ul>

@@ -4,6 +4,7 @@ import { apiGet } from "@/lib/api";
 
 import useBagDrawer from "@/store/useBagDrawer";
 import useCart from "@/store/useCart";
+import useLanguage from "@/context/useLanguage";
 import preventDragHandler from "@/utils/preventDrag";
 
 import arrowUpRightIcon from "@/assets/ui/arrow-up-right.svg";
@@ -178,6 +179,8 @@ export default function ShoppingBagDrawer() {
   const updateVariant = useCart((s) => s.updateVariant);
   const updateServiceOption = useCart((s) => s.updateServiceOption);
 
+  const { t } = useLanguage();
+
   const [products, setProducts] = useState([]);
 
   useEffect(() => {
@@ -303,7 +306,7 @@ export default function ShoppingBagDrawer() {
     >
       <button
         type="button"
-        aria-label="Close bag"
+        aria-label={t.closeBag}
         onClick={close}
         className={[
           "absolute inset-0 bg-black/40 transition-opacity duration-300 ease-out",
@@ -319,8 +322,8 @@ export default function ShoppingBagDrawer() {
           isOpen ? "translate-x-0" : "translate-x-full",
         ].join(" ")}
       >
-        <div className="h-16 px-6 flex items-center justify-between border-b border-black">
-          <p className="font-display text-[20px] leading-none">Bag</p>
+        <div className="flex h-16 items-center justify-between border-b border-black px-6">
+          <p className="font-display text-[20px] leading-none">{t.bag}</p>
 
           <button
             type="button"
@@ -328,7 +331,7 @@ export default function ShoppingBagDrawer() {
             className="ui-close inline-flex items-center gap-2 font-ui text-[14px] select-none"
           >
             <span className="ui-close__inner">
-              <span className="inline-block">Close</span>
+              <span className="inline-block">{t.close}</span>
               <img
                 src={arrowUpRightIcon}
                 alt=""
@@ -341,11 +344,11 @@ export default function ShoppingBagDrawer() {
           </button>
         </div>
 
-        <div className="flex flex-col h-[calc(100vh-64px)]">
+        <div className="flex h-[calc(100vh-64px)] flex-col">
           <div className="flex-1 overflow-y-auto">
             {items.length === 0 ? (
               <div className="px-6 py-10 text-center font-ui text-[14px] text-black/60">
-                Your bag is empty.
+                {t.bagEmpty}
               </div>
             ) : (
               items.map((item, idx) => {
@@ -396,13 +399,13 @@ export default function ShoppingBagDrawer() {
                     ].join(" ")}
                   >
                     <div className="grid grid-cols-[90px_1fr] gap-5">
-                      <div className="w-[90px] h-[110px] bg-black/5 overflow-hidden">
+                      <div className="h-[110px] w-[90px] overflow-hidden bg-black/5">
                         <img
                           src={item.image}
                           alt={item.name || ""}
                           draggable={false}
                           onDragStart={preventDragHandler}
-                          className="w-full h-full object-cover select-none"
+                          className="h-full w-full object-cover select-none"
                           loading="lazy"
                         />
                       </div>
@@ -415,11 +418,11 @@ export default function ShoppingBagDrawer() {
 
                           {isSoldOut ? (
                             <p className="mt-1 font-ui text-[12px] uppercase tracking-[0.08em] text-red-600">
-                              Sold out
+                              {t.soldOut}
                             </p>
                           ) : (
                             <p className="mt-1 font-ui text-[12px] text-black/55">
-                              In stock: {variantStock}
+                              {t.inStock}: {variantStock}
                             </p>
                           )}
 
@@ -439,13 +442,13 @@ export default function ShoppingBagDrawer() {
 
                             return (
                               <div className="text-right">
-                                <p className="font-ui text-[14px] whitespace-nowrap">
+                                <p className="whitespace-nowrap font-ui text-[14px]">
                                   {fmtPrice(unitTotal)}
                                 </p>
 
                                 {fee > 0 ? (
-                                  <p className="mt-1 font-ui text-[12px] text-black/60 whitespace-nowrap">
-                                    Shipping kit + {fmtPrice(fee)}
+                                  <p className="mt-1 whitespace-nowrap font-ui text-[12px] text-black/60">
+                                    {t.shippingKit} + {fmtPrice(fee)}
                                   </p>
                                 ) : null}
                               </div>
@@ -457,7 +460,7 @@ export default function ShoppingBagDrawer() {
                           {product?.category === "personal" ? (
                             <div className="bg-black/5 px-3 py-2">
                               <p className="font-ui text-[12px] text-black/50">
-                                Service option
+                                {t.serviceOption}
                               </p>
 
                               <select
@@ -468,16 +471,16 @@ export default function ShoppingBagDrawer() {
                                 }
                               >
                                 <option value="shipping">
-                                  Shipping kit (+15€)
+                                  {t.shippingKit} (+15€)
                                 </option>
-                                <option value="in_store">In-store</option>
+                                <option value="in_store">{t.inStore}</option>
                               </select>
                             </div>
                           ) : null}
 
                           <div className="bg-black/5 px-3 py-2">
                             <p className="font-ui text-[12px] text-black/50">
-                              Color
+                              {t.color}
                             </p>
 
                             {hasColors ? (
@@ -518,7 +521,7 @@ export default function ShoppingBagDrawer() {
 
                           <div className="bg-black/5 px-3 py-2">
                             <p className="font-ui text-[12px] text-black/50">
-                              Size
+                              {t.size}
                             </p>
 
                             {hasSizes ? (
@@ -547,19 +550,19 @@ export default function ShoppingBagDrawer() {
                               </select>
                             ) : (
                               <p className="mt-1 font-ui text-[13px] text-black/60">
-                                One size
+                                {t.oneSize}
                               </p>
                             )}
                           </div>
                         </div>
 
                         <div className="mt-4 flex items-center justify-between gap-4">
-                          <div className="inline-flex items-stretch border border-black h-10 bg-white">
+                          <div className="inline-flex h-10 items-stretch border border-black bg-white">
                             <button
                               type="button"
-                              aria-label="Decrease quantity"
+                              aria-label={t.decreaseQuantity}
                               disabled={itemQuantity <= 1}
-                              className="w-9 grid place-items-center font-ui text-[18px] select-none bg-black/5 lg:hover:bg-black/10 disabled:opacity-40 disabled:cursor-not-allowed"
+                              className="grid w-9 place-items-center bg-black/5 font-ui text-[18px] select-none lg:hover:bg-black/10 disabled:cursor-not-allowed disabled:opacity-40"
                               onClick={(e) => {
                                 e.preventDefault();
                                 if (itemQuantity <= 1) return;
@@ -569,15 +572,15 @@ export default function ShoppingBagDrawer() {
                               –
                             </button>
 
-                            <div className="w-9 grid place-items-center font-ui text-[13px] border-x border-black bg-white">
+                            <div className="grid w-9 place-items-center border-x border-black bg-white font-ui text-[13px]">
                               {itemQuantity}
                             </div>
 
                             <button
                               type="button"
-                              aria-label="Increase quantity"
+                              aria-label={t.increaseQuantity}
                               disabled={isSoldOut || reachedMaxStock}
-                              className="w-9 grid place-items-center font-ui text-[18px] select-none bg-black/5 lg:hover:bg-black/10 disabled:opacity-40 disabled:cursor-not-allowed"
+                              className="grid w-9 place-items-center bg-black/5 font-ui text-[18px] select-none lg:hover:bg-black/10 disabled:cursor-not-allowed disabled:opacity-40"
                               onClick={(e) => {
                                 e.preventDefault();
                                 if (isSoldOut || reachedMaxStock) return;
@@ -590,7 +593,7 @@ export default function ShoppingBagDrawer() {
 
                           <button
                             type="button"
-                            aria-label="Remove item"
+                            aria-label={t.removeItem}
                             className="p-2 select-none lg:hover:opacity-70"
                             onClick={(e) => {
                               e.preventDefault();
@@ -609,7 +612,7 @@ export default function ShoppingBagDrawer() {
                         </div>
 
                         {item.note ? (
-                          <div className="mt-5 bg-black/55 text-white font-ui text-[13px] px-4 py-3">
+                          <div className="mt-5 bg-black/55 px-4 py-3 font-ui text-[13px] text-white">
                             {item.note}
                           </div>
                         ) : null}
@@ -624,7 +627,7 @@ export default function ShoppingBagDrawer() {
           <div className="border-t border-black p-6">
             <button
               type="button"
-              className="ui-interact w-full h-12 bg-black text-white font-ui text-[14px] flex items-center justify-center gap-4 select-none disabled:opacity-50"
+              className="ui-interact flex h-12 w-full items-center justify-center gap-4 bg-black font-ui text-[14px] text-white select-none disabled:opacity-50"
               onClick={(e) => {
                 e.preventDefault();
                 if (items.length === 0) return;
@@ -634,7 +637,7 @@ export default function ShoppingBagDrawer() {
               }}
               disabled={items.length === 0}
             >
-              <span>Check out</span>
+              <span>{t.checkout}</span>
               <span className="inline-block h-px w-10 bg-white/90" />
               <span className="font-ui">{fmtPrice(subtotal)}</span>
             </button>

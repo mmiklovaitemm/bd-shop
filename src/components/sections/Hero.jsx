@@ -13,6 +13,7 @@ import desk2 from "@/assets/images/hero/hero-desktop-2.webp";
 import desk3 from "@/assets/images/hero/hero-desktop-3.webp";
 
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
+import useLanguage from "@/context/useLanguage";
 
 const BREAKPOINTS = { desktop: 1024, tablet: 768 };
 const SLIDE_INTERVAL = 4000;
@@ -32,6 +33,8 @@ const debounce = (func, delay) => {
 };
 
 export default function Hero() {
+  const { t } = useLanguage();
+
   const [mode, setMode] = useState("mobile");
   const [current, setCurrent] = useState(0);
   const [imageErrors, setImageErrors] = useState({});
@@ -71,11 +74,11 @@ export default function Hero() {
       img.src = src;
     };
 
-    const t = setTimeout(() => {
+    const tmr = setTimeout(() => {
       preload(images[1]);
     }, 600);
 
-    return () => clearTimeout(t);
+    return () => clearTimeout(tmr);
   }, [images, mode]);
 
   useEffect(() => {
@@ -100,7 +103,7 @@ export default function Hero() {
     <section className="w-full">
       <div
         key={mode}
-        className="relative w-screen left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] overflow-hidden"
+        className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden"
       >
         <div className="relative h-[520px] sm:h-[600px] lg:h-[560px] xl:h-[620px]">
           {images.map(
@@ -124,18 +127,18 @@ export default function Hero() {
           )}
 
           <div className="pointer-events-none absolute inset-0">
-            <div className="mx-auto h-full max-w-[1320px] px-4 md:px-6 relative">
-              <h1 className="absolute left-7 bottom-7 font-display text-[60px] leading-[74px] text-white tracking-wider lg:hidden">
-                Discover <br />
-                Timeless <br />
-                Elegance
+            <div className="relative mx-auto h-full max-w-[1320px] px-4 md:px-6">
+              <h1 className="absolute bottom-7 left-7 font-display text-[60px] leading-[74px] tracking-wider text-white lg:hidden">
+                {t.heroTitleLine1} <br />
+                {t.heroTitleLine2} <br />
+                {t.heroTitleLine3}
               </h1>
 
-              <div className="hidden lg:flex absolute left-10 right-10 bottom-10 items-end gap-8">
-                <h1 className="font-display text-white text-[72px] xl:text-[88px] leading-none whitespace-nowrap">
-                  Discover Timeless Elegance
+              <div className="absolute bottom-10 left-10 right-10 hidden items-end gap-8 lg:flex">
+                <h1 className="whitespace-nowrap font-display text-[72px] leading-none text-white xl:text-[88px]">
+                  {t.heroTitleDesktop}
                 </h1>
-                <div className="h-px flex-1 bg-white/80 translate-y-[-12px]" />
+                <div className="flex-1 translate-y-[-12px] bg-white/80 h-px" />
               </div>
             </div>
           </div>
