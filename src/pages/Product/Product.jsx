@@ -44,6 +44,48 @@ function hasVariantLevelStock(product) {
   );
 }
 
+function getFirstAvailableColor(product) {
+  const colors = product?.colors || [];
+  const variants = product?.variants || {};
+
+  for (const color of colors) {
+    const value = variants[color];
+
+    if (!Array.isArray(value) || !value.length) continue;
+
+    if (isVariantObject(value[0])) {
+      const hasAvailable = value.some(
+        (variant) => Number(variant?.stock || 0) > 0,
+      );
+      if (hasAvailable) return color;
+    }
+
+    if (typeof value[0] === "string" && value.length > 0) {
+      return color;
+    }
+  }
+
+  return colors[0] || "silver";
+}
+
+function getFirstAvailableSize(product, color) {
+  const variants = product?.variants || {};
+  const value = variants[color];
+
+  if (!Array.isArray(value) || !value.length) {
+    return product?.sizes?.[0] || null;
+  }
+
+  if (isVariantObject(value[0])) {
+    const firstAvailable = value.find(
+      (variant) => Number(variant?.stock || 0) > 0,
+    );
+    return firstAvailable?.size ?? null;
+  }
+
+  return product?.sizes?.[0] || null;
+}
+
 function ProductView({ product }) {
   const { addToCart } = useAddToCart();
   const openBag = useBagDrawer((s) => s.open);
@@ -55,10 +97,14 @@ function ProductView({ product }) {
   const [activeImgIndex, setActiveImgIndex] = useState(0);
 
   const [quantity, setQuantity] = useState(1);
-  const [selectedColor, setSelectedColor] = useState(
-    product?.colors?.[0] || "silver",
+
+  const [selectedColor, setSelectedColor] = useState(() =>
+    getFirstAvailableColor(product),
   );
-  const [selectedSize, setSelectedSize] = useState(product?.sizes?.[0] || null);
+  const [selectedSize, setSelectedSize] = useState(() =>
+    getFirstAvailableSize(product, getFirstAvailableColor(product)),
+  );
+
   const [selectedService, setSelectedService] = useState(
     product?.details?.serviceOptions?.[0]?.value || null,
   );
@@ -223,6 +269,24 @@ function ProductView({ product }) {
     ],
   );
 
+  const handleSelectColor = useCallback(
+    (color) => {
+      setSelectedColor(color);
+
+      if (!usesVariantLevelStock) return;
+
+      const nextSize = getFirstAvailableSize(product, color);
+      setSelectedSize(nextSize);
+      setQuantity(1);
+    },
+    [product, usesVariantLevelStock],
+  );
+
+  const handleSelectSize = useCallback((size) => {
+    setSelectedSize(size);
+    setQuantity(1);
+  }, []);
+
   return (
     <main
       className="mx-auto w-full px-4 py-4 select-none md:max-w-[1200px] md:px-1 md:py-4 lg:max-w-none lg:px-2"
@@ -269,8 +333,8 @@ function ProductView({ product }) {
           currentStock={currentStock}
           isCurrentSelectionSoldOut={isCurrentSelectionSoldOut}
           usesVariantLevelStock={usesVariantLevelStock}
-          setSelectedSize={setSelectedSize}
-          setSelectedColor={setSelectedColor}
+          setSelectedSize={handleSelectSize}
+          setSelectedColor={handleSelectColor}
           quantity={quantity}
           setQuantity={setQuantity}
           selectedService={selectedService}
