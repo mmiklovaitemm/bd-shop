@@ -21,7 +21,7 @@ const ICON_HOVER_CLASS =
   "transition-transform duration-300 ease-out lg:hover:-translate-y-[2px]";
 
 const NAV_LINK_CLASS =
-  "font-ui text-[12px] font-normal text-black/80 transition-colors lg:text-[15px] lg:hover:text-black";
+  "font-ui text-[12px] font-normal text-black/80 transition-colors lg:text-[14px] lg:hover:text-black";
 
 const LANGUAGE_BUTTON_CLASS =
   "h-7 w-7 font-ui text-[12px] transition-transform duration-300 ease-out lg:hover:-translate-y-[2px]";
@@ -174,7 +174,7 @@ export default function Header() {
             </span>
           </button>
 
-          {/* MOBILE/TABLET: nerodome profile icon */}
+          {/* MOBILE/TABLET */}
           {/* Languages shown from tablet */}
           <div className="hidden md:flex items-center gap-3">
             {LANGUAGES.map(({ code, isActive }) => (
