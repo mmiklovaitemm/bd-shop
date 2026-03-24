@@ -143,6 +143,39 @@ export default function AdminProductCreateModal({
     }
   };
 
+  const parsedSizes = form.sizes
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  const stockValue = Math.max(0, Number(form.stockQuantity) || 0);
+
+  const variantStock = {};
+
+  const hasSilverImages =
+    form.silverImages
+      .split("\n")
+      .map((item) => item.trim())
+      .filter(Boolean).length > 0;
+
+  const hasGoldImages =
+    form.goldImages
+      .split("\n")
+      .map((item) => item.trim())
+      .filter(Boolean).length > 0;
+
+  if (hasSilverImages) {
+    variantStock.silver = Object.fromEntries(
+      parsedSizes.map((size) => [size, stockValue]),
+    );
+  }
+
+  if (hasGoldImages) {
+    variantStock.gold = Object.fromEntries(
+      parsedSizes.map((size) => [size, stockValue]),
+    );
+  }
+
   const handleSubmit = () => {
     const payload = {
       id: form.id.trim(),
@@ -163,7 +196,7 @@ export default function AdminProductCreateModal({
         .split(",")
         .map((item) => item.trim())
         .filter(Boolean),
-      stockQuantity: Math.max(0, Number(form.stockQuantity) || 0),
+      variantStock,
       isBestSeller: form.isBestSeller,
     };
 
