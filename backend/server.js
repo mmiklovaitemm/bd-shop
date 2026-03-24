@@ -972,6 +972,100 @@ app.get("/api/admin/orders", requireAdmin, async (req, res) => {
   }
 });
 
+// Helpers for orders
+function isVariantObject(value) {
+  return (
+    value &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    Array.isArray(value.images)
+  );
+}
+
+function hasVariantLevelStockStructure(variants) {
+  return Object.values(variants || {}).some(
+    (value) =>
+      Array.isArray(value) && value.length > 0 && isVariantObject(value[0]),
+  );
+}
+
+function getTotalStockFromVariantStructure(variants = {}) {
+  return Object.values(variants).reduce((total, colorVariants) => {
+    if (!Array.isArray(colorVariants)) return total;
+
+    return (
+      total +
+      colorVariants.reduce((sum, variant) => {
+        return sum + Math.max(0, Number(variant?.stock) || 0);
+      }, 0)
+    );
+  }, 0);
+}
+
+function decreaseVariantStock(variants, color, size, qty) {
+  const nextVariants = structuredClone(variants || {});
+  const colorKey = String(color || "").trim();
+  const sizeKey = String(size || "").trim();
+  const quantity = Math.max(0, Number(qty) || 0);
+
+  if (!colorKey || !sizeKey || quantity <= 0) {
+    throw new Error("Invalid variant selection.");
+  }
+
+  const colorVariants = nextVariants[colorKey];
+
+  if (!Array.isArray(colorVariants) || !colorVariants.length) {
+    throw new Error("Variant color not found.");
+  }
+
+  const target = colorVariants.find(
+    (variant) => String(variant?.size || "").trim() === sizeKey,
+  );
+
+  if (!target) {
+    throw new Error("Variant size not found.");
+  }
+
+  const currentStock = Math.max(0, Number(target.stock) || 0);
+
+  if (currentStock < quantity) {
+    throw new Error("Not enough stock for selected variant.");
+  }
+
+  target.stock = currentStock - quantity;
+
+  return nextVariants;
+}
+
+function increaseVariantStock(variants, color, size, qty) {
+  const nextVariants = structuredClone(variants || {});
+  const colorKey = String(color || "").trim();
+  const sizeKey = String(size || "").trim();
+  const quantity = Math.max(0, Number(qty) || 0);
+
+  if (!colorKey || !sizeKey || quantity <= 0) {
+    return nextVariants;
+  }
+
+  const colorVariants = nextVariants[colorKey];
+
+  if (!Array.isArray(colorVariants) || !colorVariants.length) {
+    return nextVariants;
+  }
+
+  const target = colorVariants.find(
+    (variant) => String(variant?.size || "").trim() === sizeKey,
+  );
+
+  if (!target) {
+    return nextVariants;
+  }
+
+  target.stock = Math.max(0, Number(target.stock) || 0) + quantity;
+
+  return nextVariants;
+}
+
 // ORDERS - UPDATE STATUS
 app.patch("/api/orders/:id/status", requireAdmin, async (req, res) => {
   let connection;
@@ -1017,24 +1111,61 @@ app.patch("/api/orders/:id/status", requireAdmin, async (req, res) => {
 
     if (shouldRestoreStock) {
       const [items] = await connection.query(
-        `SELECT product_id, quantity
-         FROM order_items
-         WHERE order_id = ?`,
+        `SELECT product_id, quantity, color, size
+        FROM order_items
+        WHERE order_id = ?`,
         [orderId],
       );
 
       for (const item of items) {
         const qty = Math.max(0, Number(item.quantity) || 0);
         const productId = String(item.product_id || "").trim();
+        const color = String(item.color || "").trim();
+        const size = String(item.size || "").trim();
 
         if (!productId || qty <= 0) continue;
 
-        await connection.query(
-          `UPDATE products
+        const [productRows] = await connection.query(
+          `SELECT id, stock_quantity, variants
+          FROM products
+          WHERE id = ?
+          LIMIT 1`,
+          [productId],
+        );
+
+        const productRow = productRows[0];
+
+        if (!productRow) continue;
+
+        const parsedVariants = safeJsonParse(productRow.variants, {});
+        const usesVariantLevelStock =
+          hasVariantLevelStockStructure(parsedVariants);
+
+        if (usesVariantLevelStock && color && size) {
+          const nextVariants = increaseVariantStock(
+            parsedVariants,
+            color,
+            size,
+            qty,
+          );
+
+          const nextTotalStock =
+            getTotalStockFromVariantStructure(nextVariants);
+
+          await connection.query(
+            `UPDATE products
+            SET variants = ?, stock_quantity = ?
+            WHERE id = ?`,
+            [JSON.stringify(nextVariants), nextTotalStock, productId],
+          );
+        } else {
+          await connection.query(
+            `UPDATE products
             SET stock_quantity = stock_quantity + ?
             WHERE id = ?`,
-          [qty, productId],
-        );
+            [qty, productId],
+          );
+        }
       }
     }
 
@@ -1205,10 +1336,10 @@ app.post("/api/orders", requireAuth, async (req, res) => {
       const qty = getQty(it);
 
       const [rows] = await connection.query(
-        `SELECT id, name, price_value, thumbnail, stock_quantity
-         FROM products
-         WHERE id = ?
-         LIMIT 1`,
+        `SELECT id, name, price_value, thumbnail, stock_quantity, variants
+        FROM products
+        WHERE id = ?
+        LIMIT 1`,
         [productId],
       );
 
@@ -1218,7 +1349,34 @@ app.post("/api/orders", requireAuth, async (req, res) => {
         throw new Error("Product not found.");
       }
 
-      if (Number(productRow.stock_quantity) < qty) {
+      const color = String(it?.color || "").trim();
+      const size = String(it?.size || "").trim();
+
+      const parsedVariants = safeJsonParse(productRow.variants, {});
+      const usesVariantLevelStock =
+        hasVariantLevelStockStructure(parsedVariants);
+
+      if (usesVariantLevelStock && color && size) {
+        const colorVariants = parsedVariants[color];
+
+        if (!Array.isArray(colorVariants) || !colorVariants.length) {
+          throw new Error(`Variant color not found for "${productRow.name}"`);
+        }
+
+        const targetVariant = colorVariants.find(
+          (variant) => String(variant?.size || "").trim() === size,
+        );
+
+        if (!targetVariant) {
+          throw new Error(`Variant size not found for "${productRow.name}"`);
+        }
+
+        if (Number(targetVariant.stock || 0) < qty) {
+          throw new Error(
+            `Not enough stock for selected variant of "${productRow.name}"`,
+          );
+        }
+      } else if (Number(productRow.stock_quantity) < qty) {
         throw new Error(`Not enough stock for "${productRow.name}"`);
       }
 
@@ -1240,8 +1398,8 @@ app.post("/api/orders", requireAuth, async (req, res) => {
         productName: productRow.name,
         unitPriceCents,
         qty,
-        color: it?.color ?? null,
-        size: it?.size ?? null,
+        color: color || null,
+        size: size || null,
         serviceOption: serviceOption || null,
         imageUrl: it?.image_url ?? it?.image ?? productRow.thumbnail ?? null,
       });
@@ -1302,15 +1460,51 @@ app.post("/api/orders", requireAuth, async (req, res) => {
     const orderId = orderResult.insertId;
 
     for (const it of normalized) {
-      const [updateResult] = await connection.query(
-        `UPDATE products
-         SET stock_quantity = stock_quantity - ?
-         WHERE id = ? AND stock_quantity >= ?`,
-        [it.qty, it.productId, it.qty],
+      const [productRows] = await connection.query(
+        `SELECT id, stock_quantity, variants
+     FROM products
+     WHERE id = ?
+     LIMIT 1`,
+        [it.productId],
       );
 
-      if (updateResult.affectedRows === 0) {
-        throw new Error(`Not enough stock for "${it.productName}"`);
+      const productRow = productRows[0];
+
+      if (!productRow) {
+        throw new Error(`Product not found for "${it.productName}"`);
+      }
+
+      const parsedVariants = safeJsonParse(productRow.variants, {});
+      const usesVariantLevelStock =
+        hasVariantLevelStockStructure(parsedVariants);
+
+      if (usesVariantLevelStock && it.color && it.size) {
+        const nextVariants = decreaseVariantStock(
+          parsedVariants,
+          it.color,
+          it.size,
+          it.qty,
+        );
+
+        const nextTotalStock = getTotalStockFromVariantStructure(nextVariants);
+
+        await connection.query(
+          `UPDATE products
+       SET variants = ?, stock_quantity = ?
+       WHERE id = ?`,
+          [JSON.stringify(nextVariants), nextTotalStock, it.productId],
+        );
+      } else {
+        const [updateResult] = await connection.query(
+          `UPDATE products
+       SET stock_quantity = stock_quantity - ?
+       WHERE id = ? AND stock_quantity >= ?`,
+          [it.qty, it.productId, it.qty],
+        );
+
+        if (updateResult.affectedRows === 0) {
+          throw new Error(`Not enough stock for "${it.productName}"`);
+        }
       }
     }
 
