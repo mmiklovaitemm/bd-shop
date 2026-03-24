@@ -348,6 +348,8 @@ function buildVariantsPreservingStock({
     ? sizes.map((size) => String(size).trim()).filter(Boolean)
     : [];
 
+  const nextVariants = {};
+
   const getIncomingStock = (color, size) => {
     const rawValue = variantStock?.[color]?.[size];
     return Math.max(0, Number(rawValue) || 0);
