@@ -6,6 +6,7 @@ import useAdminProducts from "@/pages/admin/hooks/useAdminProducts";
 import AdminProductsTable from "@/pages/admin/components/AdminProductsTable";
 import AdminProductDeleteModal from "@/pages/admin/components/AdminProductDeleteModal";
 import AdminProductBulkDeleteModal from "@/pages/admin/components/AdminProductBulkDeleteModal";
+import AdminProductEditModal from "@/pages/admin/components/AdminProductEditModal";
 
 import { getStockBadge } from "@/pages/admin/helpers/productHelpers";
 
@@ -547,9 +548,9 @@ export default function AdminProducts() {
         ) : null}
 
         {editProduct ? (
-          <AdminProductCreateModal
+          <AdminProductEditModal
             onClose={() => setEditProduct(null)}
-            onCreate={handleUpdateProduct}
+            onUpdate={handleUpdateProduct}
             initialData={editProduct}
             isSaving={isSaving}
           />

@@ -270,11 +270,15 @@ function buildVariantsPreservingStock({
         return String(variant?.size || "").trim() === size;
       });
 
+      const hasIncomingStock =
+        variantStock?.[color] &&
+        Object.prototype.hasOwnProperty.call(variantStock[color], size);
+
       return {
         size,
-        stock: existingVariant
-          ? Math.max(0, Number(existingVariant?.stock) || 0)
-          : getIncomingStock(color, size),
+        stock: hasIncomingStock
+          ? getIncomingStock(color, size)
+          : Math.max(0, Number(existingVariant?.stock) || 0),
         images,
       };
     });
