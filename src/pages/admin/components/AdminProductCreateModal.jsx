@@ -164,16 +164,18 @@ export default function AdminProductCreateModal({
       .map((item) => item.trim())
       .filter(Boolean).length > 0;
 
-  if (hasSilverImages) {
-    variantStock.silver = Object.fromEntries(
-      parsedSizes.map((size) => [size, stockValue]),
-    );
-  }
+  if (!initialData) {
+    if (hasSilverImages) {
+      variantStock.silver = Object.fromEntries(
+        parsedSizes.map((size) => [size, stockValue]),
+      );
+    }
 
-  if (hasGoldImages) {
-    variantStock.gold = Object.fromEntries(
-      parsedSizes.map((size) => [size, stockValue]),
-    );
+    if (hasGoldImages) {
+      variantStock.gold = Object.fromEntries(
+        parsedSizes.map((size) => [size, stockValue]),
+      );
+    }
   }
 
   const handleSubmit = () => {
@@ -192,11 +194,7 @@ export default function AdminProductCreateModal({
         .split("\n")
         .map((item) => item.trim())
         .filter(Boolean),
-      sizes: form.sizes
-        .split(",")
-        .map((item) => item.trim())
-        .filter(Boolean),
-      stockQuantity: stockValue,
+      sizes: parsedSizes,
       variantStock,
       isBestSeller: form.isBestSeller,
     };
@@ -314,7 +312,11 @@ export default function AdminProductCreateModal({
             </div>
 
             <div>
-              <label className="mb-2 block text-black/70">Stock quantity</label>
+              <label className="mb-2 block text-black/70">
+                {initialData
+                  ? "Stock quantity (edit disabled)"
+                  : "Stock quantity"}
+              </label>
               <input
                 type="number"
                 min="0"
@@ -322,7 +324,10 @@ export default function AdminProductCreateModal({
                 value={form.stockQuantity}
                 onChange={(e) => handleChange("stockQuantity", e.target.value)}
                 placeholder="3"
-                className="h-12 w-full border border-black px-4 outline-none"
+                disabled={!!initialData}
+                className={`h-12 w-full border border-black px-4 outline-none ${
+                  initialData ? "bg-black/5 cursor-not-allowed" : ""
+                }`}
               />
             </div>
           </div>

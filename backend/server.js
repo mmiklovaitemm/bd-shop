@@ -578,40 +578,6 @@ app.delete("/api/products/:id", requireAdmin, async (req, res) => {
   }
 });
 
-// Helper
-function applyTotalStockToVariants(variants = {}, totalStock = 0) {
-  const safeTotal = Math.max(0, Number(totalStock) || 0);
-  const nextVariants = structuredClone(variants || {});
-
-  const entries = [];
-
-  for (const [color, colorVariants] of Object.entries(nextVariants)) {
-    if (!Array.isArray(colorVariants)) continue;
-
-    colorVariants.forEach((variant, index) => {
-      entries.push({ color, index, variant });
-    });
-  }
-
-  if (entries.length === 0) {
-    return nextVariants;
-  }
-
-  const baseStock = Math.floor(safeTotal / entries.length);
-  let remainder = safeTotal % entries.length;
-
-  for (const entry of entries) {
-    const stock = baseStock + (remainder > 0 ? 1 : 0);
-    nextVariants[entry.color][entry.index].stock = stock;
-
-    if (remainder > 0) {
-      remainder -= 1;
-    }
-  }
-
-  return nextVariants;
-}
-
 app.put("/api/products/:id", requireAdmin, async (req, res) => {
   try {
     const { id: routeId } = req.params;
@@ -626,7 +592,6 @@ app.put("/api/products/:id", requireAdmin, async (req, res) => {
       silverImages = [],
       goldImages = [],
       sizes = [],
-      stockQuantity = null,
       variantStock = {},
       isBestSeller = false,
     } = req.body || {};
@@ -673,15 +638,8 @@ app.put("/api/products/:id", requireAdmin, async (req, res) => {
       variantStock,
     });
 
-    const finalVariants =
-      stockQuantity === null ||
-      stockQuantity === undefined ||
-      stockQuantity === ""
-        ? variants
-        : applyTotalStockToVariants(variants, stockQuantity);
-
-    const colors = Object.keys(finalVariants);
-    const totalStockQuantity = getTotalStockFromVariants(finalVariants);
+    const colors = Object.keys(variants);
+    const totalStockQuantity = getTotalStockFromVariants(variants);
 
     const thumbnail =
       normalizedSilverImages[0] || normalizedGoldImages[0] || "";
@@ -728,7 +686,7 @@ app.put("/api/products/:id", requireAdmin, async (req, res) => {
         "smooth",
         thumbnail,
         JSON.stringify(colors),
-        JSON.stringify(finalVariants),
+        JSON.stringify(variants),
         JSON.stringify([]),
         JSON.stringify(sizes),
         JSON.stringify(details),
