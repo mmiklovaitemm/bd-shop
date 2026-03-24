@@ -19,10 +19,13 @@ import useAuth from "@/store/useAuth";
 
 const ICON_HOVER_CLASS =
   "transition-transform duration-300 ease-out lg:hover:-translate-y-[2px]";
+
 const NAV_LINK_CLASS =
-  "font-ui text-[12px] font-normal text-black/80 lg:hover:text-black transition-colors";
+  "font-ui text-[12px] font-normal text-black/80 transition-colors lg:text-[15px] lg:hover:text-black";
+
 const LANGUAGE_BUTTON_CLASS =
   "h-7 w-7 font-ui text-[12px] transition-transform duration-300 ease-out lg:hover:-translate-y-[2px]";
+
 const HEADER_HEIGHT = "h-[64px]";
 const MAX_WIDTH = "max-w-[1320px]";
 
@@ -67,7 +70,7 @@ const CartItem = memo(({ to, icon, label, count }) => (
       onDragStart={(e) => e.preventDefault()}
       className={`h-4 w-auto select-none ${ICON_HOVER_CLASS}`}
     />
-    <span className="font-ui text-[12px] text-black/80 select-none">
+    <span className="font-ui text-[12px] text-black/80 select-none lg:text-[15px]">
       {label} ({count})
     </span>
   </NavItem>
@@ -78,7 +81,6 @@ export default function Header() {
   const openBag = useBagDrawer((s) => s.open);
   const user = useAuth((s) => s.user);
 
-  // LIVE COUNTS
   const cartCount = useCart((s) =>
     s.items.reduce((sum, item) => sum + (item.quantity || 1), 0),
   );
@@ -116,7 +118,7 @@ export default function Header() {
           aria-label="Open menu"
           onClick={handleMenuOpen}
           className="p-2 justify-self-start select-none"
-          iconClassName={`h-[20px] w-auto select-none ${ICON_HOVER_CLASS}`}
+          iconClassName={`h-[17px] w-auto select-none ${ICON_HOVER_CLASS}`}
           draggable={false}
           onDragStart={preventDrag}
         />
@@ -128,7 +130,7 @@ export default function Header() {
             alt="um studio"
             draggable={false}
             onDragStart={preventDrag}
-            className="h-[28px] w-auto select-none"
+            className="h-[24px] md:h-[26px] w-auto select-none"
           />
         </NavItem>
 
@@ -136,21 +138,21 @@ export default function Header() {
         <div className="justify-self-end flex items-center gap-2 md:gap-5">
           <NavItem
             to="/favorites"
-            className="p-1 md:mr-[-15px] flex items-center gap-1"
+            className="p-1 flex items-center gap-1 md:mr-[-10px]"
           >
             <img
               src={heartIcon}
               alt="Favorites"
               draggable={false}
               onDragStart={preventDrag}
-              className={`h-[18px] mt-[2px] w-auto select-none ${ICON_HOVER_CLASS}`}
+              className={`h-[16px] mt-[1px] w-auto select-none ${ICON_HOVER_CLASS}`}
             />
-            <span className="font-ui text-[12px] text-black/80 select-none">
+            <span className="font-ui text-[11px] text-black/80 select-none md:text-[12px]">
               ({favoritesCount})
             </span>
           </NavItem>
 
-          {/* BAG: atidaro drawer  */}
+          {/* BAG */}
           <button
             type="button"
             onClick={openBag}
@@ -165,32 +167,14 @@ export default function Header() {
               alt=""
               draggable={false}
               onDragStart={preventDrag}
-              className={`h-[20px] w-auto select-none ${ICON_HOVER_CLASS}`}
+              className={`h-[17px] w-auto select-none ${ICON_HOVER_CLASS}`}
             />
-            <span className="font-ui text-[12px] text-black/80 select-none">
+            <span className="font-ui text-[11px] text-black/80 select-none md:text-[12px]">
               ({cartCount})
             </span>
           </button>
 
-          {user ? (
-            <NavItem to="/account" className="p-1 flex items-center">
-              <img
-                src={userIcon}
-                alt="Account"
-                draggable={false}
-                onDragStart={preventDrag}
-                className={`h-[20px] w-auto select-none ${ICON_HOVER_CLASS}`}
-              />
-            </NavItem>
-          ) : (
-            <NavItem
-              to="/login"
-              className="p-1 font-ui text-[12px] text-black/80 flex items-center"
-            >
-              Log in
-            </NavItem>
-          )}
-
+          {/* MOBILE/TABLET: nerodome profile icon */}
           {/* Languages shown from tablet */}
           <div className="hidden md:flex items-center gap-3">
             {LANGUAGES.map(({ code, isActive }) => (
@@ -251,7 +235,7 @@ export default function Header() {
               onDragStart={preventDrag}
               className={`h-4 w-auto select-none ${ICON_HOVER_CLASS}`}
             />
-            <span className="font-ui text-[12px] text-black/80 select-none">
+            <span className="font-ui text-[12px] text-black/80 select-none lg:text-[15px]">
               Bag ({cartCount})
             </span>
           </button>
