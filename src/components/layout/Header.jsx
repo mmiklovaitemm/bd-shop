@@ -17,6 +17,8 @@ import useFavorites from "@/context/useFavorites";
 import userIcon from "@/assets/ui/user.svg";
 import useAuth from "@/store/useAuth";
 
+import useLanguage from "@/context/useLanguage";
+
 const ICON_HOVER_CLASS =
   "transition-transform duration-300 ease-out lg:hover:-translate-y-[2px]";
 
@@ -37,14 +39,15 @@ const NAV_ITEMS = [
 
 // Language options
 const LANGUAGES = [
-  { code: "EN", isActive: true },
-  { code: "LT", isActive: false },
+  { code: "EN", value: "en" },
+  { code: "LT", value: "lt" },
 ];
 
-const LanguageButton = memo(({ code, isActive }) => (
+const LanguageButton = memo(({ code, isActive, onClick }) => (
   <button
     type="button"
     draggable={false}
+    onClick={onClick}
     onDragStart={(e) => e.preventDefault()}
     className={`${LANGUAGE_BUTTON_CLASS} select-none ${
       isActive ? "bg-black text-white" : "border border-black"
@@ -80,6 +83,13 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const openBag = useBagDrawer((s) => s.open);
   const user = useAuth((s) => s.user);
+  const { lang, setLang, t } = useLanguage();
+
+  const NAV_ITEMS = [
+    { to: "/collections", label: t.collections },
+    { to: "/about", label: t.aboutUs },
+    { to: "/contact", label: t.contacts },
+  ];
 
   const cartCount = useCart((s) =>
     s.items.reduce((sum, item) => sum + (item.quantity || 1), 0),
@@ -177,8 +187,13 @@ export default function Header() {
           {/* MOBILE/TABLET */}
           {/* Languages shown from tablet */}
           <div className="hidden md:flex items-center gap-3">
-            {LANGUAGES.map(({ code, isActive }) => (
-              <LanguageButton key={code} code={code} isActive={isActive} />
+            {LANGUAGES.map(({ code, value }) => (
+              <LanguageButton
+                key={code}
+                code={code}
+                isActive={lang === value}
+                onClick={() => setLang(value)}
+              />
             ))}
           </div>
         </div>
@@ -214,7 +229,7 @@ export default function Header() {
           <CartItem
             to="/favorites"
             icon={heartIcon}
-            label="Wishlist"
+            label={t.wishlist}
             count={favoritesCount}
           />
 
@@ -235,8 +250,9 @@ export default function Header() {
               onDragStart={preventDrag}
               className={`h-4 w-auto select-none ${ICON_HOVER_CLASS}`}
             />
+
             <span className="font-ui text-[12px] text-black/80 select-none lg:text-[15px]">
-              Bag ({cartCount})
+              {t.bag} ({cartCount})
             </span>
           </button>
 
@@ -251,7 +267,7 @@ export default function Header() {
               />
             </NavItem>
           ) : (
-            <NavItem to="/login">Log in</NavItem>
+            <NavItem to="/login">{t.logIn}</NavItem>
           )}
 
           <div className="flex items-center gap-2">
