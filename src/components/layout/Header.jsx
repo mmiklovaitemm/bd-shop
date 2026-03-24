@@ -70,7 +70,7 @@ const CartItem = memo(({ to, icon, label, count }) => (
       onDragStart={(e) => e.preventDefault()}
       className={`h-4 w-auto select-none ${ICON_HOVER_CLASS}`}
     />
-    <span className="font-ui text-[12px] text-black/80 select-none lg:text-[15px]">
+    <span className="font-ui text-[12px] text-black/80 select-none lg:text-[14px]">
       {label} ({count})
     </span>
   </NavItem>
