@@ -382,6 +382,29 @@ export default function AdminProductEditModal({
   };
 
   const handleSubmit = () => {
+    const normalizedSizes = parsedSizes.length ? parsedSizes : ["one size"];
+
+    const normalizedVariantStock = Object.fromEntries(
+      Object.entries(form.variantStock || {}).map(([color, sizeMap]) => {
+        const nextSizeMap = Object.fromEntries(
+          normalizedSizes.map((size) => [
+            size,
+            Math.max(
+              0,
+              Number(
+                sizeMap?.[size] ??
+                  sizeMap?.default ??
+                  sizeMap?.["one size"] ??
+                  0,
+              ) || 0,
+            ),
+          ]),
+        );
+
+        return [color, nextSizeMap];
+      }),
+    );
+
     const payload = {
       id: form.id.trim(),
       name: form.name.trim(),
@@ -397,8 +420,8 @@ export default function AdminProductEditModal({
         .split("\n")
         .map((item) => item.trim())
         .filter(Boolean),
-      sizes: parsedSizes,
-      variantStock: form.variantStock,
+      sizes: normalizedSizes,
+      variantStock: normalizedVariantStock,
       isBestSeller: form.isBestSeller,
     };
 
@@ -429,11 +452,6 @@ export default function AdminProductEditModal({
 
     if (payload.silverImages.length === 0 && payload.goldImages.length === 0) {
       setError("Add at least one image.");
-      return;
-    }
-
-    if (!payload.sizes.length) {
-      setError("Add at least one size.");
       return;
     }
 

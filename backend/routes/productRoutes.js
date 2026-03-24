@@ -190,6 +190,8 @@ function buildVariantsWithStock({
     ? sizes.map((size) => String(size).trim()).filter(Boolean)
     : [];
 
+  const effectiveSizes = cleanSizes.length ? cleanSizes : ["one size"];
+
   const grouped = {};
 
   const getStock = (color, size) => {
@@ -198,7 +200,7 @@ function buildVariantsWithStock({
   };
 
   if (normalizedSilverImages.length) {
-    grouped.silver = cleanSizes.map((size) => ({
+    grouped.silver = effectiveSizes.map((size) => ({
       size,
       stock: getStock("silver", size),
       images: normalizedSilverImages,
@@ -206,7 +208,7 @@ function buildVariantsWithStock({
   }
 
   if (normalizedGoldImages.length) {
-    grouped.gold = cleanSizes.map((size) => ({
+    grouped.gold = effectiveSizes.map((size) => ({
       size,
       stock: getStock("gold", size),
       images: normalizedGoldImages,
@@ -242,6 +244,8 @@ function buildVariantsPreservingStock({
     ? sizes.map((size) => String(size).trim()).filter(Boolean)
     : [];
 
+  const effectiveSizes = cleanSizes.length ? cleanSizes : ["one size"];
+
   const nextVariants = {};
 
   const getIncomingStock = (color, size) => {
@@ -261,7 +265,7 @@ function buildVariantsPreservingStock({
       ? existingVariants[color]
       : [];
 
-    nextVariants[color] = cleanSizes.map((size) => {
+    nextVariants[color] = effectiveSizes.map((size) => {
       const existingVariant = existingColorVariants.find((variant) => {
         if (!variant || typeof variant !== "object" || Array.isArray(variant)) {
           return false;
