@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import useLanguage from "@/context/useLanguage";
 import useCart from "@/store/useCart";
 import { getEmailFromLocalStorage } from "@/utils/checkout";
 
@@ -18,10 +19,10 @@ const API_ORIGIN = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
 export default function Checkout() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const items = useCart((s) => s.items);
   const clearCart = useCart((s) => s.clearCart);
 
-  // refs for scroll-to-error
   const emailRef = useRef(null);
 
   const firstNameRef = useRef(null);
@@ -38,10 +39,9 @@ export default function Checkout() {
 
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
 
-  // errors + submitting + status
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [payStatus, setPayStatus] = useState("idle"); // "idle" | "success"
+  const [payStatus, setPayStatus] = useState("idle");
 
   const clearError = (key) => {
     setErrors((prev) => {
@@ -52,19 +52,12 @@ export default function Checkout() {
     });
   };
 
-  // Contact
   const [email, setEmail] = useState(() => getEmailFromLocalStorage());
 
-  // Delivery toggle
-  const [deliveryType, setDeliveryType] = useState("ship"); // "ship" | "pickup"
+  const [deliveryType, setDeliveryType] = useState("ship");
+  const [shippingMethod, setShippingMethod] = useState("lp");
+  const [pickupLocation, setPickupLocation] = useState("vilnius");
 
-  // Shipping method (LP vs Omniva)
-  const [shippingMethod, setShippingMethod] = useState("lp"); // "lp" | "omniva"\
-
-  // Pickup salon selection
-  const [pickupLocation, setPickupLocation] = useState("vilnius"); // "vilnius" | "kaunas"
-
-  // Subtotal
   const SHIPPING_KIT_FEE = 15;
 
   const subtotal = useMemo(() => {
@@ -84,13 +77,11 @@ export default function Checkout() {
     }, 0);
   }, [items]);
 
-  // Delivery price
   const deliveryPrice = useMemo(() => {
     if (deliveryType !== "ship") return 0;
     return shippingMethod === "lp" ? 2 : 2.5;
   }, [deliveryType, shippingMethod]);
 
-  // Total
   const total = useMemo(() => {
     return subtotal + deliveryPrice;
   }, [subtotal, deliveryPrice]);
@@ -110,7 +101,6 @@ export default function Checkout() {
     return (base + fee) * qty;
   };
 
-  // Ship form fields
   const [country, setCountry] = useState("Lithuania");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -120,8 +110,7 @@ export default function Checkout() {
   const [postalCode, setPostalCode] = useState("");
   const [phone, setPhone] = useState("");
 
-  // Payment
-  const [paymentType, setPaymentType] = useState("card"); // "card" | "bank"
+  const [paymentType, setPaymentType] = useState("card");
   const [selectedBank, setSelectedBank] = useState("swedbank");
   const [cardNumber, setCardNumber] = useState("");
   const [cardDate, setCardDate] = useState("");
@@ -131,35 +120,43 @@ export default function Checkout() {
   const validate = () => {
     const next = {};
 
-    // Contact
     if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
-      next.email = "Enter a valid email.";
+      next.email = t.checkoutPage.errors.enterValidEmail;
     }
 
-    // Delivery: Ship
     if (deliveryType === "ship") {
-      if (!firstName.trim()) next.firstName = "First name is required.";
-      if (!lastName.trim()) next.lastName = "Last name is required.";
-      if (!address.trim()) next.address = "Address is required.";
-      if (!city.trim()) next.city = "City is required.";
-      if (!postalCode.trim()) next.postalCode = "Postal code is required.";
-      if (!phone.trim()) next.phone = "Phone is required.";
+      if (!firstName.trim())
+        next.firstName = t.checkout.errors.firstNameRequired;
+      if (!lastName.trim()) next.lastName = t.checkout.errors.lastNameRequired;
+      if (!address.trim()) next.address = t.checkout.errors.addressRequired;
+      if (!city.trim()) next.city = t.checkout.errors.cityRequired;
+      if (!postalCode.trim())
+        next.postalCode = t.checkout.errors.postalCodeRequired;
+      if (!phone.trim()) next.phone = t.checkout.errors.phoneRequired;
     }
 
-    // Payment
     if (paymentType === "card") {
       const digits = (s) => String(s || "").replace(/\D/g, "");
 
-      if (digits(cardNumber).length < 12)
-        next.cardNumber = "Invalid card number.";
-      if (!/^\d{2}\/\d{2}$/.test(cardDate)) next.cardDate = "Use MM/YY.";
-      if (digits(cardCvc).length < 3) next.cardCvc = "Invalid CVC.";
-      if (!cardName.trim()) next.cardName = "Card owner name is required.";
+      if (digits(cardNumber).length < 12) {
+        next.cardNumber = t.checkout.errors.invalidCardNumber;
+      }
+
+      if (!/^\d{2}\/\d{2}$/.test(cardDate)) {
+        next.cardDate = t.checkout.errors.useCardDateFormat;
+      }
+
+      if (digits(cardCvc).length < 3) {
+        next.cardCvc = t.checkout.errors.invalidCvc;
+      }
+
+      if (!cardName.trim()) {
+        next.cardName = t.checkout.errors.cardOwnerNameRequired;
+      }
     }
 
     setErrors(next);
 
-    // scroll-to-first-error
     if (Object.keys(next).length > 0) {
       const order = [
         ["email", emailRef],
@@ -224,19 +221,30 @@ export default function Checkout() {
 
       if (!product) {
         stockErrors.push(
-          `Product "${item.name || item.title || productId}" no longer exists.`,
+          t.checkout.errors.productNoLongerExists.replace(
+            "{productName}",
+            item.name || item.title || productId || t.product.label,
+          ),
         );
         continue;
       }
 
       if (product.isSoldOut || Number(product.stockQuantity || 0) <= 0) {
-        stockErrors.push(`Product "${product.name}" is sold out.`);
+        stockErrors.push(
+          t.checkout.errors.productSoldOut.replace(
+            "{productName}",
+            product.name,
+          ),
+        );
         continue;
       }
 
       if (qty > Number(product.stockQuantity || 0)) {
         stockErrors.push(
-          `Only ${product.stockQuantity} left for "${product.name}", but your bag has ${qty}.`,
+          t.checkout.errors.notEnoughStock
+            .replace("{stockQuantity}", product.stockQuantity)
+            .replace("{productName}", product.name)
+            .replace("{qty}", qty),
         );
       }
     }
@@ -318,7 +326,7 @@ export default function Checkout() {
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        throw new Error(data?.message || "Order creation failed.");
+        throw new Error(data?.message || t.somethingWentWrong);
       }
 
       clearCart();
@@ -336,18 +344,16 @@ export default function Checkout() {
       setIsSubmitting(false);
       setErrors((prev) => ({
         ...prev,
-        submit: err?.message || "Something went wrong.",
+        submit: err?.message || t.somethingWentWrong,
       }));
     }
   };
 
   return (
     <>
-      <main className="px-0 md:px-2 lg:px-4 py-6">
-        <div className="mx-auto w-full max-w-[980px] grid grid-cols-1 md:grid-cols-[1fr_360px] gap-6">
-          {/* LEFT */}
-          <section className="w-full max-w-[420px] mx-auto md:mx-0 md:max-w-none md:w-full bg-white md:border md:border-black lg:border lg:border-black">
-            {/* Mobile summary at top */}
+      <main className="px-0 py-6 md:px-2 lg:px-4">
+        <div className="mx-auto grid w-full max-w-[980px] grid-cols-1 gap-6 md:grid-cols-[1fr_360px]">
+          <section className="mx-auto w-full max-w-[420px] bg-white md:mx-0 md:w-full md:max-w-none md:border md:border-black lg:border lg:border-black">
             <div className="md:hidden">
               <OrderSummary
                 variant="mobile"
@@ -362,8 +368,7 @@ export default function Checkout() {
               />
             </div>
 
-            <form onSubmit={handlePay} className="px-4 py-6 space-y-8">
-              {/* Submit error */}
+            <form onSubmit={handlePay} className="space-y-8 px-4 py-6">
               {errors.submit ? (
                 <div className="border border-black bg-black/5 px-4 py-4">
                   <p className="font-ui text-sm">{errors.submit}</p>
@@ -373,7 +378,7 @@ export default function Checkout() {
               {payStatus === "success" ? (
                 <div className="border border-black bg-black/5 px-4 py-4">
                   <p className="font-ui text-sm font-semibold">
-                    Payment successful
+                    {t.checkout.paymentSuccess}
                   </p>
 
                   <button
@@ -381,12 +386,11 @@ export default function Checkout() {
                     className="mt-4 h-12 w-full border border-black bg-white font-ui text-[14px]"
                     onClick={() => setPayStatus("idle")}
                   >
-                    Back to checkout
+                    {t.checkout.backToCheckout}
                   </button>
                 </div>
               ) : null}
 
-              {/* Contact */}
               <ContactSection
                 email={email}
                 setEmail={setEmail}
@@ -395,13 +399,11 @@ export default function Checkout() {
                 emailRef={emailRef}
               />
 
-              {/* Delivery */}
               <DeliveryToggle
                 deliveryType={deliveryType}
                 setDeliveryType={setDeliveryType}
               />
 
-              {/* Ship flow */}
               {deliveryType === "ship" ? (
                 <div>
                   <ShippingForm
@@ -445,7 +447,6 @@ export default function Checkout() {
                 />
               ) : null}
 
-              {/* Payment */}
               <PaymentSection
                 paymentType={paymentType}
                 setPaymentType={setPaymentType}
@@ -469,17 +470,18 @@ export default function Checkout() {
 
               <button
                 type="submit"
-                className="w-full h-14 bg-black text-white font-ui text-[14px] flex items-center justify-center disabled:opacity-50"
+                className="flex h-14 w-full items-center justify-center bg-black font-ui text-[14px] text-white disabled:opacity-50"
                 disabled={
                   items.length === 0 || isSubmitting || payStatus === "success"
                 }
               >
-                {isSubmitting ? "Processing..." : "Pay now"}
+                {isSubmitting
+                  ? t.checkoutPage.processing
+                  : t.checkoutPage.payNow}
               </button>
             </form>
           </section>
 
-          {/* RIGHT */}
           <div className="hidden md:block">
             <OrderSummary
               variant="desktop"
@@ -488,7 +490,7 @@ export default function Checkout() {
               deliveryPrice={deliveryPrice}
               deliveryType={deliveryType}
               total={total}
-              isOpen={true}
+              isOpen
               onToggle={() => {}}
               calcLineTotal={calcLineTotal}
             />

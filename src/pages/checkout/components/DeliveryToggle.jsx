@@ -1,10 +1,15 @@
+import useLanguage from "@/context/useLanguage";
 import deliveryIcon from "@/assets/ui/delivery.svg";
 import pickupIcon from "@/assets/ui/pick-up-icon.svg";
 
 export default function DeliveryToggle({ deliveryType, setDeliveryType }) {
+  const { t } = useLanguage();
+
   return (
     <div>
-      <p className="font-ui text-sm font-semibold">Delivery information</p>
+      <p className="font-ui text-sm font-semibold">
+        {t.checkoutPage.deliveryInformation}
+      </p>
 
       <div className="mt-4 grid grid-cols-2 gap-3">
         <button
@@ -25,7 +30,7 @@ export default function DeliveryToggle({ deliveryType, setDeliveryType }) {
               deliveryType === "ship" ? "brightness-0 invert" : "",
             ].join(" ")}
           />
-          <span>Ship</span>
+          <span>{t.checkoutPage.ship}</span>
         </button>
 
         <button
@@ -46,7 +51,7 @@ export default function DeliveryToggle({ deliveryType, setDeliveryType }) {
               deliveryType === "pickup" ? "brightness-0 invert" : "",
             ].join(" ")}
           />
-          <span>Pickup</span>
+          <span>{t.checkoutPage.pickup}</span>
         </button>
       </div>
     </div>

@@ -1,3 +1,4 @@
+import useLanguage from "@/context/useLanguage";
 import TextInput from "./TextInput";
 
 export default function ContactSection({
@@ -7,13 +8,17 @@ export default function ContactSection({
   clearError,
   emailRef,
 }) {
+  const { t } = useLanguage();
+
   return (
     <div>
-      <p className="font-ui text-sm font-semibold">Contact</p>
+      <p className="font-ui text-sm font-semibold">
+        {t.checkoutPage.contactTitle}
+      </p>
 
       <div className="mt-4">
         <TextInput
-          label="Email address"
+          label={t.checkoutPage.emailLabel}
           required
           type="email"
           value={email}
@@ -22,7 +27,7 @@ export default function ContactSection({
             clearError?.("email");
           }}
           autoComplete="email"
-          placeholder="Enter your email"
+          placeholder={t.checkoutPage.emailPlaceholder}
           error={error}
           inputRef={emailRef}
         />

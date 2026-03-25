@@ -34,9 +34,11 @@ const translations = {
     removeItem: "Remove item",
     checkout: "Check out",
     warranty: "2 Year Warranty",
+    twoYearWarranty: "2 Year Warranty",
     highQuality: "High Quality",
     fastDelivery: "Fast Delivery",
     return90Days: "90-Day Return",
+    ninetyDayReturn: "90-Day Return",
     bestSellers: "Best sellers",
     seeAll: "See all",
     seeAllBestSellers: "See all best sellers",
@@ -118,6 +120,7 @@ const translations = {
     gold: "Gold",
     softBlue: "Soft blue",
     softGreen: "Soft green",
+    softYellow: "Soft yellow",
 
     loading: "Loading...",
     noProductsFound: "No products found.",
@@ -200,7 +203,6 @@ const translations = {
     loadingOrders: "Loading orders...",
     noOrdersYet: "No orders yet.",
     failedToLoadOrders: "Failed to load orders.",
-    product: "Product",
     pickup: "Pickup",
     omniva: "Omniva",
     lpExpress: "LP Express",
@@ -227,22 +229,189 @@ const translations = {
     invalidProductUrl: "Invalid product URL.",
     backToCollections: "Back to Collections",
 
-    softYellow: "Soft yellow",
-    ninetyDayReturn: "90 - Day Return",
     selectedVariantSoldOut: "Selected variant is sold out",
     removeFromWishlist: "Remove from wishlist",
     addToWishlist: "Add to wishlist",
     dimensionsAndDetails: "Dimensions & details",
     personalJewelleryHowItWorks: "Personal jewellery - How it works",
     quantity: "Quantity",
+    orderValue: "Order value",
 
-    youMayAlsoLike: {
-      titleLine1: "You may",
-      titleLine2: "also like",
-      seeAll: "See all",
-      seeAllAriaLabel: "See all products",
+    product: {
+      label: "Product",
+
+      youMayAlsoLike: {
+        titleLine1: "You may",
+        titleLine2: "also like",
+        seeAll: "See all",
+        seeAllAriaLabel: "See all products",
+      },
+
+      detailsPanel: {
+        title: "Dimensions & details",
+        close: "Close",
+        closeAriaLabel: "Close details",
+        adjustableFromToPrefix: "adjustable from",
+        adjustableFromToMiddle: "to",
+        sectionTitles: {
+          dimensions: "Dimensions:",
+        },
+        labels: {
+          metal: "Metal - ",
+          bandWidth: "Band width: ",
+          weight: "Weight: ",
+          gemstone: "Gemstone: ",
+          productCode: "Product Code: ",
+          chain: "Chain - ",
+          totalNecklaceLength: "Total Necklace Length: ",
+          height: "Height: ",
+          width: "Width: ",
+          size: "Size - ",
+          totalBraceletLength: "Total Bracelet Length: ",
+        },
+        metals: {
+          softYellow: "Soft yellow",
+          softBlue: "Soft blue",
+          softGreen: "Soft green",
+          gold: "Gold",
+          silver: "Silver",
+        },
+        defaultTexts: {
+          rings:
+            "This wide band ring features a textured surface inspired by organic forms, creating a subtle play of light and depth. Its bold silhouette is balanced by a refined finish, giving the piece a modern yet timeless character. Designed to be worn alone as a statement or paired with minimal jewellery, this ring adds effortless sophistication to any look.",
+          bracelets:
+            "This bold chain bracelet is crafted from interlinked, polished rings that create a strong yet balanced silhouette. Its smooth, rounded links catch the light beautifully, giving the piece a refined, contemporary feel. Designed to stand out on its own or pair effortlessly with other jewellery, this bracelet adds a modern statement to both everyday and elevated looks.",
+          necklaces:
+            "This delicate necklace features a fine chain accented by a sleek, drop-shaped pendant that falls gracefully along the neckline. Its minimalist design highlights clean lines and subtle movement, creating an elegant, elongated silhouette. Perfect for layering or wearing on its own, this piece adds a refined, modern touch to both everyday and evening looks.",
+          earrings:
+            "These minimalist earrings feature a softly contoured triangular form with a smooth, brushed surface that reflects light in a subtle, elegant way. Their sculptural silhouette adds a modern touch while remaining timeless and easy to style. Designed to complement both everyday looks and more refined outfits, they are a versatile addition to any jewellery collection.",
+        },
+      },
+    },
+
+    checkoutThankYou: {
+      title: "Thank you for your purchase!",
+      imageAlt: "Thank you",
+      orderIdLabel: "Order ID",
+      confirmationEmailLabel: "Confirmation email",
+      backToShopping: "Go back shopping",
+      shippingMessage:
+        "Your order has been received successfully. We’ll send your order details and shipping updates to your email shortly.",
+      pickupMessage:
+        "Your order has been received successfully. We’ll contact you by email when it is ready for pickup at {pickupLocation}.",
+      pickupLocations: {
+        vilnius: "Vilnius salon",
+        kaunas: "Kaunas salon",
+        default: "our salon",
+      },
+    },
+
+    checkoutPage: {
+      processing: "Processing...",
+      payNow: "Pay now",
+      paymentSuccess: "Payment successful",
+      backToCheckout: "Back to checkout",
+      contactTitle: "Contact",
+      emailLabel: "Email address",
+      emailPlaceholder: "Enter your email",
+      deliveryInformation: "Delivery information",
+      ship: "Ship",
+      pickup: "Pickup",
+      orderSummary: "Order summary",
+      quantityShort: "Qnty.",
+      subtotal: "Subtotal",
+      free: "Free",
+      paymentTitle: "Payment",
+      creditCard: "Credit card",
+      cardNumberLabel: "Card number",
+      cardNumberPlaceholder: "1234 1234 1234 1234",
+      cardDateLabel: "Date",
+      cardDatePlaceholder: "MM/YY",
+      cardCvcLabel: "CVC",
+      cardCvcPlaceholder: "CVC",
+      cardOwnerNameLabel: "Card owner name, surname",
+      cardOwnerNamePlaceholder: "Full name",
+      bankPayment: "E. bank payment",
+      chooseYourBank: "Choose your bank",
+      bankRedirectText:
+        "You will be redirected to your selected bank after clicking Pay now.",
+      pickupTitle: "Pickup location",
+      pickupDescription:
+        "Select the salon where you want to pick up your order.",
+      pickupLocations: {
+        vilnius: "Vilnius salon",
+        kaunas: "Kaunas salon",
+      },
+      pickupAddresses: {
+        vilnius: "Kauno str. 24",
+        kaunas: "Žemaičių str. 24",
+      },
+
+      pickupInfo:
+        "Pickup is free. We will contact you by email after your order is placed.",
+      countryRegionLabel: "Country/Region",
+      countryLithuania: "Lithuania",
+      addressLabel: "Address",
+      apartmentLabel: "Apartment, suite, etc.",
+      optionalPlaceholder: "(optional)",
+      cityLabel: "City",
+      postalCodeLabel: "Postal code",
+
+      chooseDeliveryMethod: "Choose delivery method",
+      lpDelivery: "LP EXPRESS delivery to home",
+      omnivaDelivery: "Omniva delivery to home",
+
+      errors: {
+        enterValidEmail: "Enter a valid email.",
+        firstNameRequired: "First name is required.",
+        lastNameRequired: "Last name is required.",
+        addressRequired: "Address is required.",
+        cityRequired: "City is required.",
+        postalCodeRequired: "Postal code is required.",
+        phoneRequired: "Phone is required.",
+        invalidCardNumber: "Invalid card number.",
+        useCardDateFormat: "Use MM/YY.",
+        invalidCvc: "Invalid CVC.",
+        cardOwnerNameRequired: "Card owner name is required.",
+        productNoLongerExists: 'Product "{productName}" no longer exists.',
+        productSoldOut: 'Product "{productName}" is sold out.',
+        notEnoughStock:
+          'Only {stockQuantity} left for "{productName}", but your bag has {qty}.',
+      },
+    },
+
+    personalized: {
+      steps: {
+        step1: {
+          title: "Choose Jewellery",
+          text: "Select your preferred piece from our collection of rings and necklaces. Choose the material — gold or silver — and the size that fits you best.",
+          alt: "Choose jewellery",
+        },
+        step2: {
+          title: "Add Your Personal Touch",
+          shippingTitle: "Shipping option:",
+          shippingText:
+            "Complete your order and we will send you a kit to capture the print you would like engraved on your jewellery. Once ready, send it back to us and we will begin crafting your personalized piece.",
+          inStoreTitle: "In-store option:",
+          inStoreText:
+            "Visit our store and we will take the print on-site. After that, simply wait while we carefully engrave it onto your selected jewellery. You can choose to have it shipped to you or collect it in person.",
+          alt: "Add print",
+        },
+        step3: {
+          title: "Receive Your Jewellery",
+          text: "Once your piece is ready, we will carefully package and ship it to you — or you can pick it up from our store. Your personalized jewellery is now ready to be worn and treasured.",
+          alt: "Take your jewellery",
+        },
+      },
+
+      productsTitle: "Personalized products",
+      productsTitleLine1: "Personalized",
+      productsTitleLine2: "products",
+      howItWorks: "How it works",
+      readyTitle: "Are You Ready?",
     },
   },
+
   lt: {
     collections: "Kolekcijos",
     aboutUs: "Apie mus",
@@ -275,9 +444,11 @@ const translations = {
     removeItem: "Pašalinti prekę",
     checkout: "Apmokėti",
     warranty: "2 metų garantija",
+    twoYearWarranty: "2 metų garantija",
     highQuality: "Aukšta kokybė",
     fastDelivery: "Greitas pristatymas",
     return90Days: "90 dienų grąžinimas",
+    ninetyDayReturn: "90 dienų grąžinimas",
     bestSellers: "Perkamiausi",
     seeAll: "Žiūrėti visus",
     seeAllBestSellers: "Žiūrėti visus perkamiausius",
@@ -359,6 +530,7 @@ const translations = {
     gold: "Auksas",
     softBlue: "Švelni mėlyna",
     softGreen: "Švelni žalia",
+    softYellow: "Švelni geltona",
 
     loading: "Kraunama...",
     noProductsFound: "Produktų nerasta.",
@@ -441,7 +613,6 @@ const translations = {
     loadingOrders: "Kraunami užsakymai...",
     noOrdersYet: "Užsakymų dar nėra.",
     failedToLoadOrders: "Nepavyko užkrauti užsakymų.",
-    product: "Produktas",
     pickup: "Atsiėmimas",
     omniva: "Omniva",
     lpExpress: "LP Express",
@@ -468,28 +639,196 @@ const translations = {
     invalidProductUrl: "Neteisinga produkto nuoroda.",
     backToCollections: "Grįžti į kolekcijas",
 
-    softYellow: "Švelni geltona",
-    twoYearWarranty: "2 metų garantija",
-    ninetyDayReturn: "90 dienų grąžinimas",
     selectedVariantSoldOut: "Pasirinktas variantas išparduotas",
     removeFromWishlist: "Pašalinti iš mėgstamų",
     addToWishlist: "Pridėti į mėgstamus",
     dimensionsAndDetails: "Išmatavimai ir detalės",
     personalJewelleryHowItWorks: "Personalizuoti papuošalai - kaip tai veikia",
     quantity: "Kiekis",
+    orderValue: "Užsakymo vertė",
 
-    youMayAlsoLike: {
-      titleLine1: "Jums gali",
-      titleLine2: "taip pat patikti",
-      seeAll: "Žiūrėti visus",
-      seeAllAriaLabel: "Žiūrėti visus produktus",
+    product: {
+      label: "Produktas",
+
+      youMayAlsoLike: {
+        titleLine1: "Jums gali",
+        titleLine2: "taip pat patikti",
+        seeAll: "Žiūrėti visus",
+        seeAllAriaLabel: "Žiūrėti visus produktus",
+      },
+
+      detailsPanel: {
+        title: "Išmatavimai ir detalės",
+        close: "Uždaryti",
+        closeAriaLabel: "Uždaryti detales",
+        adjustableFromToPrefix: "reguliuojamas nuo",
+        adjustableFromToMiddle: "iki",
+        sectionTitles: {
+          dimensions: "Išmatavimai:",
+        },
+        labels: {
+          metal: "Metalas - ",
+          bandWidth: "Žiedo plotis: ",
+          weight: "Svoris: ",
+          gemstone: "Akmuo: ",
+          productCode: "Produkto kodas: ",
+          chain: "Grandinėlė - ",
+          totalNecklaceLength: "Bendras vėrinio ilgis: ",
+          height: "Aukštis: ",
+          width: "Plotis: ",
+          size: "Dydis - ",
+          totalBraceletLength: "Bendras apyrankės ilgis: ",
+        },
+        metals: {
+          softYellow: "Švelni geltona",
+          softBlue: "Švelni mėlyna",
+          softGreen: "Švelni žalia",
+          gold: "Auksas",
+          silver: "Sidabras",
+        },
+        defaultTexts: {
+          rings:
+            "Šis platesnis žiedas pasižymi tekstūruotu paviršiumi, įkvėptu organiškų formų, kuris sukuria subtilų šviesos ir gylio žaismą. Ryškų siluetą subalansuoja išbaigta apdaila, todėl papuošalas atrodo moderniai ir kartu išlieka laikui nepavaldus. Nešiojamas vienas kaip akcentas arba derinamas su minimalistiniais papuošalais, šis žiedas suteikia įvaizdžiui lengvos elegancijos.",
+          bracelets:
+            "Ši išraiškinga grandinėlės tipo apyrankė sukurta iš tarpusavyje sujungtų, poliruotų žiedų, kurie formuoja tvirtą, bet harmoningą siluetą. Lygios, apvalintos grandys gražiai atspindi šviesą ir suteikia papuošalui rafinuotą, šiuolaikišką pojūtį. Nešiojama viena arba lengvai derinama su kitais papuošalais, ši apyrankė tampa moderniu akcentu tiek kasdieniams, tiek puošnesniems deriniams.",
+          necklaces:
+            "Šis subtilus vėrinys turi ploną grandinėlę, papildytą elegantišku lašo formos pakabuku, kuris dailiai gula išilgai kaklo linijos. Minimalistinis dizainas išryškina švarias linijas ir lengvą judesį, sukurdamas elegantišką, pailgintą siluetą. Tinkamas sluoksniuoti arba nešioti vienas, šis papuošalas suteikia rafinuotą, modernų akcentą tiek kasdieniams, tiek vakariniams deriniams.",
+          earrings:
+            "Šie minimalistiniai auskarai pasižymi švelniai išgaubta trikampio forma ir lygiu, šukuotu paviršiumi, kuris subtiliai bei elegantiškai atspindi šviesą. Skulptūriškas siluetas suteikia modernumo, bet kartu išlieka laikui nepavaldus ir lengvai pritaikomas. Jie puikiai dera tiek prie kasdienių, tiek prie puošnesnių derinių ir yra universali papuošalų kolekcijos dalis.",
+        },
+      },
+    },
+
+    checkoutThankYou: {
+      title: "Ačiū, kad apsipirkote!",
+      imageAlt: "Ačiū",
+      orderIdLabel: "Užsakymo ID",
+      confirmationEmailLabel: "Patvirtinimo el. paštas",
+      backToShopping: "Grįžti apsipirkti",
+      shippingMessage:
+        "Jūsų užsakymas sėkmingai gautas. Netrukus atsiųsime užsakymo informaciją ir pristatymo atnaujinimus į jūsų el. paštą.",
+      pickupMessage:
+        "Jūsų užsakymas sėkmingai gautas. Susisieksime su jumis el. paštu, kai jis bus paruoštas atsiėmimui {pickupLocation}.",
+      pickupLocations: {
+        vilnius: "Vilniaus salone",
+        kaunas: "Kauno salone",
+        default: "mūsų salone",
+      },
+    },
+
+    checkoutPage: {
+      processing: "Apdorojama...",
+      payNow: "Mokėti dabar",
+      paymentSuccess: "Mokėjimas sėkmingas",
+      backToCheckout: "Grįžti į apmokėjimą",
+      contactTitle: "Kontaktai",
+      emailLabel: "El. pašto adresas",
+      emailPlaceholder: "Įveskite savo el. paštą",
+      deliveryInformation: "Pristatymo informacija",
+      ship: "Siuntimas",
+      pickup: "Atsiėmimas",
+      orderSummary: "Užsakymo santrauka",
+      quantityShort: "Kiekis",
+      subtotal: "Tarpinė suma",
+      free: "Nemokamai",
+      paymentTitle: "Mokėjimas",
+      creditCard: "Mokėjimo kortelė",
+      cardNumberLabel: "Kortelės numeris",
+      cardNumberPlaceholder: "1234 1234 1234 1234",
+      cardDateLabel: "Data",
+      cardDatePlaceholder: "MM/YY",
+      cardCvcLabel: "CVC",
+      cardCvcPlaceholder: "CVC",
+      cardOwnerNameLabel: "Kortelės savininko vardas, pavardė",
+      cardOwnerNamePlaceholder: "Pilnas vardas",
+      bankPayment: "El. bankininkystė",
+      chooseYourBank: "Pasirinkite savo banką",
+      bankRedirectText:
+        "Paspaudę „Mokėti dabar“ būsite nukreipti į pasirinktą banką.",
+      pickupTitle: "Atsiėmimo vieta",
+      pickupDescription:
+        "Pasirinkite saloną, kuriame norite atsiimti užsakymą.",
+      pickupLocations: {
+        vilnius: "Vilniaus salonas",
+        kaunas: "Kauno salonas",
+      },
+      pickupAddresses: {
+        vilnius: "Kauno g. 24",
+        kaunas: "Žemaičių g. 24",
+      },
+
+      pickupInfo:
+        "Atsiėmimas yra nemokamas. Po užsakymo susisieksime su jumis el. paštu.",
+      countryRegionLabel: "Šalis / regionas",
+      countryLithuania: "Lietuva",
+      addressLabel: "Adresas",
+      apartmentLabel: "Butas, numeris ir kt.",
+      optionalPlaceholder: "(nebūtina)",
+      cityLabel: "Miestas",
+      postalCodeLabel: "Pašto kodas",
+
+      chooseDeliveryMethod: "Pasirinkite pristatymo būdą",
+      lpDelivery: "LP EXPRESS pristatymas į namus",
+      omnivaDelivery: "Omniva pristatymas į namus",
+
+      errors: {
+        enterValidEmail: "Įveskite galiojantį el. pašto adresą.",
+        firstNameRequired: "Vardas yra privalomas.",
+        lastNameRequired: "Pavardė yra privaloma.",
+        addressRequired: "Adresas yra privalomas.",
+        cityRequired: "Miestas yra privalomas.",
+        postalCodeRequired: "Pašto kodas yra privalomas.",
+        phoneRequired: "Telefono numeris yra privalomas.",
+        invalidCardNumber: "Neteisingas kortelės numeris.",
+        useCardDateFormat: "Naudokite MM/YY formatą.",
+        invalidCvc: "Neteisingas CVC.",
+        cardOwnerNameRequired: "Kortelės savininko vardas yra privalomas.",
+        productNoLongerExists: 'Produktas "{productName}" nebeegzistuoja.',
+        productSoldOut: 'Produktas "{productName}" yra išparduotas.',
+        notEnoughStock:
+          'Liko tik {stockQuantity} vnt. produkto "{productName}", bet jūsų krepšelyje yra {qty}.',
+      },
+    },
+
+    personalized: {
+      steps: {
+        step1: {
+          title: "Pasirinkite papuošalą",
+          text: "Pasirinkite norimą papuošalą iš mūsų žiedų ir kaklo papuošalų kolekcijos. Pasirinkite medžiagą — auksą arba sidabrą — ir tinkamiausią dydį.",
+          alt: "Pasirinkti papuošalą",
+        },
+        step2: {
+          title: "Pridėkite savo asmeninį prisilietimą",
+          shippingTitle: "Siuntimo variantas:",
+          shippingText:
+            "Užbaikite užsakymą ir mes atsiųsime jums rinkinį, skirtą atspaudo paėmimui, kurį norėsite išgraviruoti ant papuošalo. Paruošę, išsiųskite jį mums atgal ir mes pradėsime kurti jūsų personalizuotą papuošalą.",
+          inStoreTitle: "Salone:",
+          inStoreText:
+            "Apsilankykite mūsų salone ir mes paimsime atspaudą vietoje. Po to belieka palaukti, kol kruopščiai išgraviruosime jį ant pasirinkto papuošalo. Galėsite pasirinkti pristatymą arba atsiimti vietoje.",
+          alt: "Pridėti atspaudą",
+        },
+        step3: {
+          title: "Gaukite savo papuošalą",
+          text: "Kai jūsų papuošalas bus paruoštas, jį kruopščiai supakuosime ir išsiųsime — arba galėsite atsiimti mūsų salone. Jūsų personalizuotas papuošalas paruoštas nešioti ir saugoti.",
+          alt: "Gauti papuošalą",
+        },
+      },
+
+      productsTitle: "Personalizuoti produktai",
+      productsTitleLine1: "Personalizuoti",
+      productsTitleLine2: "produktai",
+      howItWorks: "Kaip tai veikia",
+      readyTitle: "Ar esi pasiruošęs?",
     },
   },
 };
 
+const allowedLanguages = ["en", "lt"];
+
 export function LanguageProvider({ children }) {
   const [lang, setLang] = useState(() => {
-    return localStorage.getItem("lang") || "en";
+    const savedLang = localStorage.getItem("lang");
+    return allowedLanguages.includes(savedLang) ? savedLang : "en";
   });
 
   useEffect(() => {
@@ -500,7 +839,7 @@ export function LanguageProvider({ children }) {
     return {
       lang,
       setLang,
-      t: translations[lang],
+      t: translations[lang] || translations.en,
     };
   }, [lang]);
 

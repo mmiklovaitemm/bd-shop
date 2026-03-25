@@ -1,3 +1,4 @@
+import useLanguage from "@/context/useLanguage";
 import TextInput from "./TextInput";
 
 export default function ShippingForm({
@@ -29,14 +30,19 @@ export default function ShippingForm({
   postalCodeRef,
   phoneRef,
 }) {
+  const { t } = useLanguage();
+
   return (
     <div>
-      <p className="font-ui text-[12px] text-black/50 mb-4">Contact</p>
+      <p className="mb-4 font-ui text-[12px] text-black/50">
+        {t.checkoutPage.contactTitle}
+      </p>
 
       <div className="space-y-4">
         <div>
           <label className="block text-sm">
-            Country/Region <span className="text-red-600">*</span>
+            {t.checkoutPage.countryRegionLabel}{" "}
+            <span className="text-red-600">*</span>
           </label>
 
           <select
@@ -48,13 +54,13 @@ export default function ShippingForm({
               "border border-black focus:border-black",
             ].join(" ")}
           >
-            <option value="Lithuania">Lithuania</option>
+            <option value="Lithuania">{t.checkoutPage.countryLithuania}</option>
           </select>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <TextInput
-            label="First name"
+            label={t.firstName}
             required
             value={firstName}
             onChange={(e) => {
@@ -67,7 +73,7 @@ export default function ShippingForm({
           />
 
           <TextInput
-            label="Last name"
+            label={t.lastName}
             required
             value={lastName}
             onChange={(e) => {
@@ -80,9 +86,9 @@ export default function ShippingForm({
           />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <TextInput
-            label="Address"
+            label={t.checkoutPage.addressLabel}
             required
             value={address}
             onChange={(e) => {
@@ -95,16 +101,16 @@ export default function ShippingForm({
           />
 
           <TextInput
-            label="Apartment, suite, etc."
+            label={t.checkoutPage.apartmentLabel}
             value={apartment}
             onChange={(e) => setApartment(e.target.value)}
-            placeholder="(optional)"
+            placeholder={t.checkoutPage.optionalPlaceholder}
           />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <TextInput
-            label="City"
+            label={t.checkoutPage.cityLabel}
             required
             value={city}
             onChange={(e) => {
@@ -117,7 +123,7 @@ export default function ShippingForm({
           />
 
           <TextInput
-            label="Postal code"
+            label={t.checkoutPage.postalCodeLabel}
             required
             value={postalCode}
             onChange={(e) => {
@@ -131,7 +137,7 @@ export default function ShippingForm({
         </div>
 
         <TextInput
-          label="Phone number"
+          label={t.phoneNumber}
           required
           type="tel"
           value={phone}

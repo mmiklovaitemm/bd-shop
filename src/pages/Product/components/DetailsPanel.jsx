@@ -1,20 +1,7 @@
 import { memo, useMemo } from "react";
+import { useLanguage } from "@/context/useLanguage";
 import preventDragHandler from "@/utils/preventDrag";
 import arrowUpRightIcon from "@/assets/ui/arrow-up-right.svg";
-
-const COLOR_NAMES = {
-  "soft-yellow": "Soft yellow",
-  "soft-blue": "Soft blue",
-  "soft-green": "Soft green",
-  gold: "Gold",
-  silver: "Silver",
-};
-
-const formatMetal = (value) => {
-  if (!value) return "";
-  const raw = String(value).toLowerCase().trim();
-  return COLOR_NAMES[raw] || raw.charAt(0).toUpperCase() + raw.slice(1);
-};
 
 const pickFirst = (...vals) =>
   vals.find((v) => v !== undefined && v !== null && String(v).trim() !== "");
@@ -53,19 +40,6 @@ const detectCategory = (product) => {
   return "generic";
 };
 
-// === DEFAULT TEXTS ===
-const CATEGORY_TEXT = {
-  rings:
-    "This wide band ring features a textured surface inspired by organic forms, creating a subtle play of light and depth. Its bold silhouette is balanced by a refined finish, giving the piece a modern yet timeless character. Designed to be worn alone as a statement or paired with minimal jewellery, this ring adds effortless sophistication to any look.",
-  bracelets:
-    "This bold chain bracelet is crafted from interlinked, polished rings that create a strong yet balanced silhouette. Its smooth, rounded links catch the light beautifully, giving the piece a refined, contemporary feel. Designed to stand out on its own or pair effortlessly with other jewellery, this bracelet adds a modern statement to both everyday and elevated looks.",
-  necklaces:
-    "This delicate necklace features a fine chain accented by a sleek, drop-shaped pendant that falls gracefully along the neckline. Its minimalist design highlights clean lines and subtle movement, creating an elegant, elongated silhouette. Perfect for layering or wearing on its own, this piece adds a refined, modern touch to both everyday and evening looks.",
-  earrings:
-    "These minimalist earrings feature a softly contoured triangular form with a smooth, brushed surface that reflects light in a subtle, elegant way. Their sculptural silhouette adds a modern touch while remaining timeless and easy to style. Designed to complement both everyday looks and more refined outfits, they are a versatile addition to any jewellery collection.",
-};
-
-// === DEFAULT VALUES
 const CATEGORY_DEFAULTS = {
   rings: {
     bandWidthMm: 25,
@@ -113,8 +87,36 @@ const CATEGORY_DEFAULTS = {
   },
 };
 
+const formatMetal = (value, t) => {
+  if (!value) return "";
+
+  const raw = String(value).toLowerCase().trim();
+
+  const colorNames = {
+    "soft-yellow": t.product.detailsPanel.metals.softYellow,
+    "soft-blue": t.product.detailsPanel.metals.softBlue,
+    "soft-green": t.product.detailsPanel.metals.softGreen,
+    gold: t.product.detailsPanel.metals.gold,
+    silver: t.product.detailsPanel.metals.silver,
+  };
+
+  return colorNames[raw] || raw.charAt(0).toUpperCase() + raw.slice(1);
+};
+
+const getDefaultCategoryText = (category, t) => {
+  const texts = {
+    rings: t.product.detailsPanel.defaultTexts.rings,
+    bracelets: t.product.detailsPanel.defaultTexts.bracelets,
+    necklaces: t.product.detailsPanel.defaultTexts.necklaces,
+    earrings: t.product.detailsPanel.defaultTexts.earrings,
+  };
+
+  return texts[category] || "";
+};
+
 function Row({ label, value }) {
   if (!value && value !== 0) return null;
+
   return (
     <p className="font-ui text-[14px] leading-relaxed text-black">
       <span className="text-black/70">{label}</span>
@@ -136,6 +138,8 @@ const DetailsContent = memo(function DetailsContent({
   selectedColor,
   selectedSize,
 }) {
+  const { t } = useLanguage();
+
   const view = useMemo(() => {
     if (!product) return null;
 
@@ -145,7 +149,6 @@ const DetailsContent = memo(function DetailsContent({
     const detailsObj =
       product.details || product.dimensionsDetails || product.specs || {};
 
-    // Gemstones (from product.details or product.gemstones)
     const gemstonesArr =
       Array.isArray(detailsObj.gemstones) && detailsObj.gemstones.length > 0
         ? detailsObj.gemstones
@@ -162,29 +165,26 @@ const DetailsContent = memo(function DetailsContent({
       detailsObj.description,
       product.longDescription,
       product.description,
-      CATEGORY_TEXT[category],
+      getDefaultCategoryText(category, t),
     );
 
-    // Metal
     const metalRaw = pickFirst(
       selectedColor,
       detailsObj.metal,
       product.metal,
       Array.isArray(product.colors) ? product.colors[0] : null,
     );
-    const metal = formatMetal(metalRaw);
+    const metal = formatMetal(metalRaw, t);
 
-    // Product code
     const productCode = pickFirst(
       detailsObj.productCode,
       product.productCode,
       product.sku,
       product.code,
       categoryDefaults.productCode,
-      product.id ? `ID-${product.id}` : null, // fallback
+      product.id ? `ID-${product.id}` : null,
     );
 
-    // Common numbers
     const weightG = pickNumber(
       detailsObj.weightG,
       product.weightG,
@@ -201,7 +201,6 @@ const DetailsContent = memo(function DetailsContent({
       categoryDefaults.bandWidthMm,
     );
 
-    // Necklace
     const chain = pickFirst(
       detailsObj.chain,
       product.chain,
@@ -232,7 +231,6 @@ const DetailsContent = memo(function DetailsContent({
       categoryDefaults.adjustableToCm,
     );
 
-    // Earrings dimensions
     const dims = detailsObj.dimensions || product.dimensions || {};
     const heightMm = pickNumber(
       dims.heightMm,
@@ -273,7 +271,7 @@ const DetailsContent = memo(function DetailsContent({
           ? product.sizes[0]
           : null),
     };
-  }, [product, selectedColor, selectedSize]);
+  }, [product, selectedColor, selectedSize, t]);
 
   if (!view) return null;
 
@@ -295,19 +293,27 @@ const DetailsContent = memo(function DetailsContent({
     gemstonesText,
   } = view;
 
-  // --- helpers
   const metalLine = metal ? `${metal}` : null;
 
   const ringBlock = (
     <div className="space-y-2">
-      <Row label="Metal - " value={metalLine} />
+      <Row label={t.product.detailsPanel.labels.metal} value={metalLine} />
       <Row
-        label="Band width: "
+        label={t.product.detailsPanel.labels.bandWidth}
         value={bandWidthMm != null ? `${bandWidthMm} mm` : null}
       />
-      <Row label="Weight: " value={weightG != null ? `${weightG} g` : null} />
-      <Row label="Gemstone: " value={gemstonesText || null} />
-      <Row label="Product Code: " value={productCode} />
+      <Row
+        label={t.product.detailsPanel.labels.weight}
+        value={weightG != null ? `${weightG} g` : null}
+      />
+      <Row
+        label={t.product.detailsPanel.labels.gemstone}
+        value={gemstonesText || null}
+      />
+      <Row
+        label={t.product.detailsPanel.labels.productCode}
+        value={productCode}
+      />
     </div>
   );
 
@@ -316,43 +322,67 @@ const DetailsContent = memo(function DetailsContent({
     const hasAdj = adjustableFromCm != null && adjustableToCm != null;
     if (!hasTotal && !hasAdj) return null;
 
-    const total = hasTotal ? `${totalLengthCm}cm` : "";
+    const total = hasTotal ? `${totalLengthCm} cm` : "";
     const adj = hasAdj
-      ? `, adjustable from ${adjustableFromCm} cm to ${adjustableToCm} cm`
+      ? `, ${t.product.detailsPanel.adjustableFromToPrefix} ${adjustableFromCm} cm ${t.product.detailsPanel.adjustableFromToMiddle} ${adjustableToCm} cm`
       : "";
+
     return `${total}${adj}`.trim();
   })();
 
   const necklaceBlock = (
     <div className="space-y-2">
-      <Row label="Metal - " value={metalLine} />
-      <Row label="Chain - " value={chain} />
-      <Row label="Total Necklace Length: " value={necklaceLengthValue} />
-      <Row label="Weight: " value={weightG != null ? `${weightG} g` : null} />
-      <Row label="Gemstone: " value={gemstonesText || null} />
-      <Row label="Product Code: " value={productCode} />
+      <Row label={t.product.detailsPanel.labels.metal} value={metalLine} />
+      <Row label={t.product.detailsPanel.labels.chain} value={chain} />
+      <Row
+        label={t.product.detailsPanel.labels.totalNecklaceLength}
+        value={necklaceLengthValue}
+      />
+      <Row
+        label={t.product.detailsPanel.labels.weight}
+        value={weightG != null ? `${weightG} g` : null}
+      />
+      <Row
+        label={t.product.detailsPanel.labels.gemstone}
+        value={gemstonesText || null}
+      />
+      <Row
+        label={t.product.detailsPanel.labels.productCode}
+        value={productCode}
+      />
     </div>
   );
 
   const earringsBlock = (
     <div className="space-y-2">
-      <Row label="Metal - " value={metalLine} />
+      <Row label={t.product.detailsPanel.labels.metal} value={metalLine} />
       {heightMm != null || widthMm != null ? (
         <div className="space-y-1">
-          <SectionTitle>Dimensions:</SectionTitle>
+          <SectionTitle>
+            {t.product.detailsPanel.sectionTitles.dimensions}
+          </SectionTitle>
           <Row
-            label="Height: "
+            label={t.product.detailsPanel.labels.height}
             value={heightMm != null ? `${heightMm} mm` : null}
           />
           <Row
-            label="Width: "
+            label={t.product.detailsPanel.labels.width}
             value={widthMm != null ? `${widthMm} mm` : null}
           />
         </div>
       ) : null}
-      <Row label="Weight: " value={weightG != null ? `${weightG} g` : null} />
-      <Row label="Gemstone: " value={gemstonesText || null} />
-      <Row label="Product Code: " value={productCode} />
+      <Row
+        label={t.product.detailsPanel.labels.weight}
+        value={weightG != null ? `${weightG} g` : null}
+      />
+      <Row
+        label={t.product.detailsPanel.labels.gemstone}
+        value={gemstonesText || null}
+      />
+      <Row
+        label={t.product.detailsPanel.labels.productCode}
+        value={productCode}
+      />
     </div>
   );
 
@@ -368,37 +398,61 @@ const DetailsContent = memo(function DetailsContent({
 
       return (
         <div className="space-y-2">
-          <Row label="Size - " value={activeSize} />
-          <Row label="Total Bracelet Length: " value={totalText} />
-          <Row label="Weight: " value={w != null ? `${w} g` : null} />
+          <Row label={t.product.detailsPanel.labels.size} value={activeSize} />
+          <Row
+            label={t.product.detailsPanel.labels.totalBraceletLength}
+            value={totalText}
+          />
+          <Row
+            label={t.product.detailsPanel.labels.weight}
+            value={w != null ? `${w} g` : null}
+          />
         </div>
       );
     }
 
     return (
       <div className="space-y-2">
-        <Row label="Size - " value={activeSize || "—"} />
+        <Row
+          label={t.product.detailsPanel.labels.size}
+          value={activeSize || "—"}
+        />
       </div>
     );
   };
 
   const braceletBlock = (
     <div className="space-y-2">
-      <Row label="Metal - " value={metalLine} />
+      <Row label={t.product.detailsPanel.labels.metal} value={metalLine} />
       <div className="pt-2">{renderBraceletSizeBlocks()}</div>
       <div className="pt-2">
-        <Row label="Gemstone: " value={gemstonesText || null} />
-        <Row label="Product Code: " value={productCode} />
+        <Row
+          label={t.product.detailsPanel.labels.gemstone}
+          value={gemstonesText || null}
+        />
+        <Row
+          label={t.product.detailsPanel.labels.productCode}
+          value={productCode}
+        />
       </div>
     </div>
   );
 
   const genericBlock = (
     <div className="space-y-2">
-      <Row label="Metal - " value={metalLine} />
-      <Row label="Size - " value={activeSize || "—"} />
-      <Row label="Weight: " value={weightG != null ? `${weightG} g` : null} />
-      <Row label="Product Code: " value={productCode} />
+      <Row label={t.product.detailsPanel.labels.metal} value={metalLine} />
+      <Row
+        label={t.product.detailsPanel.labels.size}
+        value={activeSize || "—"}
+      />
+      <Row
+        label={t.product.detailsPanel.labels.weight}
+        value={weightG != null ? `${weightG} g` : null}
+      />
+      <Row
+        label={t.product.detailsPanel.labels.productCode}
+        value={productCode}
+      />
     </div>
   );
 
@@ -433,6 +487,8 @@ const DetailsPanel = memo(function DetailsPanel({
   selectedColor,
   selectedSize,
 }) {
+  const { t } = useLanguage();
+
   if (!isOpen) return null;
 
   return (
@@ -442,38 +498,36 @@ const DetailsPanel = memo(function DetailsPanel({
     >
       <button
         type="button"
-        aria-label="Close details"
+        aria-label={t.product.detailsPanel.closeAriaLabel}
         onClick={onClose}
         className="absolute inset-0 bg-black/40"
       />
 
-      <aside className="absolute right-0 top-0 h-full w-[92%] max-w-[520px] bg-white border-l border-black flex flex-col">
-        {/* HEADER */}
-        <div className="px-6 pt-7 pb-5 border-b border-black shrink-0">
+      <aside className="absolute right-0 top-0 flex h-full w-[92%] max-w-[520px] flex-col border-l border-black bg-white">
+        <div className="shrink-0 border-b border-black px-6 pt-7 pb-5">
           <div className="flex items-start justify-between gap-4">
             <h2 className="font-display text-[24px] leading-[0.95]">
-              Dimensions &amp; details
+              {t.product.detailsPanel.title}
             </h2>
 
             <button
               type="button"
               onClick={onClose}
-              className="group inline-flex items-center gap-2 font-ui text-[14px] text-black/80 transition-transform duration-200 ease-out lg:hover:-translate-y-[2px] active:scale-95"
+              className="group inline-flex items-center gap-2 font-ui text-[14px] text-black/80 transition-transform duration-200 ease-out active:scale-95 lg:hover:-translate-y-[2px]"
             >
-              <span>Close</span>
+              <span>{t.product.detailsPanel.close}</span>
               <img
                 src={arrowUpRightIcon}
                 alt=""
                 aria-hidden="true"
                 draggable={false}
                 onDragStart={preventDragHandler}
-                className="h-3 w-3 transition-transform duration-200 ease-out lg:group-hover:translate-x-[1px] lg:group-hover:-translate-y-[1px] select-none"
+                className="h-3 w-3 select-none transition-transform duration-200 ease-out lg:group-hover:translate-x-[1px] lg:group-hover:-translate-y-[1px]"
               />
             </button>
           </div>
         </div>
 
-        {/* BODY */}
         <div className="flex-1 overflow-y-auto px-6 py-6">
           <DetailsContent
             product={product}

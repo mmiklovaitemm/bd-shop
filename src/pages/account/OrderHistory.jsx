@@ -173,7 +173,7 @@ export default function OrderHistory() {
                     ).toFixed(2)}`;
                   } else {
                     acc[key] = {
-                      name: it.product_name || t.product,
+                      name: it.product_name || t.product.label,
                       quantity: Number(it.quantity || 1),
                       color: it.color || t.notAvailable,
                       service:

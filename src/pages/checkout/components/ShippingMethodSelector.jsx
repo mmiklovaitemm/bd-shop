@@ -1,10 +1,16 @@
+import useLanguage from "@/context/useLanguage";
+
 export default function ShippingMethodSelector({
   shippingMethod,
   setShippingMethod,
 }) {
+  const { t } = useLanguage();
+
   return (
     <div className="mt-8">
-      <p className="font-ui text-sm font-semibold">Choose delivery method</p>
+      <p className="font-ui text-sm font-semibold">
+        {t.checkoutPage.chooseDeliveryMethod}
+      </p>
 
       <div className="mt-4 space-y-3">
         <button
@@ -31,7 +37,7 @@ export default function ShippingMethodSelector({
             </span>
 
             <div className="text-left leading-tight">
-              <p className="font-ui text-[13px]">LP EXPRESS delivery to home</p>
+              <p className="font-ui text-[13px]">{t.checkoutPage.lpDelivery}</p>
             </div>
           </div>
 
@@ -62,7 +68,9 @@ export default function ShippingMethodSelector({
             </span>
 
             <div className="text-left leading-tight">
-              <p className="font-ui text-[13px]">Omniva delivery to home</p>
+              <p className="font-ui text-[13px]">
+                {t.checkoutPage.omnivaDelivery}
+              </p>
             </div>
           </div>
 

@@ -1,13 +1,17 @@
+import useLanguage from "@/context/useLanguage";
+
 export default function PickupSection({ pickupLocation, setPickupLocation }) {
+  const { t } = useLanguage();
+
   return (
     <section className="space-y-6">
       <div>
         <h2 className="font-display text-[28px] leading-none">
-          Pickup location
+          {t.checkoutPage.pickupTitle}
         </h2>
 
         <p className="mt-2 font-ui text-sm text-black/60">
-          Select the salon where you want to pick up your order.
+          {t.checkoutPage.pickupDescription}
         </p>
       </div>
 
@@ -19,7 +23,7 @@ export default function PickupSection({ pickupLocation, setPickupLocation }) {
                 ? "border-black bg-black/5"
                 : "border-black/30 hover:border-black"
             }
-            `}
+          `}
         >
           <input
             type="radio"
@@ -29,10 +33,15 @@ export default function PickupSection({ pickupLocation, setPickupLocation }) {
             onChange={() => setPickupLocation("vilnius")}
             className="accent-black"
           />
+
           <div className="font-ui text-sm">
-            <p className="font-medium">Vilnius salon</p>
-            <p className="text-black/60">Kauno str. 24</p>
-            <p className="text-black/60">I–VII — 10:00–20:00</p>
+            <p className="font-medium">
+              {t.checkoutPage.pickupLocations.vilnius}
+            </p>
+            <p className="text-black/60">
+              {t.checkoutPage.pickupAddresses.vilnius}
+            </p>
+            <p className="text-black/60">{t.workingHours}</p>
           </div>
         </label>
 
@@ -43,7 +52,7 @@ export default function PickupSection({ pickupLocation, setPickupLocation }) {
                 ? "border-black bg-black/5"
                 : "border-black/30 hover:border-black"
             }
-            `}
+          `}
         >
           <input
             type="radio"
@@ -55,15 +64,19 @@ export default function PickupSection({ pickupLocation, setPickupLocation }) {
           />
 
           <div className="font-ui text-sm">
-            <p className="font-medium">Kaunas salon</p>
-            <p className="text-black/60">Žemaičių str. 24</p>
-            <p className="text-black/60">I–VII — 10:00–20:00</p>
+            <p className="font-medium">
+              {t.checkoutPage.pickupLocations.kaunas}
+            </p>
+            <p className="text-black/60">
+              {t.checkoutPage.pickupAddresses.kaunas}
+            </p>
+            <p className="text-black/60">{t.workingHours}</p>
           </div>
         </label>
       </div>
 
       <p className="font-ui text-sm text-black/60">
-        Pickup is free. We will contact you by email after your order is placed.
+        {t.checkoutPage.pickupInfo}
       </p>
     </section>
   );

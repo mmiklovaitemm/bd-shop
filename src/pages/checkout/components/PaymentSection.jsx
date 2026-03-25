@@ -1,3 +1,5 @@
+import useLanguage from "@/context/useLanguage";
+
 import visaIcon from "@/assets/ui/VISA-icon.svg";
 import mastercardIcon from "@/assets/ui/mastercard-icon.svg";
 import maestroIcon from "@/assets/ui/maestro-icon.svg";
@@ -44,12 +46,15 @@ export default function PaymentSection({
   cardCvcRef,
   cardNameRef,
 }) {
+  const { t } = useLanguage();
+
   return (
     <div>
-      <p className="font-ui text-sm font-semibold">Payment</p>
+      <p className="font-ui text-sm font-semibold">
+        {t.checkoutPage.paymentTitle}
+      </p>
 
       <div className="mt-4 space-y-3">
-        {/* CARD OPTION */}
         <button
           type="button"
           onClick={() => setPaymentType("card")}
@@ -73,7 +78,7 @@ export default function PaymentSection({
                 <span className="h-2 w-2 rounded-full bg-white" />
               ) : null}
             </span>
-            <span>Credit card</span>
+            <span>{t.checkoutPage.creditCard}</span>
           </div>
 
           <div className="flex min-w-0 flex-wrap items-center justify-end gap-x-2 gap-y-1">
@@ -120,16 +125,16 @@ export default function PaymentSection({
         </button>
 
         {paymentType === "card" ? (
-          <div className="border border-black p-4 space-y-4">
+          <div className="space-y-4 border border-black p-4">
             <TextInput
-              label="Card number"
+              label={t.checkoutPage.cardNumberLabel}
               required
               value={cardNumber}
               onChange={(e) => {
                 setCardNumber(e.target.value);
                 clearError?.("cardNumber");
               }}
-              placeholder="1234 1234 1234 1234"
+              placeholder={t.checkoutPage.cardNumberPlaceholder}
               inputMode="numeric"
               error={errors.cardNumber}
               inputRef={cardNumberRef}
@@ -137,7 +142,7 @@ export default function PaymentSection({
 
             <div className="grid grid-cols-2 gap-3">
               <TextInput
-                label="Date"
+                label={t.checkoutPage.cardDateLabel}
                 required
                 value={cardDate}
                 onChange={(e) => {
@@ -145,7 +150,7 @@ export default function PaymentSection({
                   setCardDate(formatExpiry(val));
                   clearError?.("cardDate");
                 }}
-                placeholder="MM/YY"
+                placeholder={t.checkoutPage.cardDatePlaceholder}
                 inputMode="numeric"
                 autoComplete="cc-exp"
                 maxLength={5}
@@ -154,14 +159,14 @@ export default function PaymentSection({
               />
 
               <TextInput
-                label="CVC"
+                label={t.checkoutPage.cardCvcLabel}
                 required
                 value={cardCvc}
                 onChange={(e) => {
                   setCardCvc(e.target.value);
                   clearError?.("cardCvc");
                 }}
-                placeholder="CVC"
+                placeholder={t.checkoutPage.cardCvcPlaceholder}
                 inputMode="numeric"
                 error={errors.cardCvc}
                 inputRef={cardCvcRef}
@@ -169,14 +174,14 @@ export default function PaymentSection({
             </div>
 
             <TextInput
-              label="Card owner name, surname"
+              label={t.checkoutPage.cardOwnerNameLabel}
               required
               value={cardName}
               onChange={(e) => {
                 setCardName(e.target.value);
                 clearError?.("cardName");
               }}
-              placeholder="Full name"
+              placeholder={t.checkoutPage.cardOwnerNamePlaceholder}
               autoComplete="cc-name"
               error={errors.cardName}
               inputRef={cardNameRef}
@@ -184,7 +189,6 @@ export default function PaymentSection({
           </div>
         ) : null}
 
-        {/* BANK OPTION */}
         <button
           type="button"
           onClick={() => setPaymentType("bank")}
@@ -209,14 +213,14 @@ export default function PaymentSection({
               ) : null}
             </span>
 
-            <span>E. bank payment</span>
+            <span>{t.checkoutPage.bankPayment}</span>
           </div>
 
           <div className="flex min-w-0 flex-wrap items-center justify-end gap-x-2 gap-y-1">
             <img
               src={swedbankIcon}
               alt="Swedbank"
-              className="h-[14px] md:h-[16px] w-auto object-contain"
+              className="h-[14px] w-auto object-contain md:h-[16px]"
               draggable={false}
             />
             <img
@@ -250,13 +254,15 @@ export default function PaymentSection({
         </button>
 
         {paymentType === "bank" ? (
-          <div className="border border-black p-4 space-y-3">
-            <p className="font-ui text-sm font-semibold">Choose your bank</p>
+          <div className="space-y-3 border border-black p-4">
+            <p className="font-ui text-sm font-semibold">
+              {t.checkoutPage.chooseYourBank}
+            </p>
 
             <select
               value={selectedBank}
               onChange={(e) => setSelectedBank(e.target.value)}
-              className="h-12 w-full border border-black px-4 bg-white font-ui text-sm outline-none"
+              className="h-12 w-full border border-black bg-white px-4 font-ui text-sm outline-none"
             >
               <option value="swedbank">Swedbank</option>
               <option value="seb">SEB</option>
@@ -265,8 +271,7 @@ export default function PaymentSection({
             </select>
 
             <p className="font-ui text-sm text-black/60">
-              You will be redirected to your selected bank after clicking Pay
-              now.
+              {t.checkoutPage.bankRedirectText}
             </p>
           </div>
         ) : null}

@@ -1,3 +1,4 @@
+import useLanguage from "@/context/useLanguage";
 import { fmtPrice } from "@/utils/checkout";
 
 export default function OrderSummary({
@@ -11,23 +12,23 @@ export default function OrderSummary({
   onToggle,
   calcLineTotal,
 }) {
+  const { t } = useLanguage();
   const isMobile = variant === "mobile";
 
   return (
     <aside
       className={[
-        "bg-white border border-black",
+        "border border-black bg-white",
         isMobile ? "" : "sticky top-6 self-start",
       ].join(" ")}
     >
-      {/* Mobile only: Order summary bar */}
       {isMobile ? (
         <button
           type="button"
           onClick={onToggle}
-          className="w-full h-12 px-4 bg-black text-white flex items-center justify-between"
+          className="flex h-12 w-full items-center justify-between bg-black px-4 text-white"
         >
-          <span className="font-ui text-sm">Order summary</span>
+          <span className="font-ui text-sm">{t.checkoutPage.orderSummary}</span>
 
           <div className="flex items-center gap-3">
             <span className="font-ui text-sm">{fmtPrice(total)}</span>
@@ -54,15 +55,16 @@ export default function OrderSummary({
           </div>
         </button>
       ) : (
-        <div className="px-4 py-4 border-b border-black/20">
+        <div className="border-b border-black/20 px-4 py-4">
           <div className="flex items-center justify-between">
-            <p className="font-ui text-sm font-semibold">Order summary</p>
+            <p className="font-ui text-sm font-semibold">
+              {t.checkoutPage.orderSummary}
+            </p>
             <p className="font-ui text-sm font-semibold">{fmtPrice(total)}</p>
           </div>
         </div>
       )}
 
-      {/* Summary content */}
       {isMobile && !isOpen ? null : (
         <div
           className={[
@@ -71,16 +73,16 @@ export default function OrderSummary({
           ].join(" ")}
         >
           {items.length === 0 ? (
-            <p className="font-ui text-sm text-black/60">Your bag is empty.</p>
+            <p className="font-ui text-sm text-black/60">{t.bagEmpty}</p>
           ) : (
             <div className="space-y-4">
               {items.map((item) => (
                 <div key={item.key} className="grid grid-cols-[64px_1fr] gap-4">
-                  <div className="w-16 h-20 bg-black/5 overflow-hidden border border-black/10">
+                  <div className="h-20 w-16 overflow-hidden border border-black/10 bg-black/5">
                     <img
                       src={item.image}
                       alt={item.name || ""}
-                      className="w-full h-full object-cover"
+                      className="h-full w-full object-cover"
                       loading="lazy"
                       draggable={false}
                     />
@@ -91,28 +93,28 @@ export default function OrderSummary({
                       <p className="font-display text-[18px] leading-tight">
                         {item.name}
                       </p>
-                      <p className="font-ui text-[14px] whitespace-nowrap">
+                      <p className="whitespace-nowrap font-ui text-[14px]">
                         {fmtPrice(calcLineTotal(item))}
                       </p>
                     </div>
 
                     <div className="mt-2 flex flex-wrap gap-2">
                       <span className="bg-black/5 px-3 py-2 font-ui text-[12px] text-black/70">
-                        Color:{" "}
+                        {t.color}:{" "}
                         <span className="font-semibold">
                           {item.color || "—"}
                         </span>
                       </span>
 
                       <span className="bg-black/5 px-3 py-2 font-ui text-[12px] text-black/70">
-                        Size:{" "}
+                        {t.size}:{" "}
                         <span className="font-semibold">
-                          {item.size || "One size"}
+                          {item.size || t.oneSize}
                         </span>
                       </span>
 
                       <span className="bg-black/5 px-3 py-2 font-ui text-[12px] text-black/70">
-                        Qnty.:{" "}
+                        {t.checkoutPage.quantityShort}:{" "}
                         <span className="font-semibold">
                           {item.quantity || 1}
                         </span>
@@ -124,16 +126,18 @@ export default function OrderSummary({
                       .toLowerCase()
                       .includes("shipping") ? (
                       <p className="mt-2 font-ui text-[12px] text-black/50">
-                        Shipping kit + {fmtPrice(15)}
+                        {t.shippingKit} + {fmtPrice(15)}
                       </p>
                     ) : null}
                   </div>
                 </div>
               ))}
 
-              <div className="pt-2 border-t border-black/20 space-y-2">
+              <div className="space-y-2 border-t border-black/20 pt-2">
                 <div className="flex items-center justify-between">
-                  <p className="font-ui text-sm text-black/60">Subtotal</p>
+                  <p className="font-ui text-sm text-black/60">
+                    {t.checkoutPage.subtotal}
+                  </p>
                   <p className="font-ui text-sm font-semibold">
                     {fmtPrice(subtotal)}
                   </p>
@@ -141,17 +145,19 @@ export default function OrderSummary({
 
                 <div className="flex items-center justify-between">
                   <p className="font-ui text-sm text-black/60">
-                    {deliveryType === "pickup" ? "Pickup" : "Delivery"}
+                    {deliveryType === "pickup"
+                      ? t.checkoutPage.pickup
+                      : t.delivery}
                   </p>
                   <p className="font-ui text-sm font-semibold">
                     {deliveryType === "pickup"
-                      ? "Free"
+                      ? t.checkoutPage.free
                       : fmtPrice(deliveryPrice)}
                   </p>
                 </div>
 
-                <div className="flex items-center justify-between pt-2 border-t border-black/20">
-                  <p className="font-ui text-sm text-black/60">Total</p>
+                <div className="flex items-center justify-between border-t border-black/20 pt-2">
+                  <p className="font-ui text-sm text-black/60">{t.total}</p>
                   <p className="font-ui text-sm font-semibold">
                     {fmtPrice(total)}
                   </p>
