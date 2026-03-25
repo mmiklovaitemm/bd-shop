@@ -1,22 +1,24 @@
 // src/components/sections/ProductsSortPanel.jsx
 import closeIcon from "@/assets/ui/arrow-up-right.svg";
-
-const DEFAULT_SORT_OPTIONS = [
-  { value: "price_desc", label: "Price, high to low" },
-  { value: "price_asc", label: "Price, low to high" },
-  { value: "best_selling", label: "Best selling" },
-  { value: "date_asc", label: "Date, old to new" },
-  { value: "date_desc", label: "Date, new to old" },
-];
+import useLanguage from "@/context/useLanguage";
 
 export default function ProductsSortPanel({
   isOpen,
   onClose,
   sortValue,
   onSortChange,
-  options = DEFAULT_SORT_OPTIONS,
   variant = "auto",
 }) {
+  const { t } = useLanguage();
+
+  const options = [
+    { value: "price_desc", label: t.sortPriceHighToLow },
+    { value: "price_asc", label: t.sortPriceLowToHigh },
+    { value: "best_selling", label: t.sortBestSelling },
+    { value: "date_asc", label: t.sortDateOldToNew },
+    { value: "date_desc", label: t.sortDateNewToOld },
+  ];
+
   if (!isOpen) return null;
 
   return (
@@ -25,22 +27,27 @@ export default function ProductsSortPanel({
         <div className="fixed inset-0 z-[60] lg:hidden">
           <button
             type="button"
-            aria-label="Close sort"
+            aria-label={t.closeSort}
             onClick={onClose}
             className="absolute inset-0 bg-black/40"
           />
 
-          <aside className="absolute right-0 top-0 h-full w-[92%] max-w-[380px] bg-white border-l border-black flex flex-col">
-            <div className="h-12 px-4 flex items-center justify-between border-b border-black shrink-0">
-              <span className="font-ui text-[14px]">Sort by:</span>
+          <aside className="absolute right-0 top-0 flex h-full w-[92%] max-w-[380px] flex-col border-l border-black bg-white">
+            <div className="flex h-12 shrink-0 items-center justify-between border-b border-black px-4">
+              <span className="font-ui text-[14px]">{t.sortBy}</span>
 
               <button
                 type="button"
                 onClick={onClose}
-                className="font-ui text-[14px] flex items-center gap-2 transition-all duration-300 ease-out hover:-translate-y-[2px]"
+                className="flex items-center gap-2 font-ui text-[14px] transition-all duration-300 ease-out hover:-translate-y-[2px]"
               >
-                Close
-                <img src={closeIcon} alt="Close" className="w-4 h-4" />
+                {t.close}
+                <img
+                  src={closeIcon}
+                  alt=""
+                  aria-hidden="true"
+                  className="h-4 w-4"
+                />
               </button>
             </div>
 
@@ -54,7 +61,7 @@ export default function ProductsSortPanel({
                       <button
                         type="button"
                         className={[
-                          "w-full text-left px-4 py-3 font-ui text-[14px]",
+                          "w-full px-4 py-3 text-left font-ui text-[14px]",
                           "hover:bg-black/5",
                           active ? "font-medium" : "font-normal",
                         ].join(" ")}

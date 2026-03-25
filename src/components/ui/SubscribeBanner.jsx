@@ -2,10 +2,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { FiX } from "react-icons/fi";
 
+import useLanguage from "@/context/useLanguage";
+
 import bannerImg from "@/assets/images/banner/banner-img.webp";
 import logo from "@/assets/ui/logo.svg";
 
 export default function SubscribeBanner({ delayMs = 3000 }) {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
 
   const close = useCallback(() => {
@@ -13,8 +16,8 @@ export default function SubscribeBanner({ delayMs = 3000 }) {
   }, []);
 
   useEffect(() => {
-    const t = setTimeout(() => setOpen(true), delayMs);
-    return () => clearTimeout(t);
+    const tmr = setTimeout(() => setOpen(true), delayMs);
+    return () => clearTimeout(tmr);
   }, [delayMs]);
 
   useEffect(() => {
@@ -46,12 +49,11 @@ export default function SubscribeBanner({ delayMs = 3000 }) {
         "
         onMouseDown={(e) => e.stopPropagation()}
       >
-        {/* X close btn */}
         <button
           type="button"
           onClick={close}
-          className="absolute right-4 top-4 text-black/60 hover:text-black transition"
-          aria-label="Close"
+          className="absolute right-4 top-4 text-black/60 transition hover:text-black"
+          aria-label={t.close}
         >
           <FiX
             size={25}
@@ -59,25 +61,23 @@ export default function SubscribeBanner({ delayMs = 3000 }) {
           />
         </button>
 
-        {/* MOBILE + TABLET */}
         <div className="block lg:hidden">
-          <div className="px-6 pt-6 pb-4 text-center sm:px-10 sm:pt-10 sm:pb-6">
+          <div className="px-6 pb-4 pt-6 text-center sm:px-10 sm:pb-6 sm:pt-10">
             <div className="mb-3 flex justify-center">
               <img
                 src={logo}
-                alt="UM Studio"
+                alt={t.umStudioLogo}
                 className="h-4 w-auto select-none sm:h-5"
                 draggable="false"
               />
             </div>
 
             <h2 className="mb-2 font-display text-4xl leading-tight sm:text-5xl">
-              Subscribe &amp; save
+              {t.subscribeAndSave}
             </h2>
 
-            <p className="mx-auto mb-5 font-ui max-w-[28ch] text-sm text-black/70 sm:text-base">
-              Subscribe to our email newsletter and receive the best offers and
-              discounts
+            <p className="mx-auto mb-5 max-w-[28ch] font-ui text-sm text-black/70 sm:text-base">
+              {t.subscribeBannerText}
             </p>
 
             <form
@@ -90,17 +90,17 @@ export default function SubscribeBanner({ delayMs = 3000 }) {
               <input
                 type="email"
                 required
-                placeholder="Email"
+                placeholder={t.email}
                 className="h-10 w-full border border-black/30 px-3 text-sm outline-none placeholder:text-black/30 sm:h-11 sm:text-base"
               />
               <button
                 type="submit"
                 className="
-                  h-10 shrink-0 border border-black bg-black px-5 text-sm text-white font-ui
+                  h-10 shrink-0 border border-black bg-black px-5 font-ui text-sm text-white
                   sm:h-11 sm:px-7 sm:text-base
                 "
               >
-                Subscribe
+                {t.subscribe}
               </button>
             </form>
           </div>
@@ -108,19 +108,18 @@ export default function SubscribeBanner({ delayMs = 3000 }) {
           <div className="h-[220px] w-full overflow-hidden sm:h-[300px]">
             <img
               src={bannerImg}
-              alt="Subscribe banner"
+              alt={t.subscribeBannerImageAlt}
               className="h-full w-full select-none object-cover"
               draggable="false"
             />
           </div>
         </div>
 
-        {/* DESKTOP */}
         <div className="hidden lg:grid lg:grid-cols-2">
           <div className="h-[420px] w-full overflow-hidden">
             <img
               src={bannerImg}
-              alt="Subscribe banner"
+              alt={t.subscribeBannerImageAlt}
               className="h-full w-full select-none object-cover"
               draggable="false"
             />
@@ -130,19 +129,18 @@ export default function SubscribeBanner({ delayMs = 3000 }) {
             <div className="mb-4 flex justify-center">
               <img
                 src={logo}
-                alt="UM Studio"
+                alt={t.umStudioLogo}
                 className="h-5 w-auto select-none"
                 draggable="false"
               />
             </div>
 
             <h2 className="mb-3 font-display text-5xl leading-tight">
-              Subscribe &amp; save
+              {t.subscribeAndSave}
             </h2>
 
-            <p className="mx-auto mb-7 font-ui max-w-[34ch] text-base text-black/70">
-              Subscribe to our email newsletter and receive the best offers and
-              discounts
+            <p className="mx-auto mb-7 max-w-[34ch] font-ui text-base text-black/70">
+              {t.subscribeBannerText}
             </p>
 
             <form
@@ -155,20 +153,20 @@ export default function SubscribeBanner({ delayMs = 3000 }) {
               <input
                 type="email"
                 required
-                placeholder="Email"
+                placeholder={t.email}
                 className="h-11 w-full border border-black/30 px-3 text-base outline-none placeholder:text-black/30"
               />
               <button
                 type="submit"
                 className="
-                  h-11 shrink-0 border border-black bg-black px-7 text-base text-white font-ui
+                  h-11 shrink-0 border border-black bg-black px-7 font-ui text-base text-white
                   transition
                   lg:duration-200 lg:ease-out
                   lg:hover:-translate-y-[1px] lg:hover:shadow-md
                   lg:active:translate-y-0
                 "
               >
-                Subscribe
+                {t.subscribe}
               </button>
             </form>
           </div>

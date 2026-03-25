@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import useLanguage from "@/context/useLanguage";
 import AboutStudioSection from "@/components/ui/AboutStudioSection";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 import backArrowIcon from "@/assets/ui/back-arrow.svg";
@@ -17,6 +18,7 @@ function RequiredStar() {
 }
 
 export default function Profile() {
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   const user = useAuth((s) => s.user);
@@ -37,6 +39,7 @@ export default function Profile() {
   const [serverError, setServerError] = useState("");
   const [success, setSuccess] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (!user) fetchMe();
@@ -55,16 +58,21 @@ export default function Profile() {
     setServerError("");
     setSuccess("");
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
+
+    setErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
   };
 
   const validate = () => {
     const errs = {};
-    if (!String(form.firstName || "").trim()) errs.firstName = "Required.";
-    if (!String(form.lastName || "").trim()) errs.lastName = "Required.";
+    if (!String(form.firstName || "").trim()) errs.firstName = t.requiredShort;
+    if (!String(form.lastName || "").trim()) errs.lastName = t.requiredShort;
     return errs;
   };
-
-  const [errors, setErrors] = useState({});
 
   const handleSave = async () => {
     const nextErrors = validate();
@@ -81,9 +89,9 @@ export default function Profile() {
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
       });
-      setSuccess("Saved successfully.");
+      setSuccess(t.savedSuccessfully);
     } catch (err) {
-      setServerError(err.message || "Something went wrong.");
+      setServerError(err.message || t.somethingWentWrong);
     } finally {
       setSubmitting(false);
     }
@@ -91,9 +99,9 @@ export default function Profile() {
 
   return (
     <>
-      <main className="px-2 pt-3 pb-10">
+      <main className="px-2 pb-10 pt-3">
         <section className="mx-auto w-full max-w-6xl">
-          <h1 className="font-display text-4xl leading-none">Profile</h1>
+          <h1 className="font-display text-4xl leading-none">{t.profile}</h1>
 
           <FullWidthDivider className="my-4" />
 
@@ -103,15 +111,15 @@ export default function Profile() {
             className="inline-flex items-center gap-2 text-sm font-ui"
           >
             <img src={backArrowIcon} alt="" className="h-3 w-3" />
-            <span>Back</span>
+            <span>{t.back}</span>
           </button>
 
           <FullWidthDivider className="my-4" />
 
           <div
             className="
-              md:mx-auto md:border md:border-black/40 md:bg-white
-              md:max-w-[560px] lg:max-w-[680px]
+              md:mx-auto md:max-w-[560px] md:border md:border-black/40 md:bg-white
+              lg:max-w-[680px]
             "
           >
             <div className="md:px-8 md:py-8">
@@ -128,10 +136,9 @@ export default function Profile() {
                   </div>
                 ) : null}
 
-                {/* Email (read-only) */}
                 <div className="space-y-2">
                   <Label>
-                    Email address
+                    {t.emailAddress}
                     <RequiredStar />
                   </Label>
                   <input
@@ -143,10 +150,9 @@ export default function Profile() {
                   />
                 </div>
 
-                {/* First name */}
                 <div className="space-y-2">
                   <Label>
-                    First name
+                    {t.firstName}
                     <RequiredStar />
                   </Label>
                   <input
@@ -154,7 +160,7 @@ export default function Profile() {
                     value={form.firstName}
                     onChange={onChangeField("firstName")}
                     autoComplete="given-name"
-                    placeholder="Enter your first name"
+                    placeholder={t.enterYourFirstName}
                     className={[
                       "w-full border bg-white px-4 py-3 font-ui text-sm outline-none placeholder:text-black/30",
                       errors.firstName ? "border-red-600" : "border-black",
@@ -168,10 +174,9 @@ export default function Profile() {
                   ) : null}
                 </div>
 
-                {/* Last name */}
                 <div className="space-y-2">
                   <Label>
-                    Last name
+                    {t.lastName}
                     <RequiredStar />
                   </Label>
                   <input
@@ -179,7 +184,7 @@ export default function Profile() {
                     value={form.lastName}
                     onChange={onChangeField("lastName")}
                     autoComplete="family-name"
-                    placeholder="Enter your last name"
+                    placeholder={t.enterYourLastName}
                     className={[
                       "w-full border bg-white px-4 py-3 font-ui text-sm outline-none placeholder:text-black/30",
                       errors.lastName ? "border-red-600" : "border-black",
@@ -193,10 +198,9 @@ export default function Profile() {
                   ) : null}
                 </div>
 
-                {/* Password row (fake input) + Change */}
                 <div className="space-y-2">
                   <Label>
-                    Password
+                    {t.password}
                     <RequiredStar />
                   </Label>
 
@@ -215,12 +219,11 @@ export default function Profile() {
                       onClick={() => navigate("/account/change-password")}
                       className="shrink-0 border border-black bg-black px-6 py-3 font-ui text-sm text-white"
                     >
-                      Change
+                      {t.change}
                     </button>
                   </div>
                 </div>
 
-                {/* Save */}
                 <div className="pt-3">
                   <button
                     type="button"
@@ -228,10 +231,10 @@ export default function Profile() {
                     disabled={submitting}
                     className={[
                       "w-full border border-black bg-black py-4 font-ui text-sm text-white",
-                      submitting ? "opacity-60 cursor-not-allowed" : "",
+                      submitting ? "cursor-not-allowed opacity-60" : "",
                     ].join(" ")}
                   >
-                    {submitting ? "Saving..." : "Save"}
+                    {submitting ? t.saving : t.save}
                   </button>
                 </div>
               </form>

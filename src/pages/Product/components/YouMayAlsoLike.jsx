@@ -7,6 +7,7 @@ import ProductCard from "@/components/ui/ProductCard/ProductCard";
 
 import seeAllArrow from "@/assets/ui/see-all-arrow-right.svg";
 import { useProducts } from "@/hooks/useProducts";
+import { useLanguage } from "@/context/useLanguage";
 
 const withBase = (path) =>
   `${import.meta.env.BASE_URL}${String(path).replace(/^\/+/, "")}`;
@@ -14,6 +15,7 @@ const withBase = (path) =>
 export default function YouMayAlsoLike({ currentProduct }) {
   const navigate = useNavigate();
   const { products, loading } = useProducts();
+  const { t } = useLanguage();
 
   const items = useMemo(() => {
     if (!products.length) return [];
@@ -46,7 +48,7 @@ export default function YouMayAlsoLike({ currentProduct }) {
       <button
         type="button"
         onClick={() => navigate("/collections")}
-        aria-label="See all products"
+        aria-label={t.product.youMayAlsoLike.seeAllAriaLabel}
         className="
           group inline-flex items-center gap-2
           font-display text-[18px] font-normal text-black
@@ -57,7 +59,7 @@ export default function YouMayAlsoLike({ currentProduct }) {
         "
       >
         <span className="inline-block transition-transform duration-300 ease-out will-change-transform lg:group-hover:translate-x-1 lg:group-hover:-translate-y-1">
-          See all
+          {t.product.youMayAlsoLike.seeAll}
         </span>
 
         <img
@@ -72,22 +74,22 @@ export default function YouMayAlsoLike({ currentProduct }) {
         />
       </button>
     ),
-    [navigate],
+    [navigate, t],
   );
 
   return (
     <HorizontalSliderSection
       title={
         <>
-          You may
+          {t.product.youMayAlsoLike.titleLine1}
           <br />
-          also like
+          {t.product.youMayAlsoLike.titleLine2}
         </>
       }
       leftWidthPx={260}
       leftBottomSlot={<div className="lg:mt-[3rem]">{SeeAllButton}</div>}
       mobileBottomSlot={
-        <div className="mt-6 flex justify-end px-1 mb-[-0.5rem] lg:hidden">
+        <div className="mt-6 mb-[-0.5rem] flex justify-end px-1 lg:hidden">
           {SeeAllButton}
         </div>
       }
@@ -100,7 +102,7 @@ export default function YouMayAlsoLike({ currentProduct }) {
             return (
               <div
                 key={product.id}
-                className="shrink-0 w-[260px] md:w-[280px] lg:w-[300px]"
+                className="w-[260px] shrink-0 md:w-[280px] lg:w-[300px]"
               >
                 <ProductCard
                   product={cardProduct}

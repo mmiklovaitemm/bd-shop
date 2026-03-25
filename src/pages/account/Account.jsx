@@ -2,11 +2,13 @@
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 import { useNavigate } from "react-router-dom";
 
+import useLanguage from "@/context/useLanguage";
+import useAuth from "@/store/useAuth";
+
 import shoppingBagIcon from "@/assets/ui/shopping-bag.svg";
 import userIcon from "@/assets/ui/user.svg";
 import logoutIcon from "@/assets/ui/log-out.svg";
 import AboutStudioSection from "@/components/ui/AboutStudioSection";
-import useAuth from "@/store/useAuth";
 
 function ActionButton({ icon, label, onClick, invertIcon = false }) {
   return (
@@ -40,6 +42,7 @@ function ActionButton({ icon, label, onClick, invertIcon = false }) {
 }
 
 export default function Account() {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const logout = useAuth((s) => s.logout);
 
@@ -58,28 +61,30 @@ export default function Account() {
     <>
       <main className="px-2 pt-3">
         <section className="mx-auto w-full max-w-6xl">
-          <h1 className="font-display text-4xl leading-none py-1">Account</h1>
+          <h1 className="py-1 font-display text-4xl leading-none">
+            {t.account}
+          </h1>
 
           <FullWidthDivider className="my-4" />
 
           <div className="mx-auto w-full max-w-md space-y-4 font-ui">
             <ActionButton
               icon={shoppingBagIcon}
-              label="Order history"
+              label={t.orderHistory}
               onClick={handleOrderHistory}
               invertIcon
             />
 
             <ActionButton
               icon={userIcon}
-              label="Profile"
+              label={t.profile}
               onClick={handleProfile}
               invertIcon
             />
 
             <ActionButton
               icon={logoutIcon}
-              label="Log out"
+              label={t.logOut}
               onClick={handleLogout}
             />
           </div>

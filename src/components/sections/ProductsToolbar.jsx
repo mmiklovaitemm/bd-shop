@@ -1,19 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import filterIcon from "@/assets/ui/filter-icon.svg";
 import { HiChevronDown } from "react-icons/hi";
+
+import filterIcon from "@/assets/ui/filter-icon.svg";
 import ProductsSortPanel from "@/components/sections/ProductsSortPanel";
 import FullWidthDivider from "../ui/FullWidthDivider";
-
-const SORT_OPTIONS = [
-  { value: "price_desc", label: "Price, high to low" },
-  { value: "price_asc", label: "Price, low to high" },
-  { value: "best_selling", label: "Best selling" },
-  { value: "date_asc", label: "Date, old to new" },
-  { value: "date_desc", label: "Date, new to old" },
-];
+import useLanguage from "@/context/useLanguage";
 
 export default function ProductsToolbar({
-  title = "Collections",
+  title,
   categories = [],
   activeCategoryValue = "rings",
   activeCategoryLabel = "Rings",
@@ -22,6 +16,25 @@ export default function ProductsToolbar({
   sortValue = "price_desc",
   onSortChange,
 }) {
+  const { t } = useLanguage();
+
+  const SORT_OPTIONS = useMemo(
+    () => [
+      { value: "price_desc", label: t.sortPriceHighToLow },
+      { value: "price_asc", label: t.sortPriceLowToHigh },
+      { value: "best_selling", label: t.sortBestSelling },
+      { value: "date_asc", label: t.sortDateOldToNew },
+      { value: "date_desc", label: t.sortDateNewToOld },
+    ],
+    [
+      t.sortPriceHighToLow,
+      t.sortPriceLowToHigh,
+      t.sortBestSelling,
+      t.sortDateOldToNew,
+      t.sortDateNewToOld,
+    ],
+  );
+
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [isSortDrawerOpen, setIsSortDrawerOpen] = useState(false);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
@@ -29,10 +42,12 @@ export default function ProductsToolbar({
   const categoryWrapRef = useRef(null);
   const sortWrapRef = useRef(null);
 
+  const resolvedTitle = title || t.collections;
+
   const activeSortLabel = useMemo(() => {
     const found = SORT_OPTIONS.find((o) => o.value === sortValue);
-    return found ? found.label : "Price, high to low";
-  }, [sortValue]);
+    return found ? found.label : t.sortPriceHighToLow;
+  }, [SORT_OPTIONS, sortValue, t.sortPriceHighToLow]);
 
   useEffect(() => {
     const onPointerDown = (e) => {
@@ -75,8 +90,7 @@ export default function ProductsToolbar({
   };
 
   const toggleSort = () => {
-    // mobile: drawer, desktop: dropdown
-    const isMobile = window.matchMedia("(max-width: 1023px)").matches; // lg breakpoint
+    const isMobile = window.matchMedia("(max-width: 1023px)").matches;
 
     if (isMobile) {
       setIsSortDrawerOpen(true);
@@ -96,39 +110,39 @@ export default function ProductsToolbar({
     <section className="w-full">
       {/* Title */}
       <div>
-        <h1 className="font-display text-[44px] leading-none px-6 py-6 md:text-[56px]">
-          {title}
+        <h1 className="px-6 py-6 font-display text-[44px] leading-none md:text-[56px]">
+          {resolvedTitle}
         </h1>
       </div>
       <FullWidthDivider />
 
       {/* Category row */}
-      <div ref={categoryWrapRef} className="px-6 py-4 relative">
-        {/* ===== MOBILE/TABLET dropdown (kept) ===== */}
+      <div ref={categoryWrapRef} className="relative px-6 py-4">
+        {/* MOBILE/TABLET dropdown */}
         <button
           type="button"
           onClick={toggleCategory}
-          className="w-full flex items-center justify-between font-ui text-[14px] text-black lg:hidden"
-          aria-label="Select category"
+          className="flex w-full items-center justify-between font-ui text-[14px] text-black lg:hidden"
+          aria-label={t.selectCategory}
           aria-haspopup="listbox"
           aria-expanded={isCategoryOpen}
         >
           <span className="font-medium">{activeCategoryLabel}</span>
           <HiChevronDown
-            className={`text-black/70 w-5 h-5 md:w-4 md:h-4 transition-transform duration-200 ${
+            className={`h-5 w-5 text-black/70 transition-transform duration-200 md:h-4 md:w-4 ${
               isCategoryOpen ? "rotate-180" : "rotate-0"
             }`}
           />
         </button>
 
         {isCategoryOpen && (
-          <div className="absolute left-0 right-0 top-full mt-2 border border-black bg-white shadow-sm z-50 lg:hidden">
+          <div className="absolute left-0 right-0 top-full z-50 mt-2 border border-black bg-white shadow-sm lg:hidden">
             <ul role="listbox" className="py-2">
               {categories.map((cat) => (
                 <li key={cat.value}>
                   <button
                     type="button"
-                    className={`w-full text-left px-4 py-2 font-ui text-[13px] hover:bg-black/5 ${
+                    className={`w-full px-4 py-2 text-left font-ui text-[13px] hover:bg-black/5 ${
                       cat.value === activeCategoryValue
                         ? "font-medium"
                         : "font-normal"
@@ -146,8 +160,8 @@ export default function ProductsToolbar({
           </div>
         )}
 
-        {/* ===== DESKTOP row categories ===== */}
-        <div className="hidden lg:flex items-center justify-end gap-10">
+        {/* DESKTOP row categories */}
+        <div className="hidden items-center justify-end gap-10 lg:flex">
           {categories.map((cat) => {
             const isActive = cat.value === activeCategoryValue;
 
@@ -171,26 +185,26 @@ export default function ProductsToolbar({
       <FullWidthDivider />
 
       {/* Filter + Sort row */}
-      <div className="px-6 py-4 flex items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-4 px-6 py-4">
         <button
           type="button"
           onClick={onOpenFilter}
-          className="h-10 px-4 border border-black font-ui text-[14px] flex items-center gap-3 transition-all duration-300 ease-out hover:-translate-y-[2px]"
+          className="flex h-10 items-center gap-3 border border-black px-4 font-ui text-[14px] transition-all duration-300 ease-out hover:-translate-y-[2px]"
         >
-          <span>Filter</span>
-          <img src={filterIcon} alt="Filter" className="w-4 h-4 opacity-70" />
+          <span>{t.filter}</span>
+          <img src={filterIcon} alt={t.filter} className="h-4 w-4 opacity-70" />
         </button>
 
         <div className="flex items-center gap-3">
-          <span className="hidden md:inline font-ui text-[12px] text-black/70">
-            Sort by:
+          <span className="hidden font-ui text-[12px] text-black/70 md:inline">
+            {t.sortBy}
           </span>
 
           <div ref={sortWrapRef} className="relative w-[180px] md:w-[220px]">
             <button
               type="button"
               onClick={toggleSort}
-              className="h-10 w-full px-4 border border-black font-ui text-[14px] inline-flex items-center justify-center transition-all duration-300 ease-out hover:-translate-y-[2px]"
+              className="inline-flex h-10 w-full items-center justify-center border border-black px-4 font-ui text-[14px] transition-all duration-300 ease-out hover:-translate-y-[2px]"
               aria-haspopup="listbox"
               aria-expanded={isSortOpen}
             >
@@ -199,13 +213,13 @@ export default function ProductsToolbar({
 
             {/* desktop dropdown only */}
             {isSortOpen && (
-              <div className="absolute left-0 top-full -mt-px w-full border border-black bg-white shadow-sm z-50 hidden lg:block">
+              <div className="absolute left-0 top-full z-50 -mt-px hidden w-full border border-black bg-white shadow-sm lg:block">
                 <ul role="listbox" className="py-2">
                   {SORT_OPTIONS.map((opt) => (
                     <li key={opt.value}>
                       <button
                         type="button"
-                        className={`w-full text-left px-4 py-2 font-ui text-[13px] hover:bg-black/5 ${
+                        className={`w-full px-4 py-2 text-left font-ui text-[13px] hover:bg-black/5 ${
                           opt.value === sortValue
                             ? "font-medium"
                             : "font-normal"
@@ -232,7 +246,6 @@ export default function ProductsToolbar({
         onClose={() => setIsSortDrawerOpen(false)}
         sortValue={sortValue}
         onSortChange={onSortChange}
-        options={SORT_OPTIONS}
       />
     </section>
   );

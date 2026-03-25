@@ -4,16 +4,15 @@ import { useNavigate } from "react-router-dom";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 import arrowUpRight from "@/assets/ui/arrow-up-right.svg";
 
+import useLanguage from "@/context/useLanguage";
+
 import heroDesktop from "@/assets/images/personalized-jewelry/personalized-hero-desktop.webp";
 import heroTablet from "@/assets/images/personalized-jewelry/personalized-hero-tablet.webp";
 import heroMobile from "@/assets/images/personalized-jewelry/personalized-hero-mobile.webp";
 
-export default function PersonalizedJewelrySection({
-  title = "Personalized\nJewellery",
-  ctaText = "Shop now",
-}) {
+export default function PersonalizedJewelrySection() {
   const navigate = useNavigate();
-  const [titleLine1, titleLine2] = title.split("\n");
+  const { t } = useLanguage();
 
   const handleShopNow = () => {
     navigate("/collections?category=personal");
@@ -24,7 +23,6 @@ export default function PersonalizedJewelrySection({
   }, []);
 
   const preventSelect = useCallback((e) => {
-    // paliekam mygtuko paspaudimą veikti normaliai
     if (e.target.closest("button")) return;
     e.preventDefault();
   }, []);
@@ -37,13 +35,13 @@ export default function PersonalizedJewelrySection({
     >
       <div className="w-full">
         <div className="relative w-full overflow-hidden">
-          <div className="relative w-full h-[520px] md:h-[360px] lg:h-[420px]">
+          <div className="relative h-[520px] w-full md:h-[360px] lg:h-[420px]">
             <picture>
               <source srcSet={heroDesktop} media="(min-width: 1024px)" />
               <source srcSet={heroTablet} media="(min-width: 768px)" />
               <img
                 src={heroMobile}
-                alt="Personalized jewellery"
+                alt={t.personalizedJewellery}
                 draggable={false}
                 onDragStart={preventDrag}
                 className="absolute inset-0 h-full w-full object-cover select-none"
@@ -65,30 +63,29 @@ export default function PersonalizedJewelrySection({
               <div className="md:flex md:items-end md:justify-between md:gap-8">
                 <h2
                   className="
-                    font-display text-white leading-[0.95]
-                    text-[50px]
+                    font-display text-[50px] leading-[0.95] text-white
                     md:text-[56px]
                     lg:text-[86px]
                   "
                 >
-                  {titleLine1 || "Personalized"}
+                  {t.personalizedLine1}
                   <br />
-                  {titleLine2 || "Jewellery"}
+                  {t.personalizedLine2}
                 </h2>
 
                 <button
                   type="button"
                   onClick={handleShopNow}
-                  aria-label="Shop personalized jewellery"
+                  aria-label={t.shopPersonalizedJewellery}
                   className="
+                    ui-interact
                     group mt-5 md:mt-0
                     inline-flex items-center gap-3
-                    font-ui text-[16px] lg:text-[18px]
-                    text-white/90 lg:hover:text-white
-                    active:text-white active:opacity-90
-                    cursor-pointer
                     self-start md:self-auto
-                    ui-interact
+                    cursor-pointer
+                    font-ui text-[16px] text-white/90
+                    active:text-white active:opacity-90
+                    lg:text-[18px] lg:hover:text-white
                   "
                 >
                   <span
@@ -98,7 +95,7 @@ export default function PersonalizedJewelrySection({
                       lg:group-hover:translate-x-1 lg:group-hover:-translate-y-1
                     "
                   >
-                    {ctaText}
+                    {t.shopNow}
                   </span>
 
                   <img
@@ -108,8 +105,9 @@ export default function PersonalizedJewelrySection({
                     draggable={false}
                     onDragStart={preventDrag}
                     className="
-                      h-3 w-3 lg:h-4 lg:w-4 invert select-none
+                      h-3 w-3 invert select-none
                       transition-transform duration-300 ease-out will-change-transform
+                      lg:h-4 lg:w-4
                       lg:group-hover:translate-x-1 lg:group-hover:-translate-y-1
                     "
                     loading="lazy"

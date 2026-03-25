@@ -1,9 +1,12 @@
 import { useRef, useState } from "react";
+import useLanguage from "@/context/useLanguage";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 import OurSalons from "./about/OurSalons";
 import checkSendMessageIcon from "@/assets/ui/check-send-message.svg";
 
 export default function Contact() {
+  const { t } = useLanguage();
+
   const [isSent, setIsSent] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -13,10 +16,8 @@ export default function Contact() {
     message: "",
   });
 
-  // field-level errors
   const [errors, setErrors] = useState({});
 
-  // refs for scroll-to-error
   const nameRef = useRef(null);
   const emailRef = useRef(null);
   const phoneRef = useRef(null);
@@ -43,9 +44,8 @@ export default function Contact() {
 
   const validateEmail = (val) => {
     const v = String(val || "").trim();
-    if (!v) return "Please fill in this field.";
-    if (!v.includes("@") || !v.includes("."))
-      return "Enter a valid email address.";
+    if (!v) return t.pleaseFillInThisField;
+    if (!v.includes("@") || !v.includes(".")) return t.enterValidEmailAddress;
     return "";
   };
 
@@ -63,13 +63,14 @@ export default function Contact() {
 
     const nextErrors = {};
 
-    if (!formData.name.trim()) nextErrors.name = "Please fill in this field.";
+    if (!formData.name.trim()) nextErrors.name = t.pleaseFillInThisField;
     const emailErr = validateEmail(formData.email);
     if (emailErr) nextErrors.email = emailErr;
 
-    if (!formData.phone.trim()) nextErrors.phone = "Please fill in this field.";
-    if (!formData.message.trim())
-      nextErrors.message = "Please fill in this field.";
+    if (!formData.phone.trim()) nextErrors.phone = t.pleaseFillInThisField;
+    if (!formData.message.trim()) {
+      nextErrors.message = t.pleaseFillInThisField;
+    }
 
     setErrors(nextErrors);
 
@@ -91,7 +92,6 @@ export default function Contact() {
       return;
     }
 
-    // success
     setIsSent(true);
     setErrors({});
     setFormData({
@@ -104,30 +104,26 @@ export default function Contact() {
 
   return (
     <div className="w-full">
-      {/* Title */}
-      <div className="px-4 md:px-8 py-6">
-        <h1 className="text-4xl md:text-5xl font-display">Contacts</h1>
+      <div className="px-4 py-6 md:px-8">
+        <h1 className="font-display text-4xl md:text-5xl">{t.contacts}</h1>
       </div>
 
       <FullWidthDivider />
 
-      {/* Contact info */}
-      <div className="px-4 md:px-8 py-6 text-base font-ui">
-        <div className="space-y-3 md:space-y-0 md:flex md:items-center md:justify-between">
-          <p>Phone: +37067456723</p>
-          <p>Email: eshop@umstudio.com</p>
+      <div className="px-4 py-6 font-ui text-base md:px-8">
+        <div className="space-y-3 md:flex md:items-center md:justify-between md:space-y-0">
+          <p>{t.phone}: +37067456723</p>
+          <p>{t.email}: eshop@umstudio.com</p>
         </div>
       </div>
 
       <FullWidthDivider />
 
-      {/* Contact form */}
-      <div className="px-4 md:px-8 py-8">
+      <div className="px-4 py-8 md:px-8">
         <form className="space-y-6" onSubmit={handleSubmit}>
-          {/* Name */}
           <div className="space-y-2">
-            <label className="text-sm font-ui">
-              Name <span className="text-red-600">*</span>
+            <label className="font-ui text-sm">
+              {t.name} <span className="text-red-600">*</span>
             </label>
             <input
               ref={nameRef}
@@ -135,20 +131,19 @@ export default function Contact() {
               name="name"
               value={formData.name}
               onChange={handleChange}
-              placeholder="Enter your name"
+              placeholder={t.enterYourName}
               className={getFieldClass("name")}
               aria-invalid={!!errors.name}
             />
             {errors.name ? (
-              <p className="text-sm text-red-600 font-ui">{errors.name}</p>
+              <p className="font-ui text-sm text-red-600">{errors.name}</p>
             ) : null}
           </div>
 
-          {/* Email + Phone row on tablet */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="space-y-2">
-              <label className="text-sm font-ui">
-                Email <span className="text-red-600">*</span>
+              <label className="font-ui text-sm">
+                {t.email} <span className="text-red-600">*</span>
               </label>
               <input
                 ref={emailRef}
@@ -156,18 +151,18 @@ export default function Contact() {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                placeholder="Enter your email"
+                placeholder={t.enterYourEmail}
                 className={getFieldClass("email")}
                 aria-invalid={!!errors.email}
               />
               {errors.email ? (
-                <p className="text-sm text-red-600 font-ui">{errors.email}</p>
+                <p className="font-ui text-sm text-red-600">{errors.email}</p>
               ) : null}
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-ui">
-                Phone number <span className="text-red-600">*</span>
+              <label className="font-ui text-sm">
+                {t.phoneNumber} <span className="text-red-600">*</span>
               </label>
               <input
                 ref={phoneRef}
@@ -175,20 +170,19 @@ export default function Contact() {
                 name="phone"
                 value={formData.phone}
                 onChange={handleChange}
-                placeholder="Enter your phone number"
+                placeholder={t.enterYourPhoneNumber}
                 className={getFieldClass("phone")}
                 aria-invalid={!!errors.phone}
               />
               {errors.phone ? (
-                <p className="text-sm text-red-600 font-ui">{errors.phone}</p>
+                <p className="font-ui text-sm text-red-600">{errors.phone}</p>
               ) : null}
             </div>
           </div>
 
-          {/* Message */}
           <div className="space-y-2">
-            <label className="text-sm font-ui">
-              Your message <span className="text-red-600">*</span>
+            <label className="font-ui text-sm">
+              {t.yourMessage} <span className="text-red-600">*</span>
             </label>
             <textarea
               ref={messageRef}
@@ -196,33 +190,32 @@ export default function Contact() {
               name="message"
               value={formData.message}
               onChange={handleChange}
-              placeholder="Enter message"
+              placeholder={t.enterMessage}
               className={`${getFieldClass("message")} resize-none`}
               aria-invalid={!!errors.message}
             />
             {errors.message ? (
-              <p className="text-sm text-red-600 font-ui">{errors.message}</p>
+              <p className="font-ui text-sm text-red-600">{errors.message}</p>
             ) : null}
           </div>
 
-          {/* Button OR Success */}
           {!isSent ? (
             <button
               type="submit"
-              className="w-full bg-black text-white py-4 font-ui transition-all duration-300 hover:bg-black/90 active:scale-[0.99]"
+              className="w-full bg-black py-4 font-ui text-white transition-all duration-300 hover:bg-black/90 active:scale-[0.99]"
             >
-              Send message
+              {t.sendMessage}
             </button>
           ) : (
-            <div className="pt-2 flex items-center justify-center gap-4">
+            <div className="flex items-center justify-center gap-4 pt-2">
               <p className="font-display text-lg">
-                Your message sent successfully
+                {t.yourMessageSentSuccessfully}
               </p>
 
               <img
                 src={checkSendMessageIcon}
-                alt="Message sent"
-                className="w-6 h-6"
+                alt={t.messageSent}
+                className="h-6 w-6"
                 draggable={false}
               />
             </div>

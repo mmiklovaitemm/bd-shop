@@ -3,7 +3,6 @@ import checkIcon from "@/assets/ui/check-send-message.svg";
 export default function StatusPill({ status }) {
   const value = String(status || "Pending").trim();
 
-  const isPending = value === "Pending";
   const isConfirmed = value === "Confirmed";
   const isShipped = value === "Shipped";
   const isCompleted = value === "Completed";

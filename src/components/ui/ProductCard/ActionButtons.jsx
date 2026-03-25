@@ -1,5 +1,7 @@
 import { useCallback } from "react";
 
+import useLanguage from "@/context/useLanguage";
+
 import IconButton from "@/components/ui/IconButton";
 import cn from "@/utils/cn";
 
@@ -14,6 +16,7 @@ export default function ActionButtons({
   isWishlisted,
 }) {
   const isSoldOut = Boolean(product?.isSoldOut);
+  const { t } = useLanguage();
 
   const handleCartClick = useCallback(
     (e) => {
@@ -43,7 +46,7 @@ export default function ActionButtons({
           variant="overlay"
           icon={bagIcon}
           onClick={handleCartClick}
-          aria-label={`Add ${product.name} to cart`}
+          aria-label={`${t.add} ${product.name} ${t.toCart}`}
           className="left-3"
         />
       )}
@@ -54,8 +57,8 @@ export default function ActionButtons({
         onClick={handleFavoriteClick}
         aria-label={
           isWishlisted
-            ? `Remove ${product.name} from favorites`
-            : `Add ${product.name} to favorites`
+            ? `${t.remove} ${product.name} ${t.fromFavorites}`
+            : `${t.add} ${product.name} ${t.toFavorites}`
         }
         className={cn("right-3", isWishlisted && "[&>img]:filter-none")}
       />

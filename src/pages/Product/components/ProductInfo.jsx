@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { FiHeart } from "react-icons/fi";
 
+import useLanguage from "@/context/useLanguage";
 import useFavorites from "@/context/useFavorites";
 
 import cn from "@/utils/cn";
@@ -15,47 +16,9 @@ import starIcon from "@/assets/ui/star.svg";
 import returnIcon from "@/assets/ui/return-box.svg";
 import arrowUpRightIcon from "@/assets/ui/arrow-up-right.svg";
 
-const COLOR_NAMES = {
-  "soft-yellow": "Soft yellow",
-  "soft-blue": "Soft blue",
-  "soft-green": "Soft green",
-  gold: "Gold",
-  silver: "Silver",
-};
-
-const formatColorName = (color) => COLOR_NAMES[color] || color;
-
-const getVariantColorStyles = (color, isActive) => {
-  const styles = {
-    "soft-yellow": {
-      active: "bg-[#F2E3B6] text-black border-black/60",
-      default: "bg-white text-black border-black/40 lg:hover:bg-black/5",
-    },
-    "soft-blue": {
-      active: "bg-[#9FB6D5] text-black border-black/60",
-      default: "bg-white text-black border-black/40 lg:hover:bg-black/5",
-    },
-    "soft-green": {
-      active: "bg-[#AFC7B0] text-black border-black/60",
-      default: "bg-white text-black border-black/40 lg:hover:bg-black/5",
-    },
-    gold: {
-      active: "bg-white text-[#c58a2a] border-[#c58a2a]",
-      default: "bg-white text-black border-black/40 lg:hover:bg-black/5",
-    },
-    silver: {
-      active: "bg-black/60 text-white border-black/60",
-      default: "bg-white text-black border-black/40 lg:hover:bg-black/5",
-    },
-  };
-
-  const key = styles[color] ? color : "silver";
-  return isActive ? styles[key].active : styles[key].default;
-};
-
 const BenefitItem = memo(function BenefitItem({ icon, text }) {
   return (
-    <div className="flex items-center gap-2 font-ui text-[14px] text-black/80 select-none">
+    <div className="flex items-center gap-2 select-none font-ui text-[14px] text-black/80">
       <img
         src={icon}
         alt=""
@@ -70,15 +33,17 @@ const BenefitItem = memo(function BenefitItem({ icon, text }) {
 });
 
 const ProductBenefits = memo(function ProductBenefits() {
+  const { t } = useLanguage();
+
   const benefits = [
-    { icon: warrantyIcon, text: "2 Year Warranty" },
-    { icon: deliveryIcon, text: "Fast Delivery" },
-    { icon: starIcon, text: "High Quality" },
-    { icon: returnIcon, text: "90 - Day Return" },
+    { icon: warrantyIcon, text: t.twoYearWarranty },
+    { icon: deliveryIcon, text: t.fastDelivery },
+    { icon: starIcon, text: t.highQuality },
+    { icon: returnIcon, text: t.ninetyDayReturn },
   ];
 
   return (
-    <div className="mt-6 mb-6 grid grid-cols-2 gap-x-6 gap-y-4 border-t border-black pt-5 md:gap-6">
+    <div className="mb-6 mt-6 grid grid-cols-2 gap-x-6 gap-y-4 border-t border-black pt-5 md:gap-6">
       {benefits.map((benefit) => (
         <BenefitItem
           key={`${benefit.text}-${benefit.icon}`}
@@ -98,8 +63,12 @@ const SizeSelector = memo(function SizeSelector({
   hoverBtnClass,
   usesVariantLevelStock,
 }) {
+  const { t } = useLanguage();
+
   if (!sizes?.length) {
-    return <p className="mt-2 font-ui text-[13px] text-black/50">One size</p>;
+    return (
+      <p className="mt-2 font-ui text-[13px] text-black/50">{t.oneSize}</p>
+    );
   }
 
   const normalizedSelectedSize =
@@ -125,7 +94,7 @@ const SizeSelector = memo(function SizeSelector({
               hoverBtnClass,
               isActive
                 ? "border-black bg-black text-white"
-                : "bg-white text-black border-black/40 lg:hover:bg-black/5",
+                : "border-black/40 bg-white text-black lg:hover:bg-black/5",
               !isAvailable ? "cursor-not-allowed opacity-35" : "",
             )}
           >
@@ -146,6 +115,46 @@ const ColorSelector = memo(function ColorSelector({
   hoverBtnClass,
   usesVariantLevelStock,
 }) {
+  const { t } = useLanguage();
+
+  const colorNames = {
+    "soft-yellow": t.softYellow,
+    "soft-blue": t.softBlue,
+    "soft-green": t.softGreen,
+    gold: t.gold,
+    silver: t.silver,
+  };
+
+  const formatColorName = (color) => colorNames[color] || color;
+
+  const getVariantColorStyles = (color, isActive) => {
+    const styles = {
+      "soft-yellow": {
+        active: "bg-[#F2E3B6] text-black border-black/60",
+        default: "bg-white text-black border-black/40 lg:hover:bg-black/5",
+      },
+      "soft-blue": {
+        active: "bg-[#9FB6D5] text-black border-black/60",
+        default: "bg-white text-black border-black/40 lg:hover:bg-black/5",
+      },
+      "soft-green": {
+        active: "bg-[#AFC7B0] text-black border-black/60",
+        default: "bg-white text-black border-black/40 lg:hover:bg-black/5",
+      },
+      gold: {
+        active: "bg-white text-[#c58a2a] border-[#c58a2a]",
+        default: "bg-white text-black border-black/40 lg:hover:bg-black/5",
+      },
+      silver: {
+        active: "bg-black/60 text-white border-black/60",
+        default: "bg-white text-black border-black/40 lg:hover:bg-black/5",
+      },
+    };
+
+    const key = styles[color] ? color : "silver";
+    return isActive ? styles[key].active : styles[key].default;
+  };
+
   return (
     <div className="mt-2 flex flex-wrap gap-2">
       {colors.map((color) => {
@@ -182,24 +191,26 @@ const QuantitySelector = memo(function QuantitySelector({
   onQuantityChange,
   hoverBtnClass,
 }) {
+  const { t } = useLanguage();
+
   return (
     <div className="mt-2 inline-flex h-10 items-center border border-black/30 select-none">
       <button
         type="button"
-        className={cn("h-10 w-10 text-[18px] select-none", hoverBtnClass)}
+        className={cn("h-10 w-10 select-none text-[18px]", hoverBtnClass)}
         onClick={() => onQuantityChange((q) => Math.max(1, q - 1))}
-        aria-label="Decrease quantity"
+        aria-label={t.decreaseQuantity}
       >
         –
       </button>
-      <div className="w-10 text-center font-ui text-[13px] select-none">
+      <div className="w-10 select-none text-center font-ui text-[13px]">
         {quantity}
       </div>
       <button
         type="button"
-        className={cn("h-10 w-10 text-[18px] select-none", hoverBtnClass)}
+        className={cn("h-10 w-10 select-none text-[18px]", hoverBtnClass)}
         onClick={() => onQuantityChange((q) => q + 1)}
-        aria-label="Increase quantity"
+        aria-label={t.increaseQuantity}
       >
         +
       </button>
@@ -227,6 +238,7 @@ const ProductInfo = memo(function ProductInfo({
   onOpenHowItWorks,
   hoverClasses = { btn: "", iconBtn: "", group: "" },
 }) {
+  const { t } = useLanguage();
   const { has, toggle } = useFavorites();
 
   if (!product) return null;
@@ -252,7 +264,7 @@ const ProductInfo = memo(function ProductInfo({
       </div>
 
       <div className="mt-5">
-        <p className="font-ui text-[13px] text-black/70">Size:</p>
+        <p className="font-ui text-[13px] text-black/70">{t.size}:</p>
         <SizeSelector
           sizes={product.sizes}
           availableSizes={availableSizes}
@@ -264,7 +276,7 @@ const ProductInfo = memo(function ProductInfo({
       </div>
 
       <div className="mt-5">
-        <p className="font-ui text-[13px] text-black/70">Color:</p>
+        <p className="font-ui text-[13px] text-black/70">{t.color}:</p>
         <ColorSelector
           colors={product.colors}
           availableColors={availableColors}
@@ -280,15 +292,17 @@ const ProductInfo = memo(function ProductInfo({
         <div className="mt-3">
           <p className="font-ui text-[12px] text-black/55">
             {isSoldOut
-              ? "Selected variant is sold out"
-              : `In stock: ${currentStock}`}
+              ? t.selectedVariantSoldOut
+              : `${t.inStock}: ${currentStock}`}
           </p>
         </div>
       )}
 
       {hasServiceOptions && (
         <div className="mt-5">
-          <p className="font-ui text-[13px] text-black/70">Service option:</p>
+          <p className="font-ui text-[13px] text-black/70">
+            {t.serviceOption}:
+          </p>
 
           <div className="mt-2 grid gap-2">
             {product.details.serviceOptions.map((opt) => {
@@ -300,7 +314,7 @@ const ProductInfo = memo(function ProductInfo({
                   type="button"
                   onClick={() => setSelectedService(opt.value)}
                   className={cn(
-                    "w-full border px-4 py-3 text-left select-none",
+                    "w-full select-none border px-4 py-3 text-left",
                     hoverBtnClass,
                     active
                       ? "border-black bg-black text-white"
@@ -341,7 +355,7 @@ const ProductInfo = memo(function ProductInfo({
       )}
 
       <div className="mt-5">
-        <p className="font-ui text-[13px] text-black/70">Quantity:</p>
+        <p className="font-ui text-[13px] text-black/70">{t.quantity}:</p>
 
         <QuantitySelector
           quantity={quantity}
@@ -375,14 +389,14 @@ const ProductInfo = memo(function ProductInfo({
                 text-black/45
               "
             >
-              Sold out
+              {t.soldOut}
             </button>
           ) : (
             <AddToBagButton
               onClick={onAddToBag}
               icon={bagIcon}
-              label="Add to bag"
-              ariaLabel={`Add ${product.name} to bag`}
+              label={t.addToBag}
+              ariaLabel={`${t.add} ${product.name} ${t.toBag}`}
               className="
                 !w-full !h-12 !min-w-0 !justify-center
                 !border-black !bg-black !text-white
@@ -395,7 +409,7 @@ const ProductInfo = memo(function ProductInfo({
 
         <button
           type="button"
-          aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+          aria-label={isWishlisted ? t.removeFromWishlist : t.addToWishlist}
           className={cn(
             "flex h-12 w-12 items-center justify-center border-[0.5px] border-black/25 bg-white select-none",
             hoverClasses.iconBtn,
@@ -422,12 +436,12 @@ const ProductInfo = memo(function ProductInfo({
             type="button"
             onClick={onOpenDetails}
             className={cn(
-              "group flex w-full items-center justify-between font-ui text-[13px] text-black select-none",
+              "group flex w-full items-center justify-between select-none font-ui text-[13px] text-black",
               hoverBtnClass,
             )}
           >
             <span className="underline underline-offset-4">
-              Dimensions &amp; details
+              {t.dimensionsAndDetails}
             </span>
             <img
               src={arrowUpRightIcon}
@@ -448,12 +462,12 @@ const ProductInfo = memo(function ProductInfo({
               type="button"
               onClick={onOpenHowItWorks}
               className={cn(
-                "group flex w-full items-center justify-between font-ui text-[13px] text-black select-none",
+                "group flex w-full items-center justify-between select-none font-ui text-[13px] text-black",
                 hoverBtnClass,
               )}
             >
               <span className="underline underline-offset-4">
-                Personal jewellery - How it works
+                {t.personalJewelleryHowItWorks}
               </span>
 
               <img

@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import useLanguage from "@/context/useLanguage";
 
 function range(start, end) {
   const out = [];
@@ -7,7 +8,7 @@ function range(start, end) {
 }
 
 function getPaginationRange({ page, totalPages, siblingCount = 1 }) {
-  const totalPageNumbers = siblingCount * 2 + 5; // first, last, current, 2* siblings, 2 dots
+  const totalPageNumbers = siblingCount * 2 + 5;
 
   if (totalPages <= totalPageNumbers) {
     return range(1, totalPages);
@@ -43,6 +44,8 @@ export default function Pagination({
   onPageChange,
   siblingCount = 1,
 }) {
+  const { t } = useLanguage();
+
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
   const safePage = Math.max(1, Math.min(page, totalPages));
 
@@ -67,9 +70,8 @@ export default function Pagination({
   return (
     <nav
       className="flex items-center gap-2 select-none"
-      aria-label="Pagination"
+      aria-label={t.pagination}
     >
-      {/* PREV */}
       <button
         type="button"
         onClick={() => onPageChange?.(safePage - 1)}
@@ -80,12 +82,11 @@ export default function Pagination({
           hoverBtn,
           !canPrev ? disabledBtn : "",
         ].join(" ")}
-        aria-label="Previous page"
+        aria-label={t.previousPage}
       >
         ←
       </button>
 
-      {/* NUMBERS */}
       <div className="flex items-center gap-2">
         {items.map((it, idx) => {
           if (it === "...") {
@@ -113,7 +114,7 @@ export default function Pagination({
                 !isActive ? hoverBtn : "",
               ].join(" ")}
               aria-current={isActive ? "page" : undefined}
-              aria-label={`Page ${p}`}
+              aria-label={`${t.page} ${p}`}
             >
               {p}
             </button>
@@ -121,7 +122,6 @@ export default function Pagination({
         })}
       </div>
 
-      {/* NEXT */}
       <button
         type="button"
         onClick={() => onPageChange?.(safePage + 1)}
@@ -132,7 +132,7 @@ export default function Pagination({
           hoverBtn,
           !canNext ? disabledBtn : "",
         ].join(" ")}
-        aria-label="Next page"
+        aria-label={t.nextPage}
       >
         →
       </button>

@@ -2,6 +2,7 @@
 import { useState, useCallback, useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 
+import useLanguage from "@/context/useLanguage";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 
 // Icons
@@ -92,6 +93,7 @@ function getFirstAvailableSize(product, color, usesVariantLevelStock) {
 }
 
 function ProductView({ product }) {
+  const { t } = useLanguage();
   const { addToCart } = useAddToCart();
   const openBag = useBagDrawer((s) => s.open);
 
@@ -257,7 +259,7 @@ function ProductView({ product }) {
           "";
 
       if (product.category === "personal" && !selectedService) {
-        alert("Please choose service option.");
+        alert(t.pleaseChooseServiceOption);
         return;
       }
 
@@ -283,6 +285,7 @@ function ProductView({ product }) {
       quantity,
       selectedService,
       selectedVariant,
+      t.pleaseChooseServiceOption,
       usesVariantLevelStock,
     ],
   );
@@ -310,13 +313,13 @@ function ProductView({ product }) {
 
   return (
     <main
-      className="mx-auto w-full px-4 py-4 select-none md:max-w-[1200px] md:px-1 md:py-4 lg:max-w-none lg:px-2"
+      className="mx-auto w-full select-none px-4 py-4 md:max-w-[1200px] md:px-1 md:py-4 lg:max-w-none lg:px-2"
       onDragStart={preventDragHandler}
     >
       <div className="mb-4">
         <Link
           to="/collections"
-          className="group inline-flex items-center font-ui text-[14px] text-black/80 select-none"
+          className="group inline-flex select-none items-center font-ui text-[14px] text-black/80"
         >
           <span
             className={cn(
@@ -332,7 +335,7 @@ function ProductView({ product }) {
               onDragStart={preventDragHandler}
               className="h-3 w-3 select-none transition-transform duration-200 ease-out"
             />
-            <span>Back</span>
+            <span>{t.back}</span>
           </span>
         </Link>
       </div>
@@ -398,6 +401,7 @@ function ProductView({ product }) {
 }
 
 export default function Product() {
+  const { t } = useLanguage();
   const { id } = useParams();
   const { product, loading } = useProduct(id);
 
@@ -405,7 +409,7 @@ export default function Product() {
     return (
       <main className="mx-auto w-full max-w-[1200px] px-4 py-10 md:px-6">
         <div className="flex min-h-[50vh] flex-col items-center justify-center">
-          <p className="font-ui text-[14px] text-black/60">Loading...</p>
+          <p className="font-ui text-[14px] text-black/60">{t.loading}</p>
         </div>
       </main>
     );
@@ -416,13 +420,13 @@ export default function Product() {
       <main className="mx-auto w-full max-w-[1200px] px-4 py-10 md:px-6">
         <div className="flex min-h-[50vh] flex-col items-center justify-center">
           <p className="font-ui text-[14px] text-black/60">
-            {id ? "Product not found." : "Invalid product URL."}
+            {id ? t.productNotFound : t.invalidProductUrl}
           </p>
           <Link
             to="/collections"
             className="mt-4 inline-block font-ui text-[14px] text-black underline transition-colors hover:text-black/70"
           >
-            Back to Collections
+            {t.backToCollections}
           </Link>
         </div>
       </main>

@@ -9,6 +9,7 @@ import {
 
 import IconButton from "@/components/ui/IconButton";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
+import useLanguage from "@/context/useLanguage";
 
 import arrowLeft from "@/assets/ui/arrow-left.svg";
 import arrowRight from "@/assets/ui/arrow-right.svg";
@@ -44,8 +45,10 @@ export default function HorizontalSliderSection({
   showDivider = true,
   dividerClassName = "",
   hideNav = false,
-  emptyText = "No items available at the moment.",
+  emptyText,
 }) {
+  const { t } = useLanguage();
+
   const scrollerRef = useRef(null);
   const trackRef = useRef(null);
 
@@ -64,6 +67,8 @@ export default function HorizontalSliderSection({
   const visibleChildren = useMemo(() => {
     return childArray.slice(0, Math.min(renderCount, childArray.length));
   }, [childArray, renderCount]);
+
+  const resolvedEmptyText = emptyText || t.noItemsAvailable;
 
   const getEndPaddingPx = useCallback(() => {
     const el = scrollerRef.current;
@@ -220,8 +225,8 @@ export default function HorizontalSliderSection({
 
   if (isEmpty) {
     return (
-      <section className="px-4 pb-6 py-8 border-b border-black lg:px-0">
-        <p className="text-center text-gray-500">{emptyText}</p>
+      <section className="border-b border-black px-4 py-8 pb-6 lg:px-0">
+        <p className="text-center text-gray-500">{resolvedEmptyText}</p>
       </section>
     );
   }
@@ -238,11 +243,11 @@ export default function HorizontalSliderSection({
       <section className={sectionWrapClassName}>
         <div className={outerPxClass}>
           <div
-            className="relative lg:grid lg:items-start lg:gap-6"
+            className="relative z-0 lg:grid lg:items-start lg:gap-6"
             style={{ gridTemplateColumns: `${leftWidthPx}px minmax(0, 1fr)` }}
           >
             {/* LEFT (desktop) */}
-            <div className="hidden lg:flex lg:flex-col lg:items-start lg:gap-14 relative z-20">
+            <div className="relative z-20 hidden lg:flex lg:flex-col lg:items-start lg:gap-14">
               <h2 className={titleDesktopClass}>{title}</h2>
 
               {!hideNav && (
@@ -252,7 +257,7 @@ export default function HorizontalSliderSection({
                     icon={arrowLeft}
                     onClick={handlePrev}
                     disabled={!canPrev}
-                    aria-label="Previous"
+                    aria-label={t.previous}
                     className={NAV_BUTTON_CLASS}
                     iconClassName="h-4 w-4"
                   />
@@ -261,7 +266,7 @@ export default function HorizontalSliderSection({
                     icon={arrowRight}
                     onClick={handleNext}
                     disabled={!canNext}
-                    aria-label="Next"
+                    aria-label={t.next}
                     className={NAV_BUTTON_CLASS}
                     iconClassName="h-4 w-4"
                   />
@@ -284,7 +289,7 @@ export default function HorizontalSliderSection({
                         icon={arrowLeft}
                         onClick={handlePrev}
                         disabled={!canPrev}
-                        aria-label="Previous"
+                        aria-label={t.previous}
                         className={NAV_BUTTON_CLASS}
                         iconClassName="h-4 w-4"
                       />
@@ -293,7 +298,7 @@ export default function HorizontalSliderSection({
                         icon={arrowRight}
                         onClick={handleNext}
                         disabled={!canNext}
-                        aria-label="Next"
+                        aria-label={t.next}
                         className={NAV_BUTTON_CLASS}
                         iconClassName="h-4 w-4"
                       />
@@ -303,7 +308,7 @@ export default function HorizontalSliderSection({
 
               <div
                 ref={scrollerRef}
-                className="hs-hide-scrollbar overflow-x-auto overflow-y-hidden w-full min-w-0 pr-8"
+                className="hs-hide-scrollbar w-full min-w-0 overflow-x-auto overflow-y-hidden pr-8"
                 style={{
                   WebkitOverflowScrolling: "touch",
                   scrollbarWidth: "none",

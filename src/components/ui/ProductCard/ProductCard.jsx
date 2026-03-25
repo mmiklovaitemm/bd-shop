@@ -2,6 +2,7 @@ import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import useFavorites from "@/context/useFavorites";
+import useLanguage from "@/context/useLanguage";
 import useAddToCart from "@/hooks/useAddToCart";
 
 import cn from "@/utils/cn";
@@ -28,6 +29,7 @@ export default function ProductCard({
   onImageError,
   onMediaReady,
 }) {
+  const { t } = useLanguage();
   const isDesktop = useMediaQuery(`(min-width: ${DESKTOP_BREAKPOINT})`);
   const { has, toggle: toggleFavorite } = useFavorites();
   const { addToCart } = useAddToCart();
@@ -148,7 +150,7 @@ export default function ProductCard({
         style={
           !isDesktop ? { WebkitTapHighlightColor: "transparent" } : undefined
         }
-        aria-label={`Open ${safeProduct.name}`}
+        aria-label={`${t.open} ${safeProduct.name}`}
       >
         <div
           className="relative w-full h-[340px] overflow-hidden bg-black/5 select-none"
@@ -157,11 +159,10 @@ export default function ProductCard({
         >
           {safeProduct.isSoldOut ? (
             <div className="absolute left-4 top-4 z-[3] border border-black/70 bg-white/90 px-3 py-1 font-ui text-[10px] uppercase tracking-[0.12em] text-black backdrop-blur-sm">
-              Sold out
+              {t.soldOut}
             </div>
           ) : null}
 
-          {/* LOADER  */}
           {!loadedMain && (
             <div className="absolute inset-0 z-[1] bg-black/5">
               <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-black/5 via-black/10 to-black/5" />
@@ -187,7 +188,7 @@ export default function ProductCard({
           {isDesktop && hasHoverImage ? (
             <ProductImage
               src={hoverSrc}
-              alt={`${safeProduct.name} - hover`}
+              alt={`${safeProduct.name} - ${t.hover}`}
               loaded={loadedHover}
               onLoad={handleHoverLoad}
               onError={handleImageError}

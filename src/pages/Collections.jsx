@@ -2,6 +2,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
+import useLanguage from "@/context/useLanguage";
+
 import Pagination from "@/components/ui/Pagination";
 import ProductCard from "@/components/ui/ProductCard/ProductCard";
 import AboutStudioSection from "@/components/ui/AboutStudioSection";
@@ -10,30 +12,6 @@ import ProductsToolbar from "@/components/sections/ProductsToolbar";
 import ProductsFilterPanel from "@/components/sections/ProductsFilterPanel";
 
 import { useProducts } from "@/hooks/useProducts";
-
-const CATEGORY_ITEMS = [
-  { label: "Rings", value: "rings" },
-  { label: "Necklaces", value: "necklaces" },
-  { label: "Bracelets", value: "bracelets" },
-  { label: "Earrings", value: "earrings" },
-  { label: "Personal", value: "personal" },
-  { label: "Best sellers", value: "best-sellers" },
-  { label: "New collection", value: "new-collection" },
-];
-
-const APPEARANCE_OPTIONS = [
-  { value: "with_gem", label: "Su brangakmeniu" },
-  { value: "without_gem", label: "Be brangakmenio" },
-  { value: "rough", label: "Grublėtas" },
-  { value: "smooth", label: "Lygus paviršius" },
-];
-
-const GEM_OPTIONS = [
-  { value: "kristolas", label: "Kristolas" },
-  { value: "cirkonis", label: "Cirkonis" },
-  { value: "deimantas", label: "Deimantas" },
-  { value: "perlas", label: "Perlas" },
-];
 
 const applyAppearanceFilter = (list, selectedAppearance) => {
   let out = list;
@@ -63,7 +41,41 @@ const applySizeFilter = (list, selectedSize) => {
 };
 
 export default function Collections() {
+  const { t } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const CATEGORY_ITEMS = useMemo(
+    () => [
+      { label: t.rings, value: "rings" },
+      { label: t.necklaces, value: "necklaces" },
+      { label: t.bracelets, value: "bracelets" },
+      { label: t.earrings, value: "earrings" },
+      { label: t.personal, value: "personal" },
+      { label: t.bestSellers, value: "best-sellers" },
+      { label: t.newCollection, value: "new-collection" },
+    ],
+    [t],
+  );
+
+  const APPEARANCE_OPTIONS = useMemo(
+    () => [
+      { value: "with_gem", label: t.withGem },
+      { value: "without_gem", label: t.withoutGem },
+      { value: "rough", label: t.rough },
+      { value: "smooth", label: t.smoothSurface },
+    ],
+    [t],
+  );
+
+  const GEM_OPTIONS = useMemo(
+    () => [
+      { value: "kristolas", label: t.kristolas },
+      { value: "cirkonis", label: t.cirkonis },
+      { value: "deimantas", label: t.deimantas },
+      { value: "perlas", label: t.perlas },
+    ],
+    [t],
+  );
 
   const categoryFromUrl =
     searchParams.get("category") || searchParams.get("filter") || "rings";
@@ -74,7 +86,6 @@ export default function Collections() {
   const [sortValue, setSortValue] = useState("price_desc");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-  // FILTER STATE
   const [selectedMaterial, setSelectedMaterial] = useState(null);
   const [priceRange, setPriceRange] = useState({ min: 0, max: 200 });
 
@@ -82,14 +93,11 @@ export default function Collections() {
   const [selectedGems, setSelectedGems] = useState([]);
   const [selectedSize, setSelectedSize] = useState(null);
 
-  // PAGINATION
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(12);
 
-  // products via hook
   const { products, loading } = useProducts();
 
-  // Responsive page size
   useEffect(() => {
     const update = () => {
       const isMobile = window.matchMedia("(max-width: 767px)").matches;
@@ -113,9 +121,8 @@ export default function Collections() {
   }, [categoryFromUrl]);
 
   const activeCategoryLabel =
-    CATEGORY_ITEMS.find((c) => c.value === activeCategory)?.label || "Rings";
+    CATEGORY_ITEMS.find((c) => c.value === activeCategory)?.label || t.rings;
 
-  // PRODUCTS IN CATEGORY
   const productsInCategory = useMemo(() => {
     if (activeCategory === "best-sellers") {
       return products.filter((p) => p.isBestSeller);
@@ -175,10 +182,10 @@ export default function Collections() {
     });
 
     const prettyLabel = (v) => {
-      if (v === "silver") return "Silver";
-      if (v === "gold") return "Gold";
-      if (v === "soft-blue") return "Soft blue";
-      if (v === "soft-green") return "Soft green";
+      if (v === "silver") return t.silver;
+      if (v === "gold") return t.gold;
+      if (v === "soft-blue") return t.softBlue;
+      if (v === "soft-green") return t.softGreen;
       return v;
     };
 
@@ -187,7 +194,7 @@ export default function Collections() {
       label: prettyLabel(value),
       count,
     }));
-  }, [productsInCategory, priceRange.min, priceRange.max]);
+  }, [productsInCategory, priceRange.min, priceRange.max, t]);
 
   const appearanceOptionsWithCount = useMemo(() => {
     return APPEARANCE_OPTIONS.map((opt) => {
@@ -212,7 +219,13 @@ export default function Collections() {
 
       return { ...opt, count };
     });
-  }, [baseAfterPriceMaterial, selectedAppearance, selectedGems, selectedSize]);
+  }, [
+    APPEARANCE_OPTIONS,
+    baseAfterPriceMaterial,
+    selectedAppearance,
+    selectedGems,
+    selectedSize,
+  ]);
 
   const gemOptionsWithCount = useMemo(() => {
     return GEM_OPTIONS.map((opt) => {
@@ -230,7 +243,13 @@ export default function Collections() {
 
       return { ...opt, count };
     });
-  }, [baseAfterPriceMaterial, selectedAppearance, selectedGems, selectedSize]);
+  }, [
+    GEM_OPTIONS,
+    baseAfterPriceMaterial,
+    selectedAppearance,
+    selectedGems,
+    selectedSize,
+  ]);
 
   const sizeOptionsWithCount = useMemo(() => {
     const allSizes = Array.from(
@@ -310,7 +329,6 @@ export default function Collections() {
     );
   };
 
-  // reset pagination on any filter/sort change
   useEffect(() => {
     setPage(1);
     setSearchParams(
@@ -380,7 +398,7 @@ export default function Collections() {
   return (
     <>
       <ProductsToolbar
-        title="Collections"
+        title={t.collections}
         categories={CATEGORY_ITEMS}
         activeCategoryValue={activeCategory}
         activeCategoryLabel={activeCategoryLabel}
@@ -416,7 +434,7 @@ export default function Collections() {
       <div className="mx-auto w-full max-w-[1200px] px-4 py-8 md:px-6 md:py-10 lg:px-1">
         <div
           className={
-            isFilterOpen ? "lg:grid lg:grid-cols-[320px_1fr] gap-6" : "lg:block"
+            isFilterOpen ? "gap-6 lg:grid lg:grid-cols-[320px_1fr]" : "lg:block"
           }
         >
           {isFilterOpen ? (
@@ -449,19 +467,19 @@ export default function Collections() {
           <div>
             {loading ? (
               <div className="py-10 text-center">
-                <p className="font-ui text-[13px] text-black/70">Loading...</p>
+                <p className="font-ui text-[13px] text-black/70">{t.loading}</p>
               </div>
             ) : isEmpty ? (
               <div className="py-10 text-center">
                 <p className="font-ui text-[13px] text-black/70">
-                  No products found.
+                  {t.noProductsFound}
                 </p>
               </div>
             ) : (
               <>
                 <div
                   className={[
-                    "grid grid-cols-2 min-[460px]:grid-cols-2 md:grid-cols-3 gap-x-3 gap-y-5 md:gap-x-4 md:gap-y-6",
+                    "grid grid-cols-2 min-[460px]:grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-3 md:gap-x-4 md:gap-y-6",
                     desktopColsClass,
                   ].join(" ")}
                 >
@@ -482,7 +500,7 @@ export default function Collections() {
 
                 <div className="mt-8 flex flex-col items-center gap-3">
                   <p className="font-ui text-[13px] text-black/70">
-                    Showing {showingCount} of {totalItems}
+                    {t.showing} {showingCount} {t.of} {totalItems}
                   </p>
 
                   <Pagination

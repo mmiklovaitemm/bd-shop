@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import cn from "@/utils/cn";
+import useLanguage from "@/context/useLanguage";
 
 const withBase = (path) =>
   `${import.meta.env.BASE_URL}${String(path || "").replace(/^\/+/, "")}`;
@@ -24,6 +25,8 @@ export default function ProductImage({
 
   ...rest
 }) {
+  const { t } = useLanguage();
+
   const imgKey = src || "no-src";
 
   const [errored, setErrored] = useState(false);
@@ -63,7 +66,7 @@ export default function ProductImage({
         sizes={errored ? undefined : sizes}
         width={340}
         height={340}
-        alt={alt || "Jewelry product image"}
+        alt={alt || t.productImage}
         loading={priority ? "eager" : "lazy"}
         decoding="async"
         draggable={false}

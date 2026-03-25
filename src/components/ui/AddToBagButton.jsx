@@ -1,15 +1,22 @@
+import useLanguage from "@/context/useLanguage";
+
 export default function AddToBagButton({
   onClick,
   icon,
-  label = "Add to bag",
-  ariaLabel = "Add to bag",
+  label,
+  ariaLabel,
   className = "",
 }) {
+  const { t } = useLanguage();
+
+  const finalLabel = label || t.addToBag;
+  const finalAriaLabel = ariaLabel || t.addToBag;
+
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label={ariaLabel}
+      aria-label={finalAriaLabel}
       className={`
         inline-flex items-center justify-center gap-2 shrink-0
         whitespace-nowrap border border-white text-white bg-white/20
@@ -33,14 +40,12 @@ export default function AddToBagButton({
           onDragStart={(e) => e.preventDefault()}
           className="
             h-[18px] w-[18px] invert shrink-0
-
             md:h-[20px] md:w-[20px]
-
             lg:h-[16px] lg:w-[16px]
           "
         />
       )}
-      <span className="whitespace-nowrap">{label}</span>
+      <span className="whitespace-nowrap">{finalLabel}</span>
     </button>
   );
 }

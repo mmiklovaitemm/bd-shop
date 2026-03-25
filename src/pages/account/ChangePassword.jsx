@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import useLanguage from "@/context/useLanguage";
 import AboutStudioSection from "@/components/ui/AboutStudioSection";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 import backArrowIcon from "@/assets/ui/back-arrow.svg";
@@ -19,6 +20,7 @@ function PasswordInput({
   error,
   inputRef,
 }) {
+  const { t } = useLanguage();
   const [show, setShow] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const type = show ? "text" : "password";
@@ -52,7 +54,7 @@ function PasswordInput({
           type="button"
           onClick={() => setShow((s) => !s)}
           className="absolute right-3 top-1/2 -translate-y-1/2 p-2"
-          aria-label={show ? "Hide password" : "Show password"}
+          aria-label={show ? t.hidePassword : t.showPassword}
         >
           {show ? (
             <svg
@@ -102,10 +104,10 @@ function PasswordInput({
 }
 
 export default function ChangePassword() {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const changePassword = useAuth((s) => s.changePassword);
 
-  // refs for scroll-to-error
   const currentRef = useRef(null);
   const newRef = useRef(null);
   const repeatRef = useRef(null);
@@ -132,7 +134,7 @@ export default function ChangePassword() {
 
   const validatePasswordMin = (val) => {
     if (String(val || "").trim().length < MIN_LEN) {
-      return `Password must be at least ${MIN_LEN} characters.`;
+      return `${t.passwordMustBeAtLeast} ${MIN_LEN} ${t.characters}.`;
     }
     return "";
   };
@@ -142,11 +144,15 @@ export default function ChangePassword() {
 
     const nextErrors = {};
 
-    if (!currentPassword.trim())
-      nextErrors.currentPassword = "This field is required.";
-    if (!newPassword.trim()) nextErrors.newPassword = "This field is required.";
-    if (!repeatNewPassword.trim())
-      nextErrors.repeatNewPassword = "This field is required.";
+    if (!currentPassword.trim()) {
+      nextErrors.currentPassword = t.thisFieldIsRequired;
+    }
+    if (!newPassword.trim()) {
+      nextErrors.newPassword = t.thisFieldIsRequired;
+    }
+    if (!repeatNewPassword.trim()) {
+      nextErrors.repeatNewPassword = t.thisFieldIsRequired;
+    }
 
     if (newPassword.trim()) {
       const minErr = validatePasswordMin(newPassword);
@@ -158,7 +164,7 @@ export default function ChangePassword() {
       repeatNewPassword.trim() &&
       newPassword !== repeatNewPassword
     ) {
-      nextErrors.repeatNewPassword = "Passwords do not match.";
+      nextErrors.repeatNewPassword = t.passwordsDoNotMatch;
     }
 
     setErrors(nextErrors);
@@ -190,17 +196,16 @@ export default function ChangePassword() {
         newPassword,
       });
 
-      // logout po password change
       await useAuth.getState().logout();
 
       navigate("/login", { replace: true });
 
-      setSuccess("Password updated successfully.");
+      setSuccess(t.passwordUpdatedSuccessfully);
       setCurrentPassword("");
       setNewPassword("");
       setRepeatNewPassword("");
     } catch (err) {
-      setServerError(err.message || "Something went wrong.");
+      setServerError(err.message || t.somethingWentWrong);
     } finally {
       setSubmitting(false);
     }
@@ -208,10 +213,10 @@ export default function ChangePassword() {
 
   return (
     <>
-      <main className="px-2 pt-3 pb-10">
+      <main className="px-2 pb-10 pt-3">
         <section className="mx-auto w-full max-w-6xl">
           <h1 className="font-display text-4xl leading-none">
-            Change password
+            {t.changePassword}
           </h1>
 
           <FullWidthDivider className="my-4" />
@@ -222,12 +227,12 @@ export default function ChangePassword() {
             className="inline-flex items-center gap-2 text-sm font-ui"
           >
             <img src={backArrowIcon} alt="" className="h-3 w-3" />
-            <span>Back</span>
+            <span>{t.back}</span>
           </button>
 
           <FullWidthDivider className="my-4" />
 
-          <div className="md:mx-auto md:border md:border-black/40 md:bg-white md:max-w-[560px] lg:max-w-[680px]">
+          <div className="md:mx-auto md:max-w-[560px] md:border md:border-black/40 md:bg-white lg:max-w-[680px]">
             <div className="md:px-8 md:py-8">
               <form onSubmit={handleSubmit} className="space-y-5">
                 {serverError ? (
@@ -243,7 +248,7 @@ export default function ChangePassword() {
                 ) : null}
 
                 <PasswordInput
-                  label="Current password"
+                  label={t.currentPassword}
                   value={currentPassword}
                   onChange={(e) => {
                     setCurrentPassword(e.target.value);
@@ -258,7 +263,7 @@ export default function ChangePassword() {
                 />
 
                 <PasswordInput
-                  label="New password"
+                  label={t.newPassword}
                   value={newPassword}
                   onChange={(e) => {
                     setNewPassword(e.target.value);
@@ -273,7 +278,7 @@ export default function ChangePassword() {
                 />
 
                 <PasswordInput
-                  label="Repeat new password"
+                  label={t.repeatNewPassword}
                   value={repeatNewPassword}
                   onChange={(e) => {
                     setRepeatNewPassword(e.target.value);
@@ -292,10 +297,10 @@ export default function ChangePassword() {
                   disabled={submitting}
                   className={[
                     "mt-4 w-full bg-black py-5 text-center text-base tracking-wide text-white",
-                    submitting ? "opacity-60 cursor-not-allowed" : "",
+                    submitting ? "cursor-not-allowed opacity-60" : "",
                   ].join(" ")}
                 >
-                  {submitting ? "Saving..." : "Save"}
+                  {submitting ? t.saving : t.save}
                 </button>
               </form>
             </div>

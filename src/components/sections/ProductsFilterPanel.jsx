@@ -4,12 +4,13 @@ import Slider from "@mui/material/Slider";
 import closeIcon from "@/assets/ui/arrow-up-right.svg";
 import FilterAccordion from "@/components/ui/FilterAccordion";
 import ClearAllButton from "@/components/ui/ClearAllButton";
+import useLanguage from "@/context/useLanguage";
 
 function clamp(n, min, max) {
   return Math.max(min, Math.min(max, n));
 }
 
-function PriceRange({ priceBounds, priceRange, onPriceChange }) {
+function PriceRange({ priceBounds, priceRange, onPriceChange, t }) {
   const minBound = priceBounds?.min ?? 0;
   const maxBound = priceBounds?.max ?? 0;
 
@@ -67,11 +68,11 @@ function PriceRange({ priceBounds, priceRange, onPriceChange }) {
       </Box>
 
       <div className="flex items-center gap-3">
-        <div className="flex-1 border border-black h-12 px-3 flex items-center gap-2">
+        <div className="flex h-12 flex-1 items-center gap-2 border border-black px-3">
           <span className="text-black/70">€</span>
           <input
             inputMode="numeric"
-            className="w-full outline-none font-ui text-[14px]"
+            className="w-full font-ui text-[14px] outline-none"
             value={value[0]}
             onChange={(e) => {
               const raw = e.target.value.replace(/[^\d]/g, "");
@@ -82,13 +83,13 @@ function PriceRange({ priceBounds, priceRange, onPriceChange }) {
           />
         </div>
 
-        <span className="text-black/70 font-ui text-[14px]">to</span>
+        <span className="font-ui text-[14px] text-black/70">{t.to}</span>
 
-        <div className="flex-1 border border-black h-12 px-3 flex items-center gap-2">
+        <div className="flex h-12 flex-1 items-center gap-2 border border-black px-3">
           <span className="text-black/70">€</span>
           <input
             inputMode="numeric"
-            className="w-full outline-none font-ui text-[14px]"
+            className="w-full font-ui text-[14px] outline-none"
             value={value[1]}
             onChange={(e) => {
               const raw = e.target.value.replace(/[^\d]/g, "");
@@ -127,12 +128,13 @@ function FiltersContent({
   sizeOptions,
   selectedSize,
   onSizeChange,
+
+  t,
 }) {
   return (
     <>
-      {/* MATERIAL */}
-      <FilterAccordion title="Material">
-        <div className="flex gap-3 flex-wrap">
+      <FilterAccordion title={t.material}>
+        <div className="flex flex-wrap gap-3">
           {materialOptions.map((opt) => {
             const active = selectedMaterial === opt.value;
             const isGold = opt.value === "gold";
@@ -147,7 +149,7 @@ function FiltersContent({
                 type="button"
                 onClick={() => onMaterialChange?.(active ? null : opt.value)}
                 className={[
-                  "h-10 px-4 border font-ui text-[13px] transition-colors",
+                  "h-10 border px-4 font-ui text-[13px] transition-colors",
                   active
                     ? activeCls
                     : "bg-white text-black border-black/40 hover:bg-black/5",
@@ -160,17 +162,16 @@ function FiltersContent({
         </div>
       </FilterAccordion>
 
-      {/* PRICE */}
-      <FilterAccordion title="Price">
+      <FilterAccordion title={t.price}>
         <PriceRange
           priceBounds={priceBounds}
           priceRange={priceRange}
           onPriceChange={onPriceChange}
+          t={t}
         />
       </FilterAccordion>
 
-      {/* APPEARANCE */}
-      <FilterAccordion title="Appearance">
+      <FilterAccordion title={t.appearance}>
         <div className="space-y-3">
           {appearanceOptions.map((opt) => {
             const checked = selectedAppearance.includes(opt.value);
@@ -199,8 +200,7 @@ function FiltersContent({
         </div>
       </FilterAccordion>
 
-      {/* GEMS */}
-      <FilterAccordion title="Brangakmeniai">
+      <FilterAccordion title={t.gemstones}>
         <div className="space-y-3">
           {gemOptions.map((opt) => {
             const checked = selectedGems.includes(opt.value);
@@ -227,9 +227,8 @@ function FiltersContent({
         </div>
       </FilterAccordion>
 
-      {/* SIZE */}
-      <FilterAccordion title="Size">
-        <div className="flex gap-3 flex-wrap">
+      <FilterAccordion title={t.size}>
+        <div className="flex flex-wrap gap-3">
           {sizeOptions.map((opt) => {
             const active = selectedSize === opt.value;
             const disabled = opt.count === 0;
@@ -246,13 +245,13 @@ function FiltersContent({
                     ? "bg-black text-white border-black"
                     : "bg-white text-black border-black/40",
                   disabled
-                    ? "opacity-45 cursor-not-allowed"
+                    ? "cursor-not-allowed opacity-45"
                     : "hover:bg-black/5",
                 ].join(" ")}
               >
                 {opt.label}
                 {disabled ? (
-                  <span className="pointer-events-none absolute left-1 right-1 top-1/2 h-px bg-black/50 rotate-[-25deg]" />
+                  <span className="pointer-events-none absolute left-1 right-1 top-1/2 h-px rotate-[-25deg] bg-black/50" />
                 ) : null}
               </button>
             );
@@ -291,6 +290,8 @@ export default function ProductsFilterPanel({
   onClearAll,
   clearDisabled = false,
 }) {
+  const { t } = useLanguage();
+
   if (!isOpen) return null;
 
   const contentProps = {
@@ -313,31 +314,37 @@ export default function ProductsFilterPanel({
     sizeOptions,
     selectedSize,
     onSizeChange,
+
+    t,
   };
 
   return (
     <>
-      {/* Mobile/Tablet overlay */}
       {(variant === "auto" || variant === "mobile") && (
         <div className="fixed inset-0 z-[60] lg:hidden">
           <button
             type="button"
-            aria-label="Close filter"
+            aria-label={t.closeFilter}
             onClick={onClose}
             className="absolute inset-0 bg-black/40"
           />
 
-          <aside className="absolute right-0 top-0 h-full w-[92%] max-w-[380px] bg-white border-l border-black flex flex-col">
-            <div className="h-12 px-4 flex items-center justify-between border-b border-black shrink-0">
-              <span className="font-ui text-[14px]">Filter</span>
+          <aside className="absolute right-0 top-0 flex h-full w-[92%] max-w-[380px] flex-col border-l border-black bg-white">
+            <div className="flex h-12 shrink-0 items-center justify-between border-b border-black px-4">
+              <span className="font-ui text-[14px]">{t.filter}</span>
 
               <button
                 type="button"
                 onClick={onClose}
-                className="font-ui text-[14px] flex items-center gap-2 transition-all duration-300 ease-out hover:-translate-y-[2px]"
+                className="flex items-center gap-2 font-ui text-[14px] transition-all duration-300 ease-out hover:-translate-y-[2px]"
               >
-                Close
-                <img src={closeIcon} alt="Close" className="w-4 h-4" />
+                {t.close}
+                <img
+                  src={closeIcon}
+                  alt=""
+                  aria-hidden="true"
+                  className="h-4 w-4"
+                />
               </button>
             </div>
 
@@ -352,19 +359,23 @@ export default function ProductsFilterPanel({
         </div>
       )}
 
-      {/* Desktop inline */}
       {(variant === "auto" || variant === "desktop") && (
-        <aside className="hidden lg:flex w-[320px] bg-white border border-black h-fit sticky top-6 flex-col">
-          <div className="h-12 px-4 flex items-center justify-between border-b border-black bg-black text-white shrink-0">
-            <span className="font-ui text-[14px]">Filter</span>
+        <aside className="sticky top-6 hidden h-fit w-[320px] flex-col border border-black bg-white lg:flex">
+          <div className="flex h-12 shrink-0 items-center justify-between border-b border-black bg-black px-4 text-white">
+            <span className="font-ui text-[14px]">{t.filter}</span>
 
             <button
               type="button"
               onClick={onClose}
-              className="font-ui text-[14px] flex items-center gap-2 text-white transition-all duration-300 ease-out hover:-translate-y-[2px]"
+              className="flex items-center gap-2 font-ui text-[14px] text-white transition-all duration-300 ease-out hover:-translate-y-[2px]"
             >
-              Close
-              <img src={closeIcon} alt="Close" className="w-3 h-3 invert" />
+              {t.close}
+              <img
+                src={closeIcon}
+                alt=""
+                aria-hidden="true"
+                className="h-3 w-3 invert"
+              />
             </button>
           </div>
 

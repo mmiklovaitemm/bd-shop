@@ -1,9 +1,12 @@
 // src/components/account/OrderCard.jsx
+import useLanguage from "@/context/useLanguage";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 import StatusPill from "./StatusPill";
 import arrowRightIcon from "@/assets/ui/arrow-right.svg";
 
 export default function OrderCard({ order, onOpen }) {
+  const { t } = useLanguage();
+
   return (
     <>
       <article className="py-6">
@@ -21,7 +24,7 @@ export default function OrderCard({ order, onOpen }) {
               type="button"
               onClick={onOpen}
               className="flex h-12 w-12 items-center justify-center bg-black active:opacity-80"
-              aria-label="Open order"
+              aria-label={t.openOrder}
             >
               <img src={arrowRightIcon} alt="" className="h-6 w-6 invert" />
             </button>
@@ -39,7 +42,7 @@ export default function OrderCard({ order, onOpen }) {
                   }`}
                 >
                   {item.name}{" "}
-                  <span className="font-ui text-sm align-middle">
+                  <span className="align-middle font-ui text-sm">
                     x{item.quantity}
                   </span>
                 </p>
@@ -47,10 +50,11 @@ export default function OrderCard({ order, onOpen }) {
 
               {order.productLines?.length > 2 && (
                 <p className="font-ui text-xs text-neutral-500">
-                  +{order.productLines.length - 2} more
+                  +{order.productLines.length - 2} {t.more}
                 </p>
               )}
             </div>
+
             <p className="font-ui text-base">{order.price}</p>
           </div>
 
@@ -66,29 +70,27 @@ export default function OrderCard({ order, onOpen }) {
             ))}
           </div>
 
-          <div className="mt-4 bg-neutral-100 px-4 py-3 font-ui text-xs max-w-[250px]">
-            <span className="text-neutral-500">Order no.:</span>{" "}
+          <div className="mt-4 max-w-[250px] bg-neutral-100 px-4 py-3 font-ui text-xs">
+            <span className="text-neutral-500">{t.orderNo}:</span>{" "}
             <span className="text-black">{order.orderNo}</span>
           </div>
         </div>
 
         {/* TABLET */}
-        <div className="hidden md:flex lg:hidden md:items-stretch md:gap-0">
-          {/* 1) date + status */}
-          <div className="w-[150px] pr-6 flex flex-col justify-center">
+        <div className="hidden md:flex md:items-stretch md:gap-0 lg:hidden">
+          <div className="flex w-[150px] flex-col justify-center pr-6">
             <p className="font-display text-base">{order.date}</p>
             <div className="mt-3">
               <StatusPill status={order.status} />
             </div>
           </div>
 
-          {/* 2) name + price */}
-          <div className="w-[180px] px-6 flex flex-col justify-center border-l border-black">
+          <div className="flex w-[180px] flex-col justify-center border-l border-black px-6">
             <div className="space-y-1">
               {(order.productLines || []).slice(0, 2).map((item, index) => (
                 <p key={index} className="font-display text-sm leading-none">
                   {item.name}{" "}
-                  <span className="font-ui text-xs align-middle">
+                  <span className="align-middle font-ui text-xs">
                     x{item.quantity}
                   </span>
                 </p>
@@ -96,27 +98,25 @@ export default function OrderCard({ order, onOpen }) {
 
               {order.productLines?.length > 2 && (
                 <p className="mt-1 font-ui text-xs text-neutral-500">
-                  +{order.productLines.length - 2} more
+                  +{order.productLines.length - 2} {t.more}
                 </p>
               )}
             </div>
             <p className="mt-2 font-ui text-sm">{order.price}</p>
           </div>
 
-          {/* 3) order no */}
-          <div className="w-[240px] px-6 flex items-center border-l border-black">
+          <div className="flex w-[240px] items-center border-l border-black px-6">
             <div className="w-full bg-neutral-100 px-4 py-3 font-ui">
-              <div className="text-[11px] text-neutral-500 leading-tight">
-                Order no.:
+              <div className="text-[11px] leading-tight text-neutral-500">
+                {t.orderNo}:
               </div>
-              <div className="mt-1 text-[12px] leading-tight text-black break-all">
+              <div className="mt-1 break-all text-[12px] leading-tight text-black">
                 {order.orderNo}
               </div>
             </div>
           </div>
 
-          {/* 4) images */}
-          <div className="flex-1 px-6 flex items-center justify-end gap-3">
+          <div className="flex flex-1 items-center justify-end gap-3 px-6">
             {order.images.slice(0, 2).map((img, index) => (
               <img
                 key={index}
@@ -128,13 +128,12 @@ export default function OrderCard({ order, onOpen }) {
             ))}
           </div>
 
-          {/* 5) arrow */}
-          <div className="w-[52px] flex items-center justify-end">
+          <div className="flex w-[52px] items-center justify-end">
             <button
               type="button"
               onClick={onOpen}
               className="flex h-12 w-12 items-center justify-center bg-black active:opacity-80"
-              aria-label="Open order"
+              aria-label={t.openOrder}
             >
               <img src={arrowRightIcon} alt="" className="h-6 w-6 invert" />
             </button>
@@ -143,21 +142,19 @@ export default function OrderCard({ order, onOpen }) {
 
         {/* DESKTOP */}
         <div className="hidden lg:flex lg:items-stretch lg:gap-0">
-          {/* 1) date + status */}
-          <div className="w-[190px] pr-8 flex flex-col justify-center">
+          <div className="flex w-[190px] flex-col justify-center pr-8">
             <p className="font-display text-base">{order.date}</p>
             <div className="mt-3">
               <StatusPill status={order.status} />
             </div>
           </div>
 
-          {/* 2) name + price */}
-          <div className="w-[360px] px-8 flex items-center justify-between gap-6 border-l border-black">
+          <div className="flex w-[360px] items-center justify-between gap-6 border-l border-black px-8">
             <div className="space-y-1">
               {(order.productLines || []).slice(0, 2).map((item, index) => (
                 <p key={index} className="font-display text-base leading-none">
                   {item.name}{" "}
-                  <span className="font-ui text-xs align-middle">
+                  <span className="align-middle font-ui text-xs">
                     x{item.quantity}
                   </span>
                 </p>
@@ -165,23 +162,21 @@ export default function OrderCard({ order, onOpen }) {
 
               {order.productLines?.length > 2 && (
                 <p className="mt-1 font-ui text-xs text-neutral-500">
-                  +{order.productLines.length - 2} more
+                  +{order.productLines.length - 2} {t.more}
                 </p>
               )}
             </div>
             <p className="font-ui text-sm">{order.price}</p>
           </div>
 
-          {/* 3) order no */}
-          <div className="w-[320px] px-8 flex items-center border-l border-black">
+          <div className="flex w-[320px] items-center border-l border-black px-8">
             <div className="w-full bg-neutral-100 px-5 py-3 font-ui text-sm">
-              <span className="text-neutral-500">Order no.:</span>{" "}
+              <span className="text-neutral-500">{t.orderNo}:</span>{" "}
               <span className="text-black">{order.orderNo}</span>
             </div>
           </div>
 
-          {/* 4) images */}
-          <div className="flex-1 px-8 flex items-center justify-end gap-3">
+          <div className="flex flex-1 items-center justify-end gap-3 px-8">
             {order.images.slice(0, 2).map((img, index) => (
               <img
                 key={index}
@@ -193,13 +188,12 @@ export default function OrderCard({ order, onOpen }) {
             ))}
           </div>
 
-          {/* 5) arrow */}
-          <div className="w-[56px] flex items-center justify-end">
+          <div className="flex w-[56px] items-center justify-end">
             <button
               type="button"
               onClick={onOpen}
               className="flex h-12 w-12 items-center justify-center bg-black active:opacity-80"
-              aria-label="Open order"
+              aria-label={t.openOrder}
             >
               <img src={arrowRightIcon} alt="" className="h-6 w-6 invert" />
             </button>

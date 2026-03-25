@@ -2,18 +2,17 @@ import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
+import useLanguage from "@/context/useLanguage";
+
 import arrowUpRight from "@/assets/ui/arrow-up-right.svg";
 
 import heroDesktop from "@/assets/images/new-collection/hero-desktop.webp";
 import heroTablet from "@/assets/images/new-collection/hero-tablet.webp";
 import heroMobile from "@/assets/images/new-collection/hero-mobile.webp";
 
-export default function NewCollectionSection({
-  title = "New\ncollection",
-  ctaText = "Shop now",
-}) {
+export default function NewCollectionSection() {
   const navigate = useNavigate();
-  const [titleLine1, titleLine2] = title.split("\n");
+  const { t } = useLanguage();
 
   const handleShopNow = () => {
     navigate("/collections?category=new-collection");
@@ -36,13 +35,13 @@ export default function NewCollectionSection({
     >
       <div className="w-full">
         <div className="relative w-full overflow-hidden">
-          <div className="relative w-full h-[520px] md:h-[360px] lg:h-[420px]">
+          <div className="relative h-[520px] w-full md:h-[360px] lg:h-[420px]">
             <picture>
               <source srcSet={heroDesktop} media="(min-width: 1024px)" />
               <source srcSet={heroTablet} media="(min-width: 768px)" />
               <img
                 src={heroMobile}
-                alt="New collection"
+                alt={t.newCollection}
                 draggable={false}
                 onDragStart={preventDrag}
                 className="absolute inset-0 h-full w-full object-cover select-none"
@@ -68,27 +67,27 @@ export default function NewCollectionSection({
                     lg:text-[86px]
                   "
                 >
-                  {titleLine1 || "New"}
+                  {t.newCollectionLine1}
                   <br />
-                  {titleLine2 || "collection"}
+                  {t.newCollectionLine2}
                 </h2>
 
                 <button
                   type="button"
                   onClick={handleShopNow}
-                  aria-label="Shop new collection"
+                  aria-label={t.shopNewCollection}
                   className="
-                  ui-interact
-                  group mt-5 md:mt-0
-                  inline-flex items-center gap-3
-                  font-ui text-[16px] lg:text-[18px]
-                  text-white/90 lg:hover:text-white
-                  cursor-pointer
-                  self-start md:self-auto
-                "
+                    ui-interact
+                    group mt-5 md:mt-0
+                    inline-flex items-center gap-3
+                    font-ui text-[16px] lg:text-[18px]
+                    text-white/90 lg:hover:text-white
+                    cursor-pointer
+                    self-start md:self-auto
+                  "
                 >
                   <span className="inline-block transition-transform duration-300 ease-out will-change-transform lg:group-hover:translate-x-1 lg:group-hover:-translate-y-1">
-                    {ctaText}
+                    {t.shopNow}
                   </span>
 
                   <img

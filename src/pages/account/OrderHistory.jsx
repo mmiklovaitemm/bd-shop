@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
+import useLanguage from "@/context/useLanguage";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 import backArrowIcon from "@/assets/ui/back-arrow.svg";
 import OrderCard from "@/pages/account/OrderCard";
@@ -12,6 +13,7 @@ import useAuth from "@/store/useAuth";
 import { apiGet } from "@/lib/api";
 
 export default function OrderHistory() {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const isOrders = location.pathname === "/account/orders";
@@ -26,10 +28,8 @@ export default function OrderHistory() {
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [error, setError] = useState("");
 
-  // products map: { [id]: product }
   const [productsById, setProductsById] = useState({});
 
-  // Fetch orders
   useEffect(() => {
     let alive = true;
 
@@ -44,7 +44,7 @@ export default function OrderHistory() {
         setOrders(Array.isArray(data) ? data : []);
       } catch (err) {
         if (!alive) return;
-        setError(err?.message || "Failed to load orders.");
+        setError(err?.message || t.failedToLoadOrders);
         setOrders([]);
       } finally {
         if (alive) setLoadingOrders(false);
@@ -54,7 +54,7 @@ export default function OrderHistory() {
     return () => {
       alive = false;
     };
-  }, [getOrders]);
+  }, [getOrders, t.failedToLoadOrders]);
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -89,37 +89,36 @@ export default function OrderHistory() {
         <section className="mx-auto w-full max-w-6xl">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <h1 className="font-display text-4xl leading-none">
-              Order history
+              {t.orderHistory}
             </h1>
 
-            {/* Tablet buttons */}
-            <div className="hidden md:flex items-center gap-4 font-ui text-sm">
+            <div className="hidden items-center gap-4 font-ui text-sm md:flex">
               <button
                 type="button"
                 onClick={() => navigate("/account/orders")}
-                className={`px-6 py-3 border border-black ${
+                className={`border border-black px-6 py-3 ${
                   isOrders ? "bg-black text-white" : "bg-white text-black"
                 }`}
               >
-                Order history
+                {t.orderHistory}
               </button>
 
               <button
                 type="button"
                 onClick={() => navigate("/account/profile")}
-                className={`px-6 py-3 border border-black ${
+                className={`border border-black px-6 py-3 ${
                   isProfile ? "bg-black text-white" : "bg-white text-black"
                 }`}
               >
-                Profile
+                {t.profile}
               </button>
 
               <button
                 type="button"
                 onClick={handleLogout}
-                className="px-6 py-3 border border-black bg-white text-black"
+                className="border border-black bg-white px-6 py-3 text-black"
               >
-                Log out
+                {t.logOut}
               </button>
             </div>
           </div>
@@ -133,20 +132,19 @@ export default function OrderHistory() {
           >
             <img
               src={backArrowIcon}
-              alt="Back"
+              alt=""
               width={12}
               height={12}
               className="h-3 w-3"
             />
-            <span>Back</span>
+            <span>{t.back}</span>
           </button>
 
           <FullWidthDivider className="mt-4" />
 
-          {/* States */}
           {loadingOrders ? (
             <div className="py-8 font-ui text-sm text-black/60">
-              Loading orders...
+              {t.loadingOrders}
             </div>
           ) : error ? (
             <div className="my-6 border border-red-600 bg-red-50 px-4 py-3 font-ui text-sm text-red-700">
@@ -154,12 +152,13 @@ export default function OrderHistory() {
             </div>
           ) : orders.length === 0 ? (
             <div className="py-10 font-ui text-sm text-black/60">
-              No orders yet.
+              {t.noOrdersYet}
             </div>
           ) : (
             <div>
               {orders.map((order) => {
                 const isOpen = openOrderId === order.id;
+
                 const groupedItems = (order.items || []).reduce((acc, it) => {
                   const key = `${it.product_id}|${it.color || ""}|${it.size || ""}`;
                   const existing = acc[key];
@@ -174,16 +173,20 @@ export default function OrderHistory() {
                     ).toFixed(2)}`;
                   } else {
                     acc[key] = {
-                      name: it.product_name || "Product",
+                      name: it.product_name || t.product,
                       quantity: Number(it.quantity || 1),
-                      color: it.color || "-",
+                      color: it.color || t.notAvailable,
                       service:
                         it.service_option === "shipping"
-                          ? "Shipping kit"
+                          ? t.shippingKit
                           : it.service_option === "in_store"
-                            ? "In-store"
+                            ? t.inStore
                             : null,
-                      price: `€${((Number(it.price_cents || 0) * Number(it.quantity || 1)) / 100).toFixed(2)}`,
+                      price: `€${(
+                        (Number(it.price_cents || 0) *
+                          Number(it.quantity || 1)) /
+                        100
+                      ).toFixed(2)}`,
                     };
                   }
 
@@ -200,6 +203,7 @@ export default function OrderHistory() {
                   },
                   0,
                 );
+
                 const priceText = `€${(totalCentsFromItems / 100).toFixed(2)}`;
 
                 const uniqueItems = (order.items || []).filter(
@@ -258,7 +262,6 @@ export default function OrderHistory() {
 
                             const totalCents = Number(order?.total_cents || 0);
 
-                            // fallback delivery_fee_cents
                             const deliveryCentsFallback = Math.max(
                               0,
                               totalCents - itemsTotalCents,
@@ -269,7 +272,7 @@ export default function OrderHistory() {
 
                             const deliveryType = String(
                               order?.delivery_type || "",
-                            ).trim(); // "ship" | "pickup"
+                            ).trim();
 
                             const deliveryFeeCentsReal = Number.isFinite(
                               Number(order?.delivery_fee_cents),
@@ -278,22 +281,24 @@ export default function OrderHistory() {
                               : deliveryCentsFallback;
 
                             const pickupValue =
-                              deliveryType === "pickup" ? "Pickup" : "-";
+                              deliveryType === "pickup"
+                                ? t.pickup
+                                : t.notAvailable;
 
                             const fullName =
                               [order?.ship_first_name, order?.ship_last_name]
                                 .filter(Boolean)
-                                .join(" ") || "-";
+                                .join(" ") || t.notAvailable;
 
                             const streetLine =
                               [order?.ship_address, order?.ship_apartment]
                                 .filter(Boolean)
-                                .join(", ") || "-";
+                                .join(", ") || t.notAvailable;
 
                             const zipCityLine =
                               [order?.ship_postal_code, order?.ship_city]
                                 .filter(Boolean)
-                                .join(" ") || "-";
+                                .join(" ") || t.notAvailable;
 
                             const deliveryTo =
                               deliveryType === "ship"
@@ -302,7 +307,11 @@ export default function OrderHistory() {
                                     street: streetLine,
                                     zipCity: zipCityLine,
                                   }
-                                : { name: "-", street: "-", zipCity: "-" };
+                                : {
+                                    name: t.notAvailable,
+                                    street: t.notAvailable,
+                                    zipCity: t.notAvailable,
+                                  };
 
                             const billingAddress = deliveryTo;
 
@@ -315,11 +324,11 @@ export default function OrderHistory() {
                               deliveryMethod:
                                 order?.delivery_type === "ship"
                                   ? order?.delivery_method === "omniva"
-                                    ? "Omniva"
+                                    ? t.omniva
                                     : order?.delivery_method === "lp"
-                                      ? "LP Express"
-                                      : "-"
-                                  : "Pickup",
+                                      ? t.lpExpress
+                                      : t.notAvailable
+                                  : t.pickup,
                               deliveryPrice:
                                 deliveryType === "ship"
                                   ? money(deliveryFeeCentsReal)

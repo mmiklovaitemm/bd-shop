@@ -1,7 +1,11 @@
+import useLanguage from "@/context/useLanguage";
 import AboutStudioSection from "@/components/ui/AboutStudioSection";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
+import TestimonialsSlider from "@/components/sections/TestimonialsSlider";
+
 import BestSellersIntro from "./BestSellersIntro";
 import TwoImageStrip from "./TwoImageStrip";
+import OurSalons from "./OurSalons";
 
 // new collection
 import newColMobile from "@/assets/images/new-collection/hero-mobile.webp";
@@ -12,16 +16,15 @@ import newColDesktop from "@/assets/images/new-collection/hero-desktop.webp";
 import persMobile from "@/assets/images/personalized-jewelry/personalized-hero-mobile.webp";
 import persTablet from "@/assets/images/personalized-jewelry/personalized-hero-tablet.webp";
 import persDesktop from "@/assets/images/personalized-jewelry/personalized-hero-desktop.webp";
-import TestimonialsSlider from "@/components/sections/TestimonialsSlider";
-import OurSalons from "./OurSalons";
 
 export default function About() {
+  const { t } = useLanguage();
+
   return (
     <div>
-      {/* Title */}
       <section className="px-4 py-5">
-        <h1 className="font-display text-[44px] xs:text-[36px] leading-[1.05] tracking-[-0.02em] text-black">
-          About Us
+        <h1 className="font-display text-[44px] leading-[1.05] tracking-[-0.02em] text-black xs:text-[36px]">
+          {t.aboutUs}
         </h1>
       </section>
 
@@ -29,8 +32,8 @@ export default function About() {
       <AboutStudioSection />
 
       <BestSellersIntro
-        title="Best Sellers"
-        description="Every piece of our jewelry is created to capture a feeling — love, beauty, and timeless elegance. Crafted with exquisite detail and the finest materials, each design is meant to be cherished."
+        title={t.bestSellers}
+        description={t.bestSellersIntroDescription}
       />
       <FullWidthDivider />
 
@@ -40,9 +43,13 @@ export default function About() {
           tablet: newColTablet,
           desktop: newColDesktop,
         }}
-        right={{ mobile: persMobile, tablet: persTablet, desktop: persDesktop }}
-        altLeft="New collection"
-        altRight="Personalized jewelry"
+        right={{
+          mobile: persMobile,
+          tablet: persTablet,
+          desktop: persDesktop,
+        }}
+        altLeft={t.newCollection}
+        altRight={t.personalizedJewelry}
       />
       <FullWidthDivider />
 

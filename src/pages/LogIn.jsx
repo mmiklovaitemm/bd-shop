@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
+import useLanguage from "@/context/useLanguage";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 import OurSalons from "./about/OurSalons";
 import useAuth from "@/store/useAuth";
@@ -14,6 +15,7 @@ function PasswordInput({
   error,
   inputRef,
 }) {
+  const { t } = useLanguage();
   const [show, setShow] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const type = show ? "text" : "password";
@@ -47,7 +49,7 @@ function PasswordInput({
           type="button"
           onClick={() => setShow((s) => !s)}
           className="absolute right-3 top-1/2 -translate-y-1/2 p-2"
-          aria-label={show ? "Hide password" : "Show password"}
+          aria-label={show ? t.hidePassword : t.showPassword}
         >
           {show ? (
             <svg
@@ -140,6 +142,7 @@ function TextInput({
 }
 
 export default function Login() {
+  const { t } = useLanguage();
   const location = useLocation();
   const { pathname } = useLocation();
   const isRegister = pathname === "/register";
@@ -160,7 +163,6 @@ export default function Login() {
     }
   }, [user, navigate, from]);
 
-  // refs for scroll-to-error
   const firstNameRef = useRef(null);
   const lastNameRef = useRef(null);
   const emailRef = useRef(null);
@@ -168,19 +170,15 @@ export default function Login() {
   const registerPasswordRef = useRef(null);
   const confirmPasswordRef = useRef(null);
 
-  // shared
   const [email, setEmail] = useState("");
 
-  // login
   const [loginPassword, setLoginPassword] = useState("");
 
-  // register
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  // errors
   const [errors, setErrors] = useState({});
 
   const clearError = (key) => {
@@ -207,9 +205,10 @@ export default function Login() {
 
   const validateEmail = (val) => {
     const v = String(val || "").trim();
-    if (!v) return "This field is required.";
-    if (!v.includes("@") || !v.includes("."))
-      return "Enter a valid email address.";
+    if (!v) return t.thisFieldIsRequired;
+    if (!v.includes("@") || !v.includes(".")) {
+      return t.enterValidEmailAddress;
+    }
     return "";
   };
 
@@ -219,30 +218,33 @@ export default function Login() {
     const nextErrors = {};
 
     if (isRegister) {
-      if (!firstName.trim()) nextErrors.firstName = "This field is required.";
-      if (!lastName.trim()) nextErrors.lastName = "This field is required.";
+      if (!firstName.trim()) nextErrors.firstName = t.thisFieldIsRequired;
+      if (!lastName.trim()) nextErrors.lastName = t.thisFieldIsRequired;
 
       const emailErr = validateEmail(email);
       if (emailErr) nextErrors.email = emailErr;
 
-      if (!registerPassword.trim())
-        nextErrors.registerPassword = "This field is required.";
+      if (!registerPassword.trim()) {
+        nextErrors.registerPassword = t.thisFieldIsRequired;
+      }
 
-      if (!confirmPassword.trim())
-        nextErrors.confirmPassword = "This field is required.";
+      if (!confirmPassword.trim()) {
+        nextErrors.confirmPassword = t.thisFieldIsRequired;
+      }
 
       if (
         registerPassword.trim() &&
         confirmPassword.trim() &&
         registerPassword !== confirmPassword
       ) {
-        nextErrors.confirmPassword = "Passwords do not match.";
+        nextErrors.confirmPassword = t.passwordsDoNotMatch;
       }
     } else {
       const emailErr = validateEmail(email);
       if (emailErr) nextErrors.email = emailErr;
-      if (!loginPassword.trim())
-        nextErrors.loginPassword = "This field is required.";
+      if (!loginPassword.trim()) {
+        nextErrors.loginPassword = t.thisFieldIsRequired;
+      }
     }
 
     setErrors(nextErrors);
@@ -288,13 +290,12 @@ export default function Login() {
         navigate(from, { replace: true });
       }
     } catch (err) {
-      setServerError(err.message || "Something went wrong.");
+      setServerError(err.message || t.somethingWentWrong);
     } finally {
       setSubmitting(false);
     }
   };
 
-  // reset + clear errors when switching tabs
   const goLogin = () => {
     setErrors({});
     setServerError("");
@@ -309,41 +310,39 @@ export default function Login() {
 
   return (
     <>
-      <main className="py-6 overflow-x-hidden">
-        <section className="mx-auto w-full max-w-[420px] md:max-w-[560px] lg:max-w-[680px] md:border md:border-black/40 bg-white">
-          <div className="px-6 pt-6 pb-8">
-            {/* Top buttons */}
-            <div className="flex gap-3 w-full">
+      <main className="overflow-x-hidden py-6">
+        <section className="mx-auto w-full max-w-[420px] bg-white md:max-w-[560px] md:border md:border-black/40 lg:max-w-[680px]">
+          <div className="px-6 pb-8 pt-6">
+            <div className="flex w-full gap-3">
               {isRegister ? (
                 <Link
                   to="/login"
-                  className="block flex-1 min-w-0 border border-black/60 bg-white py-4 text-center text-base tracking-wide"
+                  className="block min-w-0 flex-1 border border-black/60 bg-white py-4 text-center text-base tracking-wide"
                   onClick={goLogin}
                 >
-                  Sign in
+                  {t.signIn}
                 </Link>
               ) : (
-                <div className="block flex-1 min-w-0 bg-black py-4 text-center text-base tracking-wide text-white">
-                  Sign in
+                <div className="block min-w-0 flex-1 bg-black py-4 text-center text-base tracking-wide text-white">
+                  {t.signIn}
                 </div>
               )}
 
               {isRegister ? (
-                <div className="block flex-1 min-w-0 bg-black py-4 text-center text-base tracking-wide text-white">
-                  Create an account
+                <div className="block min-w-0 flex-1 bg-black py-4 text-center text-base tracking-wide text-white">
+                  {t.createAccount}
                 </div>
               ) : (
                 <Link
                   to="/register"
-                  className="block flex-1 min-w-0 border border-black/60 bg-white py-4 text-center text-base tracking-wide"
+                  className="block min-w-0 flex-1 border border-black/60 bg-white py-4 text-center text-base tracking-wide"
                   onClick={goRegister}
                 >
-                  Create an account
+                  {t.createAccount}
                 </Link>
               )}
             </div>
 
-            {/* Form */}
             <form onSubmit={handleSubmit} className="mt-8 space-y-5">
               {serverError ? (
                 <div className="border border-red-600 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -354,7 +353,7 @@ export default function Login() {
               {isRegister ? (
                 <>
                   <TextInput
-                    label="First name"
+                    label={t.firstName}
                     required
                     value={firstName}
                     onChange={(e) => {
@@ -367,7 +366,7 @@ export default function Login() {
                   />
 
                   <TextInput
-                    label="Last name"
+                    label={t.lastName}
                     required
                     value={lastName}
                     onChange={(e) => {
@@ -380,7 +379,7 @@ export default function Login() {
                   />
 
                   <TextInput
-                    label="Email address"
+                    label={t.emailAddress}
                     required
                     type="email"
                     value={email}
@@ -394,7 +393,7 @@ export default function Login() {
                   />
 
                   <PasswordInput
-                    label="Password"
+                    label={t.password}
                     value={registerPassword}
                     onChange={(e) => {
                       setRegisterPassword(e.target.value);
@@ -407,7 +406,7 @@ export default function Login() {
                   />
 
                   <PasswordInput
-                    label="Confirm password"
+                    label={t.confirmPassword}
                     value={confirmPassword}
                     onChange={(e) => {
                       setConfirmPassword(e.target.value);
@@ -424,16 +423,16 @@ export default function Login() {
                     disabled={submitting}
                     className={[
                       "mt-6 w-full bg-black py-5 text-center text-base tracking-wide text-white",
-                      submitting ? "opacity-60 cursor-not-allowed" : "",
+                      submitting ? "cursor-not-allowed opacity-60" : "",
                     ].join(" ")}
                   >
-                    {submitting ? "Please wait..." : "Create account"}
+                    {submitting ? t.pleaseWait : t.createAccount}
                   </button>
                 </>
               ) : (
                 <>
                   <TextInput
-                    label="Email address"
+                    label={t.emailAddress}
                     required
                     type="email"
                     value={email}
@@ -447,7 +446,7 @@ export default function Login() {
                   />
 
                   <PasswordInput
-                    label="Password"
+                    label={t.password}
                     value={loginPassword}
                     onChange={(e) => {
                       setLoginPassword(e.target.value);
@@ -464,7 +463,7 @@ export default function Login() {
                       to="/forgot-password"
                       className="text-sm text-black/50 underline underline-offset-2"
                     >
-                      Forgot password?
+                      {t.forgotPassword}
                     </Link>
                   </div>
 
@@ -473,10 +472,10 @@ export default function Login() {
                     disabled={submitting}
                     className={[
                       "mt-6 w-full bg-black py-5 text-center text-base tracking-wide text-white",
-                      submitting ? "opacity-60 cursor-not-allowed" : "",
+                      submitting ? "cursor-not-allowed opacity-60" : "",
                     ].join(" ")}
                   >
-                    {submitting ? "Please wait..." : "Log in"}
+                    {submitting ? t.pleaseWait : t.logIn}
                   </button>
                 </>
               )}

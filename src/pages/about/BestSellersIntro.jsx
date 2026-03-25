@@ -1,12 +1,17 @@
 import { Link } from "react-router-dom";
+import useLanguage from "@/context/useLanguage";
 import ArrowUpRight from "@/assets/ui/arrow-up-right.svg";
 
 export default function SectionIntro({
   title,
   description,
-  buttonText = "Shop now",
+  buttonText,
   to = "/collections",
 }) {
+  const { t } = useLanguage();
+
+  const finalButtonText = buttonText || t.shopNow;
+
   return (
     <section className="px-5 pt-8 pb-6 md:px-10 md:pt-10 md:pb-8 lg:px-16 lg:pt-12 lg:pb-10">
       <div className="mx-auto max-w-[720px] text-center">
@@ -25,7 +30,7 @@ export default function SectionIntro({
         to={to}
         className="ui-interact mt-6 mx-auto flex w-full max-w-[320px] cursor-pointer items-center justify-center gap-2 bg-black px-6 py-4 text-[14px] text-white md:mt-8"
       >
-        <span>{buttonText}</span>
+        <span>{finalButtonText}</span>
         <img
           src={ArrowUpRight}
           alt=""

@@ -1,6 +1,8 @@
-// src/components/ui/ClearAllButton.jsx
+import useLanguage from "@/context/useLanguage";
 
 export default function ClearAllButton({ onClick, disabled = false }) {
+  const { t } = useLanguage();
+
   return (
     <button
       type="button"
@@ -16,7 +18,7 @@ export default function ClearAllButton({ onClick, disabled = false }) {
           : "bg-black text-white hover:-translate-y-[2px]",
       ].join(" ")}
     >
-      Clear all
+      {t.clearAll}
     </button>
   );
 }
