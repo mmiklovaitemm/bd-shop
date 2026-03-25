@@ -7,7 +7,7 @@ import ProductCard from "@/components/ui/ProductCard/ProductCard";
 
 import seeAllArrow from "@/assets/ui/see-all-arrow-right.svg";
 import { useProducts } from "@/hooks/useProducts";
-import { useLanguage } from "@/context/useLanguage";
+import useLanguage from "@/context/useLanguage";
 
 const withBase = (path) =>
   `${import.meta.env.BASE_URL}${String(path).replace(/^\/+/, "")}`;
