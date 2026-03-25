@@ -1,5 +1,6 @@
 import { memo, useMemo } from "react";
-import { useLanguage } from "@/context/useLanguage";
+
+import useLanguage from "@/context/useLanguage";
 import preventDragHandler from "@/utils/preventDrag";
 import arrowUpRightIcon from "@/assets/ui/arrow-up-right.svg";
 
