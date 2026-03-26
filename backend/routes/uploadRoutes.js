@@ -54,8 +54,13 @@ router.post(
         folder: `bd-shop/${safeCategory}`,
         resource_type: "image",
         public_id: `${Date.now()}-${publicIdBase}`,
-        use_filename: false,
-        unique_filename: false,
+
+        transformation: [
+          {
+            fetch_format: "webp",
+            quality: "auto",
+          },
+        ],
       });
 
       const imageUrl = result?.secure_url || result?.url || "";
