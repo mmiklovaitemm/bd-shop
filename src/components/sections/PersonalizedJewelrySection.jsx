@@ -15,7 +15,7 @@ export default function PersonalizedJewelrySection() {
   const { t } = useLanguage();
 
   const handleShopNow = () => {
-    navigate("/collections?category=personal");
+    navigate("/personalized");
   };
 
   const preventDrag = useCallback((e) => {
