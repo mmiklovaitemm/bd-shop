@@ -90,12 +90,6 @@ export default function ProductCard({
   const handleImageError = useCallback(
     (e) => {
       setMainError(true);
-
-      if (e?.currentTarget) {
-        e.currentTarget.src = `${import.meta.env.BASE_URL}products/fallback.png`;
-        e.currentTarget.srcset = "";
-      }
-
       onImageError?.(e);
     },
     [onImageError],
