@@ -143,7 +143,7 @@ export default function Hero() {
                   <span className="block">{t.heroTitleLine3}</span>
                 </h1>
 
-                <div className="mb-[10px] h-px flex-1 bg-white/80" />
+                <div className="mb-[10px] h-px w-[120px] lg:w-[160px] xl:w-[220px] bg-gradient-to-r from-white/80 to-transparent" />
               </div>
             </div>
           </div>
