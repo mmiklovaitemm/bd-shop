@@ -226,13 +226,19 @@ export default function OrderHistory() {
                     .trim()
                     .toLowerCase();
 
-                  const variantImages =
+                  const colorVariants =
                     product?.variants?.[pickedColor] ||
                     product?.variants?.silver ||
                     product?.variants?.gold ||
                     [];
 
-                  images = variantImages.slice(0, 2);
+                  const flattenedImages = (colorVariants || [])
+                    .flatMap((variant) =>
+                      Array.isArray(variant?.images) ? variant.images : [],
+                    )
+                    .filter(Boolean);
+
+                  images = [...new Set(flattenedImages)].slice(0, 2);
                 } else {
                   images = uniqueItems
                     .slice(0, 2)
