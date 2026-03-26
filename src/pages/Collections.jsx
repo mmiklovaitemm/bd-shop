@@ -12,32 +12,27 @@ import ProductsFilterPanel from "@/components/sections/ProductsFilterPanel";
 
 import { useProducts } from "@/hooks/useProducts";
 
-const applyAppearanceFilter = (list, selectedAppearance) => {
-  let out = list;
+function hasGemValue(product) {
+  return product?.hasGem === true;
+}
 
-  if (selectedAppearance?.length) {
-    for (const a of selectedAppearance) {
-      if (a === "with_gem") out = out.filter((p) => p.hasGem === true);
-      if (a === "without_gem") out = out.filter((p) => p.hasGem === false);
-      if (a === "rough") out = out.filter((p) => p.surface === "rough");
-      if (a === "smooth") out = out.filter((p) => p.surface === "smooth");
-    }
-  }
+function normalizeSizeValue(size) {
+  return String(size ?? "")
+    .trim()
+    .replace(/\.0$/, "");
+}
 
-  return out;
-};
+function normalizeGemValue(gem) {
+  return String(gem || "")
+    .trim()
+    .toLowerCase();
+}
 
-const applyGemsFilter = (list, selectedGems) => {
-  if (!selectedGems?.length) return list;
-  return list.filter((p) =>
-    (p.gemstones || []).some((g) => selectedGems.includes(g)),
-  );
-};
-
-const applySizeFilter = (list, selectedSize) => {
-  if (selectedSize == null) return list;
-  return list.filter((p) => (p.sizes || []).includes(selectedSize));
-};
+function normalizeMaterialValue(material) {
+  return String(material || "")
+    .trim()
+    .toLowerCase();
+}
 
 function toTitleCaseLabel(value) {
   return String(value || "")
@@ -51,9 +46,7 @@ function toTitleCaseLabel(value) {
 }
 
 function formatMaterialLabel(value, t) {
-  const normalized = String(value || "")
-    .trim()
-    .toLowerCase();
+  const normalized = normalizeMaterialValue(value);
 
   const knownLabels = {
     silver: t.silver,
@@ -69,9 +62,58 @@ function formatMaterialLabel(value, t) {
   return knownLabels[normalized] || toTitleCaseLabel(normalized);
 }
 
+function applyAppearanceFilter(list, selectedAppearance) {
+  let out = list;
+
+  if (selectedAppearance?.length) {
+    for (const value of selectedAppearance) {
+      if (value === "with_gem") {
+        out = out.filter((p) => hasGemValue(p));
+      }
+
+      if (value === "without_gem") {
+        out = out.filter((p) => !hasGemValue(p));
+      }
+
+      if (value === "rough") {
+        out = out.filter((p) => p.surface === "rough");
+      }
+
+      if (value === "smooth") {
+        out = out.filter((p) => p.surface === "smooth");
+      }
+    }
+  }
+
+  return out;
+}
+
+function applyGemsFilter(list, selectedGems) {
+  if (!selectedGems?.length) return list;
+
+  const normalizedSelected = selectedGems.map(normalizeGemValue);
+
+  return list.filter((p) =>
+    (p.gemstones || [])
+      .map(normalizeGemValue)
+      .some((g) => normalizedSelected.includes(g)),
+  );
+}
+
+function applySizeFilter(list, selectedSize) {
+  if (selectedSize == null) return list;
+
+  const normalizedSelected = normalizeSizeValue(selectedSize);
+
+  return list.filter((p) =>
+    (p.sizes || []).map(normalizeSizeValue).includes(normalizedSelected),
+  );
+}
+
 export default function Collections() {
   const { t } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { products, loading } = useProducts();
 
   const CATEGORY_ITEMS = useMemo(
     () => [
@@ -96,58 +138,49 @@ export default function Collections() {
     [t],
   );
 
-  const GEM_OPTIONS = useMemo(
-    () => [
-      { value: "kristolas", label: t.kristolas },
-      { value: "cirkonis", label: t.cirkonis },
-      { value: "deimantas", label: t.deimantas },
-      { value: "perlas", label: t.perlas },
-    ],
-    [t],
-  );
-
-  const categoryFromUrl =
+  const activeCategory =
     searchParams.get("category") || searchParams.get("filter") || "rings";
-  const pageFromUrlParam = Number(searchParams.get("page") || 1);
 
-  const [activeCategory, setActiveCategory] = useState("rings");
+  const pageFromUrl = Number(searchParams.get("page") || 1);
+  const page =
+    Number.isFinite(pageFromUrl) && pageFromUrl > 0 ? pageFromUrl : 1;
 
   const [sortValue, setSortValue] = useState("price_desc");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   const [selectedMaterial, setSelectedMaterial] = useState(null);
-  const [priceRange, setPriceRange] = useState({ min: 0, max: 200 });
-
   const [selectedAppearance, setSelectedAppearance] = useState([]);
   const [selectedGems, setSelectedGems] = useState([]);
   const [selectedSize, setSelectedSize] = useState(null);
 
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(12);
+  const [customPriceRange, setCustomPriceRange] = useState(null);
 
-  const { products, loading } = useProducts();
+  const [pageSize, setPageSize] = useState(() => {
+    if (typeof window === "undefined") return 12;
+    return window.matchMedia("(max-width: 767px)").matches ? 8 : 12;
+  });
 
   useEffect(() => {
-    const update = () => {
-      const isMobile = window.matchMedia("(max-width: 767px)").matches;
-      setPageSize(isMobile ? 8 : 12);
+    const media = window.matchMedia("(max-width: 767px)");
+
+    const handleChange = (event) => {
+      setPageSize(event.matches ? 8 : 12);
     };
 
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
+    if (media.addEventListener) {
+      media.addEventListener("change", handleChange);
+    } else {
+      media.addListener(handleChange);
+    }
+
+    return () => {
+      if (media.removeEventListener) {
+        media.removeEventListener("change", handleChange);
+      } else {
+        media.removeListener(handleChange);
+      }
+    };
   }, []);
-
-  useEffect(() => {
-    const p = Number.isFinite(pageFromUrlParam) ? pageFromUrlParam : 1;
-    if (p !== page) setPage(p);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageFromUrlParam]);
-
-  useEffect(() => {
-    if (categoryFromUrl !== activeCategory) setActiveCategory(categoryFromUrl);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categoryFromUrl]);
 
   const activeCategoryLabel =
     CATEGORY_ITEMS.find((c) => c.value === activeCategory)?.label || t.rings;
@@ -167,80 +200,146 @@ export default function Collections() {
   }, [activeCategory, products]);
 
   const priceBounds = useMemo(() => {
-    const prices = productsInCategory.map((p) => p.priceValue);
-    const min = prices.length ? Math.min(...prices) : 0;
-    const max = prices.length ? Math.max(...prices) : 0;
-    return { min, max };
+    const prices = productsInCategory
+      .map((p) => Number(p.priceValue) || 0)
+      .filter((value) => value >= 0);
+
+    return {
+      min: prices.length ? Math.min(...prices) : 0,
+      max: prices.length ? Math.max(...prices) : 0,
+    };
   }, [productsInCategory]);
 
-  useEffect(() => {
-    setPriceRange({ min: priceBounds.min, max: priceBounds.max });
-  }, [priceBounds.min, priceBounds.max]);
+  const effectivePriceRange = useMemo(() => {
+    if (!customPriceRange) {
+      return { min: priceBounds.min, max: priceBounds.max };
+    }
+
+    const min = Math.max(
+      priceBounds.min,
+      Math.min(customPriceRange.min, priceBounds.max),
+    );
+    const max = Math.max(
+      priceBounds.min,
+      Math.min(customPriceRange.max, priceBounds.max),
+    );
+
+    return {
+      min: Math.min(min, max),
+      max: Math.max(min, max),
+    };
+  }, [customPriceRange, priceBounds.min, priceBounds.max]);
 
   const baseAfterPriceMaterial = useMemo(() => {
     let list = [...productsInCategory];
 
     list = list.filter(
-      (p) => p.priceValue >= priceRange.min && p.priceValue <= priceRange.max,
+      (p) =>
+        Number(p.priceValue) >= effectivePriceRange.min &&
+        Number(p.priceValue) <= effectivePriceRange.max,
     );
 
     if (selectedMaterial) {
-      list = list.filter((p) => (p.colors || []).includes(selectedMaterial));
+      const normalizedSelectedMaterial =
+        normalizeMaterialValue(selectedMaterial);
+
+      list = list.filter((p) =>
+        (p.colors || [])
+          .map(normalizeMaterialValue)
+          .includes(normalizedSelectedMaterial),
+      );
     }
 
     return list;
-  }, [productsInCategory, priceRange.min, priceRange.max, selectedMaterial]);
+  }, [
+    productsInCategory,
+    effectivePriceRange.min,
+    effectivePriceRange.max,
+    selectedMaterial,
+  ]);
 
   const materialOptions = useMemo(() => {
     let list = [...productsInCategory];
 
     list = list.filter(
-      (p) => p.priceValue >= priceRange.min && p.priceValue <= priceRange.max,
+      (p) =>
+        Number(p.priceValue) >= effectivePriceRange.min &&
+        Number(p.priceValue) <= effectivePriceRange.max,
     );
 
     const counts = {};
 
-    for (const p of list) {
-      for (const c of p.colors || []) {
-        const normalized = String(c || "")
-          .trim()
-          .toLowerCase();
+    for (const product of list) {
+      for (const color of product.colors || []) {
+        const normalized = normalizeMaterialValue(color);
         if (!normalized) continue;
         counts[normalized] = (counts[normalized] || 0) + 1;
       }
     }
 
-    const entries = Object.entries(counts).sort((a, b) =>
-      a[0].localeCompare(b[0]),
-    );
+    return Object.entries(counts)
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([value, count]) => ({
+        value,
+        label: formatMaterialLabel(value, t),
+        count,
+      }));
+  }, [productsInCategory, effectivePriceRange.min, effectivePriceRange.max, t]);
 
-    return entries.map(([value, count]) => ({
-      value,
-      label: formatMaterialLabel(value, t),
-      count,
-    }));
-  }, [productsInCategory, priceRange.min, priceRange.max, t]);
+  const availableGemOptions = useMemo(() => {
+    const counts = {};
+
+    for (const product of productsInCategory) {
+      for (const gem of product.gemstones || []) {
+        const normalized = normalizeGemValue(gem);
+        if (!normalized) continue;
+        counts[normalized] = (counts[normalized] || 0) + 1;
+      }
+    }
+
+    const labelMap = {
+      kristolas: t.kristolas,
+      cirkonis: t.cirkonis,
+      deimantas: t.deimantas,
+      perlas: t.perlas,
+    };
+
+    return Object.keys(counts)
+      .sort((a, b) => a.localeCompare(b))
+      .map((value) => ({
+        value,
+        label: labelMap[value] || toTitleCaseLabel(value),
+      }));
+  }, [productsInCategory, t]);
 
   const appearanceOptionsWithCount = useMemo(() => {
     return APPEARANCE_OPTIONS.map((opt) => {
       const appearanceWithoutThis = selectedAppearance.filter(
-        (v) => v !== opt.value,
+        (value) => value !== opt.value,
       );
 
       let list = [...baseAfterPriceMaterial];
-
       list = applyGemsFilter(list, selectedGems);
       list = applySizeFilter(list, selectedSize);
       list = applyAppearanceFilter(list, appearanceWithoutThis);
 
       let count = 0;
-      if (opt.value === "with_gem") count = list.filter((p) => p.hasGem).length;
-      if (opt.value === "without_gem")
-        count = list.filter((p) => !p.hasGem).length;
-      if (opt.value === "rough")
+
+      if (opt.value === "with_gem") {
+        count = list.filter((p) => hasGemValue(p)).length;
+      }
+
+      if (opt.value === "without_gem") {
+        count = list.filter((p) => !hasGemValue(p)).length;
+      }
+
+      if (opt.value === "rough") {
         count = list.filter((p) => p.surface === "rough").length;
-      if (opt.value === "smooth")
+      }
+
+      if (opt.value === "smooth") {
         count = list.filter((p) => p.surface === "smooth").length;
+      }
 
       return { ...opt, count };
     });
@@ -253,23 +352,22 @@ export default function Collections() {
   ]);
 
   const gemOptionsWithCount = useMemo(() => {
-    return GEM_OPTIONS.map((opt) => {
+    return availableGemOptions.map((opt) => {
       const gemsWithoutThis = selectedGems.filter((g) => g !== opt.value);
 
       let list = [...baseAfterPriceMaterial];
-
       list = applyAppearanceFilter(list, selectedAppearance);
       list = applySizeFilter(list, selectedSize);
       list = applyGemsFilter(list, gemsWithoutThis);
 
       const count = list.filter((p) =>
-        (p.gemstones || []).includes(opt.value),
+        (p.gemstones || []).map(normalizeGemValue).includes(opt.value),
       ).length;
 
       return { ...opt, count };
     });
   }, [
-    GEM_OPTIONS,
+    availableGemOptions,
     baseAfterPriceMaterial,
     selectedAppearance,
     selectedGems,
@@ -278,17 +376,23 @@ export default function Collections() {
 
   const sizeOptionsWithCount = useMemo(() => {
     const allSizes = Array.from(
-      new Set(productsInCategory.flatMap((p) => (p.sizes || []).map((s) => s))),
-    ).sort((a, b) => {
-      const na = Number(a);
-      const nb = Number(b);
+      new Set(
+        productsInCategory.flatMap((p) =>
+          (p.sizes || []).map((size) => normalizeSizeValue(size)),
+        ),
+      ),
+    )
+      .filter(Boolean)
+      .sort((a, b) => {
+        const na = Number(a);
+        const nb = Number(b);
 
-      if (!Number.isNaN(na) && !Number.isNaN(nb)) {
-        return na - nb;
-      }
+        if (!Number.isNaN(na) && !Number.isNaN(nb)) {
+          return na - nb;
+        }
 
-      return String(a).localeCompare(String(b));
-    });
+        return String(a).localeCompare(String(b));
+      });
 
     if (!allSizes.length) return [];
 
@@ -297,9 +401,15 @@ export default function Collections() {
       list = applyAppearanceFilter(list, selectedAppearance);
       list = applyGemsFilter(list, selectedGems);
 
-      const count = list.filter((p) => (p.sizes || []).includes(size)).length;
+      const count = list.filter((p) =>
+        (p.sizes || []).map(normalizeSizeValue).includes(size),
+      ).length;
 
-      return { value: size, label: String(size), count };
+      return {
+        value: size,
+        label: String(size),
+        count,
+      };
     });
   }, [
     productsInCategory,
@@ -317,10 +427,10 @@ export default function Collections() {
 
     switch (sortValue) {
       case "price_asc":
-        list.sort((a, b) => a.priceValue - b.priceValue);
+        list.sort((a, b) => Number(a.priceValue) - Number(b.priceValue));
         break;
       case "price_desc":
-        list.sort((a, b) => b.priceValue - a.priceValue);
+        list.sort((a, b) => Number(b.priceValue) - Number(a.priceValue));
         break;
       default:
         break;
@@ -349,51 +459,32 @@ export default function Collections() {
     window.scrollTo({ top: 0, behavior: "auto" });
   }, [activeCategory, safePage]);
 
-  const handlePageChange = (nextPage) => {
-    const clamped = Math.max(1, Math.min(nextPage, totalPages));
-    setPage(clamped);
-
+  const setPageInUrl = (nextPage) => {
     setSearchParams(
       (prev) => {
         const sp = new URLSearchParams(prev);
-        sp.set("page", String(clamped));
+        sp.set("page", String(nextPage));
         return sp;
       },
       { replace: true },
     );
   };
 
-  useEffect(() => {
-    setPage(1);
-    setSearchParams(
-      (prev) => {
-        const sp = new URLSearchParams(prev);
-        sp.set("page", "1");
-        return sp;
-      },
-      { replace: true },
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    activeCategory,
-    selectedMaterial,
-    priceRange.min,
-    priceRange.max,
-    selectedAppearance,
-    selectedGems,
-    selectedSize,
-    sortValue,
-  ]);
+  const resetPageInUrl = () => {
+    setPageInUrl(1);
+  };
+
+  const handlePageChange = (nextPage) => {
+    const clamped = Math.max(1, Math.min(nextPage, totalPages));
+    setPageInUrl(clamped);
+  };
 
   const handleChangeCategory = (next) => {
-    setActiveCategory(next);
-
     setSelectedMaterial(null);
     setSelectedAppearance([]);
     setSelectedGems([]);
     setSelectedSize(null);
-
-    setPage(1);
+    setCustomPriceRange(null);
 
     setSearchParams(
       (prev) => {
@@ -407,23 +498,43 @@ export default function Collections() {
     );
   };
 
+  const handleMaterialChange = (nextMaterial) => {
+    setSelectedMaterial(nextMaterial);
+    resetPageInUrl();
+  };
+
+  const handlePriceChange = (nextRange) => {
+    setCustomPriceRange(nextRange);
+    resetPageInUrl();
+  };
+
+  const handleAppearanceChange = (nextAppearance) => {
+    setSelectedAppearance(nextAppearance);
+    resetPageInUrl();
+  };
+
+  const handleGemsChange = (nextGems) => {
+    setSelectedGems(nextGems);
+    resetPageInUrl();
+  };
+
+  const handleSizeChange = (nextSize) => {
+    setSelectedSize(nextSize);
+    resetPageInUrl();
+  };
+
+  const handleSortChange = (nextSort) => {
+    setSortValue(nextSort);
+    resetPageInUrl();
+  };
+
   const handleClearAll = () => {
     setSelectedMaterial(null);
     setSelectedAppearance([]);
     setSelectedGems([]);
     setSelectedSize(null);
-    setPriceRange({ min: priceBounds.min, max: priceBounds.max });
-
-    setPage(1);
-    setSearchParams(
-      (prev) => {
-        const sp = new URLSearchParams(prev);
-        sp.set("page", "1");
-        sp.delete("filter");
-        return sp;
-      },
-      { replace: true },
-    );
+    setCustomPriceRange(null);
+    resetPageInUrl();
   };
 
   const desktopColsClass = isFilterOpen ? "lg:grid-cols-3" : "lg:grid-cols-4";
@@ -437,9 +548,9 @@ export default function Collections() {
         activeCategoryValue={activeCategory}
         activeCategoryLabel={activeCategoryLabel}
         onCategoryChange={handleChangeCategory}
-        onOpenFilter={() => setIsFilterOpen((p) => !p)}
+        onOpenFilter={() => setIsFilterOpen((prev) => !prev)}
         sortValue={sortValue}
-        onSortChange={setSortValue}
+        onSortChange={handleSortChange}
       />
 
       <ProductsFilterPanel
@@ -448,19 +559,19 @@ export default function Collections() {
         onClose={() => setIsFilterOpen(false)}
         materialOptions={materialOptions}
         selectedMaterial={selectedMaterial}
-        onMaterialChange={setSelectedMaterial}
+        onMaterialChange={handleMaterialChange}
         priceBounds={priceBounds}
-        priceRange={priceRange}
-        onPriceChange={setPriceRange}
+        priceRange={effectivePriceRange}
+        onPriceChange={handlePriceChange}
         appearanceOptions={appearanceOptionsWithCount}
         selectedAppearance={selectedAppearance}
-        onAppearanceChange={setSelectedAppearance}
+        onAppearanceChange={handleAppearanceChange}
         gemOptions={gemOptionsWithCount}
         selectedGems={selectedGems}
-        onGemsChange={setSelectedGems}
+        onGemsChange={handleGemsChange}
         sizeOptions={sizeOptionsWithCount}
         selectedSize={selectedSize}
-        onSizeChange={setSelectedSize}
+        onSizeChange={handleSizeChange}
         onClearAll={handleClearAll}
         clearDisabled={false}
       />
@@ -479,19 +590,19 @@ export default function Collections() {
                 onClose={() => setIsFilterOpen(false)}
                 materialOptions={materialOptions}
                 selectedMaterial={selectedMaterial}
-                onMaterialChange={setSelectedMaterial}
+                onMaterialChange={handleMaterialChange}
                 priceBounds={priceBounds}
-                priceRange={priceRange}
-                onPriceChange={setPriceRange}
+                priceRange={effectivePriceRange}
+                onPriceChange={handlePriceChange}
                 appearanceOptions={appearanceOptionsWithCount}
                 selectedAppearance={selectedAppearance}
-                onAppearanceChange={setSelectedAppearance}
+                onAppearanceChange={handleAppearanceChange}
                 gemOptions={gemOptionsWithCount}
                 selectedGems={selectedGems}
-                onGemsChange={setSelectedGems}
+                onGemsChange={handleGemsChange}
                 sizeOptions={sizeOptionsWithCount}
                 selectedSize={selectedSize}
-                onSizeChange={setSelectedSize}
+                onSizeChange={handleSizeChange}
                 onClearAll={handleClearAll}
                 clearDisabled={false}
               />
@@ -513,7 +624,7 @@ export default function Collections() {
               <>
                 <div
                   className={[
-                    "grid grid-cols-2 min-[460px]:grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-3 md:gap-x-4 md:gap-y-6",
+                    "grid grid-cols-2 gap-x-3 gap-y-5 min-[460px]:grid-cols-2 md:grid-cols-3 md:gap-x-4 md:gap-y-6",
                     desktopColsClass,
                   ].join(" ")}
                 >
