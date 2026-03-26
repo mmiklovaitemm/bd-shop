@@ -4,6 +4,11 @@ import { requireAdmin } from "../middleware/auth.js";
 
 const router = express.Router();
 
+const BACKEND_ORIGIN =
+  process.env.BACKEND_ORIGIN ||
+  process.env.API_ORIGIN ||
+  "http://localhost:4000";
+
 router.post(
   "/product-image",
   requireAdmin,
@@ -14,7 +19,8 @@ router.post(
         return res.status(400).json({ message: "Image file is required." });
       }
 
-      const fileUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+      const base = String(BACKEND_ORIGIN).replace(/\/+$/, "");
+      const fileUrl = `${base}/uploads/${req.file.filename}`;
 
       return res.status(201).json({
         ok: true,

@@ -33,10 +33,23 @@ export default function AdminProductCreateModal({
   const [uploadingVariantIndex, setUploadingVariantIndex] = useState(null);
 
   const handleChange = (key, value) => {
-    setForm((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
+    setForm((prev) => {
+      const next = {
+        ...prev,
+        [key]: value,
+      };
+
+      if (key === "category") {
+        const shouldKeepSizes =
+          value === "rings" || value === "bracelets" || value === "personal";
+
+        if (!shouldKeepSizes) {
+          next.sizes = "";
+        }
+      }
+
+      return next;
+    });
 
     setError("");
   };
@@ -155,6 +168,14 @@ export default function AdminProductCreateModal({
   const normalizedSizes = parsedSizes.length ? parsedSizes : ["one size"];
   const stockValue = Math.max(0, Number(form.stockQuantity) || 0);
 
+  const shouldShowSizes =
+    form.category === "rings" ||
+    form.category === "bracelets" ||
+    form.category === "personal";
+
+  const sizesPlaceholder =
+    form.category === "bracelets" ? "S/M, M/L" : "15.5, 16, 17.5, 18";
+
   const handleSubmit = () => {
     const normalizedVariants = form.variants
       .map((variant) => ({
@@ -229,9 +250,20 @@ export default function AdminProductCreateModal({
       onClick={onClose}
     >
       <div
-        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto border border-black bg-white"
+        className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto border border-black bg-white"
         onClick={(e) => e.stopPropagation()}
       >
+        {isSaving ? (
+          <div className="absolute inset-0 z-[20] flex items-center justify-center bg-white/70 backdrop-blur-[1px]">
+            <div className="flex flex-col items-center gap-3 border border-black bg-white px-6 py-5">
+              <div className="h-7 w-7 animate-spin rounded-full border-2 border-black/20 border-t-black" />
+              <p className="font-ui text-sm text-black">
+                {initialData ? "Updating product..." : "Saving product..."}
+              </p>
+            </div>
+          </div>
+        ) : null}
+
         <div className="flex items-center justify-between border-b border-black px-6 py-4">
           <h2 className="font-display text-2xl leading-none">
             {initialData ? "Edit product" : "Add new product"}
@@ -464,18 +496,20 @@ export default function AdminProductCreateModal({
             </div>
           </div>
 
-          <div>
-            <label className="mb-2 block text-black/70">
-              Sizes (comma separated)
-            </label>
-            <input
-              type="text"
-              value={form.sizes}
-              onChange={(e) => handleChange("sizes", e.target.value)}
-              placeholder="15.5, 16, 17.5, 18"
-              className="h-12 w-full border border-black px-4 outline-none"
-            />
-          </div>
+          {shouldShowSizes ? (
+            <div>
+              <label className="mb-2 block text-black/70">
+                Sizes (comma separated)
+              </label>
+              <input
+                type="text"
+                value={form.sizes}
+                onChange={(e) => handleChange("sizes", e.target.value)}
+                placeholder={sizesPlaceholder}
+                className="h-12 w-full border border-black px-4 outline-none"
+              />
+            </div>
+          ) : null}
 
           <label className="flex items-center gap-3">
             <input
