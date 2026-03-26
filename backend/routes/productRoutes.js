@@ -2,9 +2,6 @@ import express from "express";
 import db from "../db.js";
 import { requireAdmin } from "../middleware/auth.js";
 
-console.log("FRONTEND_ORIGIN:", process.env.FRONTEND_ORIGIN);
-console.log("NODE_ENV:", process.env.NODE_ENV);
-
 const router = express.Router();
 
 function safeJsonParse(value, fallback) {
@@ -55,7 +52,23 @@ function normalizeFrontendAssetUrl(value) {
   if (!raw) return "";
 
   if (/^https?:\/\//i.test(raw)) {
-    return raw;
+    try {
+      const url = new URL(raw);
+
+      if (url.hostname === "localhost" || url.hostname === "127.0.0.1") {
+        if (url.pathname.startsWith("/products/")) {
+          return withBase(url.pathname.replace(/^\/+/, ""));
+        }
+
+        if (url.pathname.startsWith("/uploads/")) {
+          return withBackendBase(url.pathname.replace(/^\/+/, ""));
+        }
+      }
+
+      return raw;
+    } catch {
+      return raw;
+    }
   }
 
   if (raw.startsWith("/uploads/")) {
@@ -101,7 +114,23 @@ function normalizeImageList(category, list = []) {
     .filter(Boolean)
     .map((item) => {
       if (/^https?:\/\//i.test(item)) {
-        return item;
+        try {
+          const url = new URL(item);
+
+          if (url.hostname === "localhost" || url.hostname === "127.0.0.1") {
+            if (url.pathname.startsWith("/products/")) {
+              return withBase(url.pathname.replace(/^\/+/, ""));
+            }
+
+            if (url.pathname.startsWith("/uploads/")) {
+              return withBackendBase(url.pathname.replace(/^\/+/, ""));
+            }
+          }
+
+          return item;
+        } catch {
+          return item;
+        }
       }
 
       if (item.startsWith("/uploads/")) {
