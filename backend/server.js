@@ -6,7 +6,6 @@ import cookieParser from "cookie-parser";
 import "dotenv/config";
 
 import db from "./db.js";
-import { uploadsDir } from "./config/upload.js";
 
 import uploadRoutes from "./routes/uploadRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
