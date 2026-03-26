@@ -27,6 +27,20 @@ export default function AdminProductCreateModal({
     stockQuantity: initialData?.stockQuantity ?? "",
     isBestSeller: initialData?.isBestSeller || false,
     variants: [createEmptyVariant()],
+
+    // common / category-based details
+    length: initialData?.details?.totalLengthCm ?? "",
+    weight: initialData?.details?.weightG ?? "",
+    bandWidth: initialData?.details?.bandWidthMm ?? "",
+    chainType: initialData?.details?.chain || "",
+    adjustableFrom: initialData?.details?.adjustableFromCm ?? "",
+    adjustableTo: initialData?.details?.adjustableToCm ?? "",
+    braceletLength:
+      initialData?.details?.braceletLengthCm ??
+      initialData?.details?.totalBraceletLengthCm ??
+      "",
+    metal: initialData?.details?.metal || "",
+    personalType: initialData?.details?.personalType || "ring",
   });
 
   const [error, setError] = useState("");
@@ -45,6 +59,43 @@ export default function AdminProductCreateModal({
 
         if (!shouldKeepSizes) {
           next.sizes = "";
+        }
+
+        // reset some fields when switching categories
+        if (value !== "necklaces") {
+          next.length = "";
+          next.chainType = "";
+          next.adjustableFrom = "";
+          next.adjustableTo = "";
+        }
+
+        if (value !== "bracelets") {
+          next.braceletLength = "";
+        }
+
+        if (value !== "rings") {
+          next.bandWidth = "";
+        }
+
+        if (value !== "personal") {
+          next.personalType = "ring";
+        }
+      }
+
+      if (key === "personalType") {
+        if (value !== "necklace") {
+          next.length = "";
+          next.chainType = "";
+          next.adjustableFrom = "";
+          next.adjustableTo = "";
+        }
+
+        if (value !== "bracelet") {
+          next.braceletLength = "";
+        }
+
+        if (value !== "necklace") {
+          next.bandWidth = "";
         }
       }
 
@@ -176,6 +227,30 @@ export default function AdminProductCreateModal({
   const sizesPlaceholder =
     form.category === "bracelets" ? "S/M, M/L" : "15.5, 16, 17.5, 18";
 
+  const isRingCategory = form.category === "rings";
+  const isNecklaceCategory = form.category === "necklaces";
+  const isBraceletCategory = form.category === "bracelets";
+  const isEarringCategory = form.category === "earrings";
+  const isPersonalCategory = form.category === "personal";
+
+  const isPersonalNecklace =
+    isPersonalCategory && form.personalType === "necklace";
+  const isPersonalBracelet =
+    isPersonalCategory && form.personalType === "bracelet";
+
+  const shouldShowNecklaceFields = isNecklaceCategory || isPersonalNecklace;
+
+  const shouldShowBraceletFields = isBraceletCategory || isPersonalBracelet;
+
+  const shouldShowRingBandWidth = isRingCategory;
+
+  const shouldShowWeight =
+    isRingCategory ||
+    isNecklaceCategory ||
+    isBraceletCategory ||
+    isEarringCategory ||
+    isPersonalCategory;
+
   const handleSubmit = () => {
     const normalizedVariants = form.variants
       .map((variant) => ({
@@ -196,6 +271,37 @@ export default function AdminProductCreateModal({
       ]),
     );
 
+    const details = {
+      detailsText: form.description.trim(),
+      metal: form.metal.trim() || undefined,
+      weightG: shouldShowWeight ? Number(form.weight || 0) : undefined,
+
+      // necklaces
+      totalLengthCm: shouldShowNecklaceFields
+        ? Number(form.length || 0)
+        : undefined,
+      adjustableFromCm: shouldShowNecklaceFields
+        ? Number(form.adjustableFrom || 0)
+        : undefined,
+      adjustableToCm: shouldShowNecklaceFields
+        ? Number(form.adjustableTo || 0)
+        : undefined,
+      chain: shouldShowNecklaceFields ? form.chainType.trim() || "" : undefined,
+
+      // rings
+      bandWidthMm: shouldShowRingBandWidth
+        ? Number(form.bandWidth || 0)
+        : undefined,
+
+      // bracelets
+      braceletLengthCm: shouldShowBraceletFields
+        ? Number(form.braceletLength || 0)
+        : undefined,
+
+      // personal
+      personalType: isPersonalCategory ? form.personalType : undefined,
+    };
+
     const payload = {
       id: form.id.trim(),
       name: form.name.trim(),
@@ -208,6 +314,7 @@ export default function AdminProductCreateModal({
       variants: normalizedVariants,
       variantStock,
       isBestSeller: form.isBestSeller,
+      details,
     };
 
     if (!payload.id) {
@@ -374,6 +481,143 @@ export default function AdminProductCreateModal({
               className="w-full resize-none border border-black px-4 py-3 outline-none"
             />
           </div>
+
+          <div>
+            <label className="mb-2 block text-black/70">Metal</label>
+            <input
+              type="text"
+              value={form.metal}
+              onChange={(e) => handleChange("metal", e.target.value)}
+              placeholder="Silver / Gold / Pearl"
+              className="h-12 w-full border border-black px-4 outline-none"
+            />
+          </div>
+
+          {isPersonalCategory ? (
+            <div>
+              <label className="mb-2 block text-black/70">Personal type</label>
+              <select
+                value={form.personalType}
+                onChange={(e) => handleChange("personalType", e.target.value)}
+                className="h-12 w-full border border-black bg-white px-4 outline-none"
+              >
+                <option value="ring">Ring</option>
+                <option value="necklace">Necklace</option>
+                <option value="bracelet">Bracelet</option>
+              </select>
+            </div>
+          ) : null}
+
+          {shouldShowWeight ? (
+            <div>
+              <label className="mb-2 block text-black/70">Weight (g)</label>
+              <input
+                type="number"
+                min="0"
+                step="0.1"
+                value={form.weight || ""}
+                onChange={(e) => handleChange("weight", e.target.value)}
+                placeholder="4.5"
+                className="h-12 w-full border border-black px-4 outline-none"
+              />
+            </div>
+          ) : null}
+
+          {shouldShowRingBandWidth ? (
+            <div>
+              <label className="mb-2 block text-black/70">
+                Band width (mm)
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.1"
+                value={form.bandWidth || ""}
+                onChange={(e) => handleChange("bandWidth", e.target.value)}
+                placeholder="2.5"
+                className="h-12 w-full border border-black px-4 outline-none"
+              />
+            </div>
+          ) : null}
+
+          {shouldShowNecklaceFields ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="mb-2 block text-black/70">
+                  Necklace length (cm)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={form.length || ""}
+                  onChange={(e) => handleChange("length", e.target.value)}
+                  placeholder="45"
+                  className="h-12 w-full border border-black px-4 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-black/70">Chain type</label>
+                <input
+                  type="text"
+                  value={form.chainType || ""}
+                  onChange={(e) => handleChange("chainType", e.target.value)}
+                  placeholder="Curb"
+                  className="h-12 w-full border border-black px-4 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-black/70">
+                  Adjustable from (cm)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={form.adjustableFrom || ""}
+                  onChange={(e) =>
+                    handleChange("adjustableFrom", e.target.value)
+                  }
+                  placeholder="41"
+                  className="h-12 w-full border border-black px-4 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-black/70">
+                  Adjustable to (cm)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={form.adjustableTo || ""}
+                  onChange={(e) => handleChange("adjustableTo", e.target.value)}
+                  placeholder="45"
+                  className="h-12 w-full border border-black px-4 outline-none"
+                />
+              </div>
+            </div>
+          ) : null}
+
+          {shouldShowBraceletFields ? (
+            <div>
+              <label className="mb-2 block text-black/70">
+                Bracelet length (cm)
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.1"
+                value={form.braceletLength || ""}
+                onChange={(e) => handleChange("braceletLength", e.target.value)}
+                placeholder="18.5"
+                className="h-12 w-full border border-black px-4 outline-none"
+              />
+            </div>
+          ) : null}
 
           <div>
             <div className="mb-3 flex items-center justify-between">

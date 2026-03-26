@@ -189,6 +189,21 @@ function getTotalStockFromVariants(variants = {}) {
   }, 0);
 }
 
+function sanitizeDetails(input = {}, fallbackDescription = "") {
+  const raw =
+    input && typeof input === "object" && !Array.isArray(input) ? input : {};
+
+  const detailsText =
+    typeof raw.detailsText === "string" && raw.detailsText.trim()
+      ? raw.detailsText.trim()
+      : String(fallbackDescription || "").trim();
+
+  return {
+    ...raw,
+    detailsText,
+  };
+}
+
 function mapProductRow(row) {
   const colors = safeJsonParse(row.colors, []);
   const variantsRaw = safeJsonParse(row.variants, {});
@@ -201,7 +216,9 @@ function mapProductRow(row) {
       value.map((variant) => ({
         size: variant.size,
         stock: variant.stock,
-        images: variant.images.map(normalizeFrontendAssetUrl),
+        images: Array.isArray(variant.images)
+          ? variant.images.map(normalizeFrontendAssetUrl)
+          : [],
       })),
     ]),
   );
@@ -269,6 +286,7 @@ router.post("/", requireAdmin, async (req, res) => {
       priceValue,
       createdAt,
       description,
+      details: incomingDetails = {},
       variants = [],
       sizes = [],
       variantStock = {},
@@ -296,15 +314,11 @@ router.post("/", requireAdmin, async (req, res) => {
     });
 
     const colors = Object.keys(builtVariants);
-
     const totalStockQuantity = getTotalStockFromVariants(builtVariants);
-
     const firstVariant = Object.values(builtVariants)[0];
     const thumbnail = firstVariant?.[0]?.images?.[0] || "";
 
-    const details = {
-      detailsText: description,
-    };
+    const details = sanitizeDetails(incomingDetails, description);
 
     await db.query(
       `INSERT INTO products (
@@ -348,6 +362,7 @@ router.put("/:id", requireAdmin, async (req, res) => {
       priceValue,
       createdAt,
       description,
+      details: incomingDetails = {},
       variants = [],
       sizes = [],
       variantStock = {},
@@ -365,13 +380,10 @@ router.put("/:id", requireAdmin, async (req, res) => {
 
     const colors = Object.keys(builtVariants);
     const totalStockQuantity = getTotalStockFromVariants(builtVariants);
-
     const firstVariant = Object.values(builtVariants)[0];
     const thumbnail = firstVariant?.[0]?.images?.[0] || "";
 
-    const details = {
-      detailsText: description,
-    };
+    const details = sanitizeDetails(incomingDetails, description);
 
     await db.query(
       `UPDATE products SET
@@ -409,7 +421,6 @@ router.put("/:id", requireAdmin, async (req, res) => {
 router.delete("/:id", requireAdmin, async (req, res) => {
   try {
     await db.query("DELETE FROM products WHERE id = ?", [req.params.id]);
-
     res.json({ ok: true });
   } catch {
     res.status(500).json({ message: "Delete failed" });

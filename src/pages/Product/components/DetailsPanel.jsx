@@ -9,10 +9,14 @@ const pickFirst = (...vals) =>
 
 const pickNumber = (...vals) => {
   for (const v of vals) {
+    if (v === undefined || v === null || v === "") continue;
+
     const n =
       typeof v === "number" ? v : Number(String(v ?? "").replace(",", "."));
-    if (Number.isFinite(n)) return n;
+
+    if (Number.isFinite(n) && n > 0) return n;
   }
+
   return null;
 };
 
@@ -26,6 +30,7 @@ const detectCategory = (product) => {
       product?.slug,
       product?.tags?.[0],
     ) || "";
+
   const s = String(raw).toLowerCase();
 
   if (s.includes("ring")) return "rings";
@@ -39,53 +44,6 @@ const detectCategory = (product) => {
   if (s.includes("earrings")) return "earrings";
 
   return "generic";
-};
-
-const CATEGORY_DEFAULTS = {
-  rings: {
-    bandWidthMm: 25,
-    weightG: 4.5,
-    productCode: "HG34-CT-N4_LD",
-  },
-  bracelets: {
-    productCode: "HG34-CT-N4_LD",
-    sizes: [
-      {
-        label: "S/M - 18 cm",
-        lines: [
-          {
-            label: "Total Bracelet Length",
-            value: "18.5 cm, adjustable from 16 cm to 18.5 cm",
-          },
-        ],
-        weightG: 2.5,
-      },
-      {
-        label: "M/L - 18 cm",
-        lines: [
-          {
-            label: "Total Bracelet Length",
-            value: "21.5 cm, adjustable from 19 cm to 18.5 cm",
-          },
-        ],
-        weightG: 2.9,
-      },
-    ],
-  },
-  necklaces: {
-    chain: "Curb",
-    totalLengthCm: 45,
-    adjustableFromCm: 41,
-    adjustableToCm: 45,
-    weightG: 4.5,
-    productCode: "HG34-CT-N4_LD",
-  },
-  earrings: {
-    heightMm: 25,
-    widthMm: 16.4,
-    weightG: 4.5,
-    productCode: "HG34-CT-N4_LD",
-  },
 };
 
 const toTitleCaseLabel = (value) =>
@@ -155,11 +113,23 @@ const DetailsContent = memo(function DetailsContent({
   const view = useMemo(() => {
     if (!product) return null;
 
-    const category = detectCategory(product);
-    const categoryDefaults = CATEGORY_DEFAULTS[category] || {};
-
+    const baseCategory = detectCategory(product);
     const detailsObj =
       product.details || product.dimensionsDetails || product.specs || {};
+
+    const personalType = pickFirst(
+      detailsObj.personalType,
+      product.personalType,
+    );
+
+    const category =
+      baseCategory === "personal"
+        ? personalType === "necklace"
+          ? "necklaces"
+          : personalType === "bracelet"
+            ? "bracelets"
+            : "rings"
+        : baseCategory;
 
     const gemstonesArr =
       Array.isArray(detailsObj.gemstones) && detailsObj.gemstones.length > 0
@@ -181,11 +151,12 @@ const DetailsContent = memo(function DetailsContent({
     );
 
     const metalRaw = pickFirst(
-      selectedColor,
       detailsObj.metal,
+      selectedColor,
       product.metal,
       Array.isArray(product.colors) ? product.colors[0] : null,
     );
+
     const metal = formatMetal(metalRaw, t);
 
     const productCode = pickFirst(
@@ -193,7 +164,6 @@ const DetailsContent = memo(function DetailsContent({
       product.productCode,
       product.sku,
       product.code,
-      categoryDefaults.productCode,
       product.id ? `ID-${product.id}` : null,
     );
 
@@ -202,7 +172,6 @@ const DetailsContent = memo(function DetailsContent({
       product.weightG,
       detailsObj.weight,
       product.weight,
-      categoryDefaults.weightG,
     );
 
     const bandWidthMm = pickNumber(
@@ -210,21 +179,15 @@ const DetailsContent = memo(function DetailsContent({
       product.bandWidthMm,
       detailsObj.bandWidth,
       product.bandWidth,
-      categoryDefaults.bandWidthMm,
     );
 
-    const chain = pickFirst(
-      detailsObj.chain,
-      product.chain,
-      categoryDefaults.chain,
-    );
+    const chain = pickFirst(detailsObj.chain, product.chain);
 
     const totalLengthCm = pickNumber(
       detailsObj.totalLengthCm,
       product.totalLengthCm,
       detailsObj.totalLength,
       product.totalLength,
-      categoryDefaults.totalLengthCm,
     );
 
     const adjustableFromCm = pickNumber(
@@ -232,7 +195,6 @@ const DetailsContent = memo(function DetailsContent({
       product.adjustableFromCm,
       detailsObj.adjustableFrom,
       product.adjustableFrom,
-      categoryDefaults.adjustableFromCm,
     );
 
     const adjustableToCm = pickNumber(
@@ -240,7 +202,13 @@ const DetailsContent = memo(function DetailsContent({
       product.adjustableToCm,
       detailsObj.adjustableTo,
       product.adjustableTo,
-      categoryDefaults.adjustableToCm,
+    );
+
+    const braceletLengthCm = pickNumber(
+      detailsObj.braceletLengthCm,
+      detailsObj.totalBraceletLengthCm,
+      product.braceletLengthCm,
+      product.totalBraceletLengthCm,
     );
 
     const dims = detailsObj.dimensions || product.dimensions || {};
@@ -249,14 +217,12 @@ const DetailsContent = memo(function DetailsContent({
       product.heightMm,
       dims.height,
       product.height,
-      categoryDefaults.heightMm,
     );
     const widthMm = pickNumber(
       dims.widthMm,
       product.widthMm,
       dims.width,
       product.width,
-      categoryDefaults.widthMm,
     );
 
     const sizeDetailsMap =
@@ -273,6 +239,7 @@ const DetailsContent = memo(function DetailsContent({
       totalLengthCm,
       adjustableFromCm,
       adjustableToCm,
+      braceletLengthCm,
       heightMm,
       widthMm,
       sizeDetailsMap,
@@ -298,11 +265,12 @@ const DetailsContent = memo(function DetailsContent({
     totalLengthCm,
     adjustableFromCm,
     adjustableToCm,
+    braceletLengthCm,
     heightMm,
     widthMm,
     sizeDetailsMap,
-    selectedSize: activeSize,
     gemstonesText,
+    selectedSize: activeSize,
   } = view;
 
   const metalLine = metal ? `${metal}` : null;
@@ -332,6 +300,7 @@ const DetailsContent = memo(function DetailsContent({
   const necklaceLengthValue = (() => {
     const hasTotal = totalLengthCm != null;
     const hasAdj = adjustableFromCm != null && adjustableToCm != null;
+
     if (!hasTotal && !hasAdj) return null;
 
     const total = hasTotal ? `${totalLengthCm} cm` : "";
@@ -345,7 +314,7 @@ const DetailsContent = memo(function DetailsContent({
   const necklaceBlock = (
     <div className="space-y-2">
       <Row label={t.product.detailsPanel.labels.metal} value={metalLine} />
-      <Row label={t.product.detailsPanel.labels.chain} value={chain} />
+      <Row label={t.product.detailsPanel.labels.chain} value={chain || null} />
       <Row
         label={t.product.detailsPanel.labels.totalNecklaceLength}
         value={necklaceLengthValue}
@@ -368,6 +337,7 @@ const DetailsContent = memo(function DetailsContent({
   const earringsBlock = (
     <div className="space-y-2">
       <Row label={t.product.detailsPanel.labels.metal} value={metalLine} />
+
       {heightMm != null || widthMm != null ? (
         <div className="space-y-1">
           <SectionTitle>
@@ -383,6 +353,7 @@ const DetailsContent = memo(function DetailsContent({
           />
         </div>
       ) : null}
+
       <Row
         label={t.product.detailsPanel.labels.weight}
         value={weightG != null ? `${weightG} g` : null}
@@ -428,6 +399,14 @@ const DetailsContent = memo(function DetailsContent({
         <Row
           label={t.product.detailsPanel.labels.size}
           value={activeSize || "—"}
+        />
+        <Row
+          label={t.product.detailsPanel.labels.totalBraceletLength}
+          value={braceletLengthCm != null ? `${braceletLengthCm} cm` : null}
+        />
+        <Row
+          label={t.product.detailsPanel.labels.weight}
+          value={weightG != null ? `${weightG} g` : null}
         />
       </div>
     );
