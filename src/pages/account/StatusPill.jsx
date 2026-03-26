@@ -1,12 +1,28 @@
 import checkIcon from "@/assets/ui/check-send-message.svg";
+import useLanguage from "@/context/useLanguage";
 
 export default function StatusPill({ status }) {
+  const { t } = useLanguage();
+
   const value = String(status || "Pending").trim();
 
   const isConfirmed = value === "Confirmed";
   const isShipped = value === "Shipped";
   const isCompleted = value === "Completed";
   const isCanceled = value === "Canceled";
+
+  const translatedStatus =
+    value === "Pending"
+      ? t.pending
+      : value === "Confirmed"
+        ? t.confirmed
+        : value === "Shipped"
+          ? t.shipped
+          : value === "Completed"
+            ? t.completed
+            : value === "Canceled"
+              ? t.canceled
+              : value;
 
   const pillClass = isCanceled
     ? "bg-white text-black border-black"
@@ -29,7 +45,7 @@ export default function StatusPill({ status }) {
         ${pillClass}
       `}
     >
-      <span>{value}</span>
+      <span>{translatedStatus}</span>
 
       {(isCompleted || isShipped) && (
         <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-white">

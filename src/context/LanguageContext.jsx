@@ -237,6 +237,12 @@ const translations = {
     quantity: "Quantity",
     orderValue: "Order value",
 
+    pending: "Pending",
+    confirmed: "Confirmed",
+    shipped: "Shipped",
+    completed: "Completed",
+    canceled: "Canceled",
+
     product: {
       label: "Product",
 
@@ -770,6 +776,12 @@ const translations = {
       chooseDeliveryMethod: "Pasirinkite pristatymo būdą",
       lpDelivery: "LP EXPRESS pristatymas į namus",
       omnivaDelivery: "Omniva pristatymas į namus",
+
+      pending: "Laukiama",
+      confirmed: "Patvirtintas",
+      shipped: "Išsiųstas",
+      completed: "Įvykdytas",
+      canceled: "Atšauktas",
 
       errors: {
         enterValidEmail: "Įveskite galiojantį el. pašto adresą.",
