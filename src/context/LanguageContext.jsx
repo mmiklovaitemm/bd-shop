@@ -622,7 +622,12 @@ const translations = {
     pickup: "Atsiėmimas",
     omniva: "Omniva",
     lpExpress: "LP Express",
-    notAvailable: "-",
+
+    pending: "Laukiama",
+    confirmed: "Patvirtintas",
+    shipped: "Išsiųstas",
+    completed: "Įvykdytas",
+    canceled: "Atšauktas",
 
     orderDate: "Užsakymo data",
     deliveryTo: "Pristatyti į",
@@ -776,12 +781,6 @@ const translations = {
       chooseDeliveryMethod: "Pasirinkite pristatymo būdą",
       lpDelivery: "LP EXPRESS pristatymas į namus",
       omnivaDelivery: "Omniva pristatymas į namus",
-
-      pending: "Laukiama",
-      confirmed: "Patvirtintas",
-      shipped: "Išsiųstas",
-      completed: "Įvykdytas",
-      canceled: "Atšauktas",
 
       errors: {
         enterValidEmail: "Įveskite galiojantį el. pašto adresą.",
