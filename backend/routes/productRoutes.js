@@ -42,20 +42,64 @@ function normalizeFrontendAssetUrl(value) {
   const raw = String(value).trim();
   if (!raw) return "";
 
-  if (raw.includes("/uploads/")) return raw;
+  if (raw.includes("/uploads/")) {
+    return raw;
+  }
 
-  if (raw.startsWith("http")) return raw;
+  if (/^https?:\/\//i.test(raw)) {
+    return raw;
+  }
 
-  return withBase(`products/${raw}`);
+  const productsMatch = raw.match(/\/products\/(.+)$/);
+  if (productsMatch) {
+    return withBase(`products/${productsMatch[1]}`);
+  }
+
+  if (raw.startsWith("products/")) {
+    return withBase(raw);
+  }
+
+  if (raw.startsWith("/products/")) {
+    return withBase(raw.replace(/^\/+/, ""));
+  }
+
+  return raw;
 }
 
 function normalizeImageList(category, list = []) {
-  return list
-    .map((item) => String(item || "").trim())
+  return (list || [])
+    .map((item) => {
+      if (typeof item === "string") {
+        return item.trim();
+      }
+
+      if (item && typeof item === "object") {
+        if (typeof item.url === "string") return item.url.trim();
+        if (typeof item.src === "string") return item.src.trim();
+        if (typeof item.path === "string") return item.path.trim();
+        if (typeof item.value === "string") return item.value.trim();
+      }
+
+      return "";
+    })
     .filter(Boolean)
     .map((item) => {
-      if (item.startsWith("http")) return item;
-      if (item.includes("/uploads/")) return item;
+      if (/^https?:\/\//i.test(item)) {
+        return item;
+      }
+
+      if (item.includes("/uploads/")) {
+        return item;
+      }
+
+      if (item.startsWith("/products/")) {
+        return withBase(item.replace(/^\/+/, ""));
+      }
+
+      if (item.startsWith("products/")) {
+        return withBase(item);
+      }
+
       return withBase(`products/${category}/${item}`);
     });
 }
