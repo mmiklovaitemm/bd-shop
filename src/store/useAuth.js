@@ -1,7 +1,7 @@
 // src/store/useAuth.js
 import { create } from "zustand";
 
-const API_ORIGIN = import.meta.env.VITE_API_URL || "http://localhost:4000";
+const API_ORIGIN = import.meta.env.DEV ? "http://localhost:4000" : "";
 
 async function api(path, options = {}) {
   const res = await fetch(`${API_ORIGIN}${path}`, {
