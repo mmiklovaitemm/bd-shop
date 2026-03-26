@@ -58,10 +58,12 @@ function getAvailableColors(product, usesVariantLevelStock) {
 
   if (!usesVariantLevelStock) return colors;
 
-  return colors.filter((color) => {
+  const inStockColors = colors.filter((color) => {
     const entries = product?.variants?.[color] || [];
     return entries.some((variant) => Number(variant?.stock || 0) > 0);
   });
+
+  return inStockColors.length ? inStockColors : colors;
 }
 
 function getAvailableSizesForColor(product, color, usesVariantLevelStock) {

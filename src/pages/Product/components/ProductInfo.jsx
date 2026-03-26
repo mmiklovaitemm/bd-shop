@@ -284,6 +284,8 @@ const ProductInfo = memo(function ProductInfo({
     product.category === "personal" &&
     (product.details?.serviceOptions?.length ?? 0) > 0;
 
+  const hasColors = Array.isArray(product?.colors) && product.colors.length > 0;
+
   return (
     <div className="md:pt-1">
       <div className="mt-5 flex items-end justify-between gap-4 md:mt-0">
@@ -305,18 +307,20 @@ const ProductInfo = memo(function ProductInfo({
         />
       </div>
 
-      <div className="mt-5">
-        <p className="font-ui text-[13px] text-black/70">{t.color}:</p>
-        <ColorSelector
-          colors={product.colors}
-          availableColors={availableColors}
-          variants={product.variants}
-          selectedColor={selectedColor}
-          onSelectColor={setSelectedColor}
-          hoverBtnClass={hoverBtnClass}
-          usesVariantLevelStock={usesVariantLevelStock}
-        />
-      </div>
+      {hasColors ? (
+        <div className="mt-5">
+          <p className="font-ui text-[13px] text-black/70">{t.color}:</p>
+          <ColorSelector
+            colors={product.colors}
+            availableColors={availableColors}
+            variants={product.variants}
+            selectedColor={selectedColor}
+            onSelectColor={setSelectedColor}
+            hoverBtnClass={hoverBtnClass}
+            usesVariantLevelStock={usesVariantLevelStock}
+          />
+        </div>
+      ) : null}
 
       {usesVariantLevelStock && (
         <div className="mt-3">

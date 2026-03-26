@@ -8,18 +8,20 @@ const ImageGallery = memo(function ImageGallery({
   openLightbox,
   btnHover,
 }) {
-  if (!images.length) return null;
+  const safeImages = Array.isArray(images) ? images.filter(Boolean) : [];
+
+  if (!safeImages.length) return null;
 
   return (
     <div className="grid grid-cols-2 gap-3 md:grid-cols-1 md:gap-4 lg:grid-cols-2">
-      {images.slice(0, 2).map((src, index) => (
+      {safeImages.map((src, index) => (
         <button
-          key={`${product?.id}-${index}`}
+          key={`${product?.id || "product"}-${src}-${index}`}
           type="button"
           onClick={() => openLightbox(index)}
           aria-label={`Open image ${index + 1}`}
           className={cn(
-            "group h-[420px] sm:h-[480px] md:aspect-auto md:h-[280px] lg:h-[560px] overflow-hidden bg-black/5 relative text-left select-none",
+            "group relative overflow-hidden bg-black/5 text-left select-none h-[420px] sm:h-[480px] md:h-[280px] md:aspect-auto lg:h-[560px]",
             btnHover,
           )}
         >
@@ -28,7 +30,7 @@ const ImageGallery = memo(function ImageGallery({
             alt={`${product?.name || "Product"} - photo ${index + 1}`}
             draggable={false}
             onDragStart={preventDragHandler}
-            className="h-full w-full object-cover transition-transform duration-500 ease-out lg:group-hover:scale-[1.05] select-none"
+            className="h-full w-full object-cover select-none transition-transform duration-500 ease-out lg:group-hover:scale-[1.05]"
             loading={index === 0 ? "eager" : "lazy"}
             decoding="async"
           />
