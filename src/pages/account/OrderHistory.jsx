@@ -282,7 +282,11 @@ export default function OrderHistory() {
 
                             const pickupValue =
                               deliveryType === "pickup"
-                                ? t.pickup
+                                ? order?.delivery_method === "vilnius"
+                                  ? "Vilnius salon"
+                                  : order?.delivery_method === "kaunas"
+                                    ? "Kaunas salon"
+                                    : t.pickup
                                 : t.notAvailable;
 
                             const fullName =
@@ -328,7 +332,11 @@ export default function OrderHistory() {
                                     : order?.delivery_method === "lp"
                                       ? t.lpExpress
                                       : t.notAvailable
-                                  : t.pickup,
+                                  : order?.delivery_method === "vilnius"
+                                    ? "Vilnius salon"
+                                    : order?.delivery_method === "kaunas"
+                                      ? "Kaunas salon"
+                                      : t.pickup,
                               deliveryPrice:
                                 deliveryType === "ship"
                                   ? money(deliveryFeeCentsReal)
