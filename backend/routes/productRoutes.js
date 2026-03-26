@@ -20,6 +20,10 @@ function safeJsonParse(value, fallback) {
 
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "http://localhost:5173";
 const FRONTEND_BASE_PATH = process.env.FRONTEND_BASE_PATH || "/";
+const BACKEND_ORIGIN =
+  process.env.BACKEND_ORIGIN ||
+  process.env.API_ORIGIN ||
+  "http://localhost:4000";
 
 function joinUrl(origin, path) {
   const o = String(origin).replace(/\/+$/, "");
@@ -36,18 +40,27 @@ function withBase(path) {
   return joinUrl(FRONTEND_ORIGIN, `${base}${clean}`);
 }
 
+function withBackendBase(path) {
+  const clean = String(path).replace(/^\/+/, "");
+  return joinUrl(BACKEND_ORIGIN, clean);
+}
+
 function normalizeFrontendAssetUrl(value) {
   if (!value) return "";
 
   const raw = String(value).trim();
   if (!raw) return "";
 
-  if (raw.includes("/uploads/")) {
+  if (/^https?:\/\//i.test(raw)) {
     return raw;
   }
 
-  if (/^https?:\/\//i.test(raw)) {
-    return raw;
+  if (raw.startsWith("/uploads/")) {
+    return withBackendBase(raw);
+  }
+
+  if (raw.startsWith("uploads/")) {
+    return withBackendBase(raw);
   }
 
   const productsMatch = raw.match(/\/products\/(.+)$/);
@@ -88,8 +101,12 @@ function normalizeImageList(category, list = []) {
         return item;
       }
 
-      if (item.includes("/uploads/")) {
-        return item;
+      if (item.startsWith("/uploads/")) {
+        return withBackendBase(item);
+      }
+
+      if (item.startsWith("uploads/")) {
+        return withBackendBase(item);
       }
 
       if (item.startsWith("/products/")) {
@@ -104,9 +121,6 @@ function normalizeImageList(category, list = []) {
     });
 }
 
-/**
- * NAUJA UNIVERSALI VARIANTŲ FUNKCIJA
- */
 function buildVariants({ variants = [], sizes = [], variantStock = {} }) {
   const cleanSizes = sizes.length ? sizes : ["one size"];
 
