@@ -1,4 +1,5 @@
 import express from "express";
+import fs from "fs";
 import { upload } from "../config/upload.js";
 import { requireAdmin } from "../middleware/auth.js";
 
@@ -18,6 +19,9 @@ router.post(
       if (!req.file) {
         return res.status(400).json({ message: "Image file is required." });
       }
+
+      console.log("UPLOAD FILE PATH:", req.file.path);
+      console.log("UPLOAD FILE EXISTS:", fs.existsSync(req.file.path));
 
       const base = String(BACKEND_ORIGIN).replace(/\/+$/, "");
       const fileUrl = `${base}/uploads/${req.file.filename}`;
