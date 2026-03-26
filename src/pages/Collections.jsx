@@ -1,4 +1,3 @@
-// src/pages/Collections.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
@@ -39,6 +38,36 @@ const applySizeFilter = (list, selectedSize) => {
   if (selectedSize == null) return list;
   return list.filter((p) => (p.sizes || []).includes(selectedSize));
 };
+
+function toTitleCaseLabel(value) {
+  return String(value || "")
+    .trim()
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function formatMaterialLabel(value, t) {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+
+  const knownLabels = {
+    silver: t.silver,
+    gold: t.gold,
+    pearl: t.perlas,
+    "soft-blue": t.softBlue,
+    "soft green": t.softGreen,
+    "soft-green": t.softGreen,
+    "soft-yellow": t.softYellow,
+    "soft yellow": t.softYellow,
+  };
+
+  return knownLabels[normalized] || toTitleCaseLabel(normalized);
+}
 
 export default function Collections() {
   const { t } = useLanguage();
@@ -170,28 +199,24 @@ export default function Collections() {
     );
 
     const counts = {};
+
     for (const p of list) {
-      for (const c of p.colors || []) counts[c] = (counts[c] || 0) + 1;
+      for (const c of p.colors || []) {
+        const normalized = String(c || "")
+          .trim()
+          .toLowerCase();
+        if (!normalized) continue;
+        counts[normalized] = (counts[normalized] || 0) + 1;
+      }
     }
 
-    const order = ["silver", "gold"];
-    const entries = Object.entries(counts).sort((a, b) => {
-      const ai = order.indexOf(a[0]);
-      const bi = order.indexOf(b[0]);
-      return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
-    });
-
-    const prettyLabel = (v) => {
-      if (v === "silver") return t.silver;
-      if (v === "gold") return t.gold;
-      if (v === "soft-blue") return t.softBlue;
-      if (v === "soft-green") return t.softGreen;
-      return v;
-    };
+    const entries = Object.entries(counts).sort((a, b) =>
+      a[0].localeCompare(b[0]),
+    );
 
     return entries.map(([value, count]) => ({
       value,
-      label: prettyLabel(value),
+      label: formatMaterialLabel(value, t),
       count,
     }));
   }, [productsInCategory, priceRange.min, priceRange.max, t]);
@@ -254,7 +279,16 @@ export default function Collections() {
   const sizeOptionsWithCount = useMemo(() => {
     const allSizes = Array.from(
       new Set(productsInCategory.flatMap((p) => (p.sizes || []).map((s) => s))),
-    ).sort((a, b) => a - b);
+    ).sort((a, b) => {
+      const na = Number(a);
+      const nb = Number(b);
+
+      if (!Number.isNaN(na) && !Number.isNaN(nb)) {
+        return na - nb;
+      }
+
+      return String(a).localeCompare(String(b));
+    });
 
     if (!allSizes.length) return [];
 

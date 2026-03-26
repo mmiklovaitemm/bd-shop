@@ -134,32 +134,33 @@ function FiltersContent({
   return (
     <>
       <FilterAccordion title={t.material}>
-        <div className="flex flex-wrap gap-3">
-          {materialOptions.map((opt) => {
-            const active = selectedMaterial === opt.value;
-            const isGold = opt.value === "gold";
+        {materialOptions.length === 0 ? (
+          <p className="font-ui text-[14px] text-black/50">
+            {t.noProductsFound}
+          </p>
+        ) : (
+          <div className="flex flex-wrap gap-3">
+            {materialOptions.map((opt) => {
+              const active = selectedMaterial === opt.value;
 
-            const activeCls = isGold
-              ? "bg-white text-[#c58a2a] border-[#c58a2a]"
-              : "bg-black/60 text-white border-black/60";
-
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => onMaterialChange?.(active ? null : opt.value)}
-                className={[
-                  "h-10 border px-4 font-ui text-[13px] transition-colors",
-                  active
-                    ? activeCls
-                    : "bg-white text-black border-black/40 hover:bg-black/5",
-                ].join(" ")}
-              >
-                {opt.label} ({opt.count})
-              </button>
-            );
-          })}
-        </div>
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => onMaterialChange?.(active ? null : opt.value)}
+                  className={[
+                    "h-10 border px-4 font-ui text-[13px] transition-colors",
+                    active
+                      ? "border-black bg-black text-white"
+                      : "border-black/40 bg-white text-black hover:bg-black/5",
+                  ].join(" ")}
+                >
+                  {opt.label} ({opt.count})
+                </button>
+              );
+            })}
+          </div>
+        )}
       </FilterAccordion>
 
       <FilterAccordion title={t.price}>
@@ -242,8 +243,8 @@ function FiltersContent({
                 className={[
                   "relative h-10 w-14 border font-ui text-[13px] transition-colors",
                   active
-                    ? "bg-black text-white border-black"
-                    : "bg-white text-black border-black/40",
+                    ? "border-black bg-black text-white"
+                    : "border-black/40 bg-white text-black",
                   disabled
                     ? "cursor-not-allowed opacity-45"
                     : "hover:bg-black/5",

@@ -106,6 +106,17 @@ const SizeSelector = memo(function SizeSelector({
   );
 });
 
+function toTitleCaseLabel(value) {
+  return String(value || "")
+    .trim()
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
 const ColorSelector = memo(function ColorSelector({
   colors,
   availableColors,
@@ -123,11 +134,21 @@ const ColorSelector = memo(function ColorSelector({
     "soft-green": t.softGreen,
     gold: t.gold,
     silver: t.silver,
+    pearl: t.perlas,
   };
 
-  const formatColorName = (color) => colorNames[color] || color;
+  const formatColorName = (color) => {
+    const normalized = String(color || "")
+      .trim()
+      .toLowerCase();
+    return colorNames[normalized] || toTitleCaseLabel(normalized);
+  };
 
   const getVariantColorStyles = (color, isActive) => {
+    const normalized = String(color || "")
+      .trim()
+      .toLowerCase();
+
     const styles = {
       "soft-yellow": {
         active: "bg-[#F2E3B6] text-black border-black/60",
@@ -149,10 +170,19 @@ const ColorSelector = memo(function ColorSelector({
         active: "bg-black/60 text-white border-black/60",
         default: "bg-white text-black border-black/40 lg:hover:bg-black/5",
       },
+      pearl: {
+        active: "bg-[#F3EEE7] text-black border-black/60",
+        default: "bg-white text-black border-black/40 lg:hover:bg-black/5",
+      },
     };
 
-    const key = styles[color] ? color : "silver";
-    return isActive ? styles[key].active : styles[key].default;
+    if (styles[normalized]) {
+      return isActive ? styles[normalized].active : styles[normalized].default;
+    }
+
+    return isActive
+      ? "bg-black text-white border-black"
+      : "bg-white text-black border-black/40 lg:hover:bg-black/5";
   };
 
   return (

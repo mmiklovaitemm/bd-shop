@@ -22,16 +22,16 @@ export function getStockBadge(product) {
 }
 
 export function getImageTextFromVariant(variantValue) {
-  if (!Array.isArray(variantValue) || !variantValue.length) return "";
+  if (!Array.isArray(variantValue) || variantValue.length === 0) {
+    return "";
+  }
 
   const firstItem = variantValue[0];
 
-  // SENAS formatas (string[])
   if (typeof firstItem === "string") {
     return variantValue.join("\n");
   }
 
-  // NAUJAS formatas ({ size, stock, images }[])
   if (
     firstItem &&
     typeof firstItem === "object" &&
@@ -41,4 +41,51 @@ export function getImageTextFromVariant(variantValue) {
   }
 
   return "";
+}
+
+export function joinUrl(origin, path) {
+  const o = String(origin).replace(/\/+$/, "");
+  const p = String(path).replace(/^\/+/, "");
+  return `${o}/${p}`;
+}
+
+export function withBasePath({ apiOrigin, frontendBasePath, path }) {
+  const base = String(frontendBasePath || "/")
+    .replace(/^\/?/, "/")
+    .replace(/\/?$/, "/");
+
+  const clean = String(path || "").replace(/^\/+/, "");
+
+  return joinUrl(
+    String(apiOrigin || "").replace(":4000", ":5173"),
+    `${base}${clean}`,
+  );
+}
+
+export function makePreviewList({
+  category,
+  rawValue,
+  apiOrigin,
+  frontendBasePath,
+}) {
+  return String(rawValue || "")
+    .split("\n")
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .map((item) => {
+      if (/^https?:\/\//i.test(item)) return item;
+
+      return withBasePath({
+        apiOrigin,
+        frontendBasePath,
+        path: `products/${category}/${item}`,
+      });
+    });
+}
+
+export function createEmptyVariant() {
+  return {
+    name: "",
+    images: "",
+  };
 }

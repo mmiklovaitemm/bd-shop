@@ -88,6 +88,16 @@ const CATEGORY_DEFAULTS = {
   },
 };
 
+const toTitleCaseLabel = (value) =>
+  String(value || "")
+    .trim()
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+
 const formatMetal = (value, t) => {
   if (!value) return "";
 
@@ -99,9 +109,10 @@ const formatMetal = (value, t) => {
     "soft-green": t.product.detailsPanel.metals.softGreen,
     gold: t.product.detailsPanel.metals.gold,
     silver: t.product.detailsPanel.metals.silver,
+    pearl: t.perlas,
   };
 
-  return colorNames[raw] || raw.charAt(0).toUpperCase() + raw.slice(1);
+  return colorNames[raw] || toTitleCaseLabel(raw);
 };
 
 const getDefaultCategoryText = (category, t) => {

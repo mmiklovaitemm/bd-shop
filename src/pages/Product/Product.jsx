@@ -45,8 +45,16 @@ function hasVariantLevelStock(product) {
   );
 }
 
+function getAllColors(product) {
+  return Array.isArray(product?.colors) ? product.colors.filter(Boolean) : [];
+}
+
+function getFallbackColor(product) {
+  return getAllColors(product)[0] || null;
+}
+
 function getAvailableColors(product, usesVariantLevelStock) {
-  const colors = product?.colors || [];
+  const colors = getAllColors(product);
 
   if (!usesVariantLevelStock) return colors;
 
@@ -75,7 +83,7 @@ function getAvailableSizesForColor(product, color, usesVariantLevelStock) {
 
 function getFirstAvailableColor(product, usesVariantLevelStock) {
   const availableColors = getAvailableColors(product, usesVariantLevelStock);
-  return availableColors[0] || product?.colors?.[0] || "silver";
+  return availableColors[0] || getFallbackColor(product);
 }
 
 function getFirstAvailableSize(product, color, usesVariantLevelStock) {
@@ -134,7 +142,7 @@ function ProductView({ product }) {
   );
 
   const effectiveSelectedColor = useMemo(() => {
-    if (availableColors.includes(selectedColor)) {
+    if (selectedColor && availableColors.includes(selectedColor)) {
       return selectedColor;
     }
 
@@ -142,7 +150,7 @@ function ProductView({ product }) {
   }, [availableColors, product, selectedColor, usesVariantLevelStock]);
 
   const effectiveColorEntries = useMemo(() => {
-    if (!usesVariantLevelStock) return [];
+    if (!usesVariantLevelStock || !effectiveSelectedColor) return [];
 
     return Array.isArray(product?.variants?.[effectiveSelectedColor])
       ? product.variants[effectiveSelectedColor]
@@ -207,7 +215,7 @@ function ProductView({ product }) {
       }
 
       const fallbackColor =
-        availableColors[0] || product?.colors?.[0] || "silver";
+        getFirstAvailableColor(product, true) || getFallbackColor(product);
 
       const fallbackVariant = (product?.variants?.[fallbackColor] || []).find(
         (variant) =>
@@ -217,8 +225,9 @@ function ProductView({ product }) {
       return fallbackVariant?.images?.filter(Boolean) || [];
     }
 
-    const defaultColor = product?.colors?.[0] || "silver";
-    const base = (product?.variants?.[defaultColor] || []).filter(Boolean);
+    const fallbackColor = getFallbackColor(product);
+
+    const base = (product?.variants?.[fallbackColor] || []).filter(Boolean);
     const selectedArr = (
       product?.variants?.[effectiveSelectedColor] || []
     ).filter(Boolean);
@@ -227,13 +236,7 @@ function ProductView({ product }) {
     const extras = selectedArr.slice(base.length);
 
     return [...merged, ...extras].filter(Boolean);
-  }, [
-    product,
-    effectiveSelectedColor,
-    selectedVariant,
-    usesVariantLevelStock,
-    availableColors,
-  ]);
+  }, [product, effectiveSelectedColor, selectedVariant, usesVariantLevelStock]);
 
   const openLightbox = useCallback((index) => {
     setActiveImgIndex(index);
@@ -251,10 +254,12 @@ function ProductView({ product }) {
 
       if (!product || isCurrentSelectionSoldOut) return;
 
+      const fallbackColor = getFallbackColor(product);
+
       const img = usesVariantLevelStock
         ? selectedVariant?.images?.[0] || product?.thumbnail || ""
         : product?.variants?.[effectiveSelectedColor]?.[0] ||
-          product?.variants?.[product?.colors?.[0]]?.[0] ||
+          product?.variants?.[fallbackColor]?.[0] ||
           product?.thumbnail ||
           "";
 
@@ -266,7 +271,7 @@ function ProductView({ product }) {
       addToCart({
         product,
         category: product.category,
-        color: effectiveSelectedColor || "silver",
+        color: effectiveSelectedColor || fallbackColor || null,
         size: effectiveSelectedSize || null,
         quantity: quantity || 1,
         image: img,
