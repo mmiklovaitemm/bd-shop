@@ -105,11 +105,11 @@ export default function AdminProducts() {
 
   const handleCreateProduct = async (newProduct) => {
     try {
-      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
+      setIsSaving(true);
+      setErrorMessage("");
+      setSuccessMessage("");
 
-      console.log("DATA:", newProduct);
-
-      const res = await fetch(`${API_URL}/api/products`, {
+      const res = await fetch(`${API_ORIGIN}/api/products`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -124,12 +124,17 @@ export default function AdminProducts() {
         throw new Error(data?.message || "Failed to create product.");
       }
 
-      console.log("CREATED PRODUCT:", data);
+      setSuccessMessage(
+        `Product created: ${newProduct.name} (${newProduct.id})`,
+      );
+
       setIsCreateOpen(false);
-      window.location.reload();
+      await fetchProducts();
     } catch (err) {
       console.error("Create product error:", err);
-      alert(err.message || "Failed to create product.");
+      setErrorMessage(err.message || "Failed to create product.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
