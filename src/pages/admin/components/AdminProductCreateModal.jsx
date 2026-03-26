@@ -170,6 +170,7 @@ export default function AdminProductCreateModal({
 
       const formData = new FormData();
       formData.append("image", file);
+      formData.append("category", form.category);
 
       const res = await fetch(`${API_ORIGIN}/api/uploads/product-image`, {
         method: "POST",
