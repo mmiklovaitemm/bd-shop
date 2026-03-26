@@ -2,6 +2,9 @@ import express from "express";
 import db from "../db.js";
 import { requireAdmin } from "../middleware/auth.js";
 
+console.log("FRONTEND_ORIGIN:", process.env.FRONTEND_ORIGIN);
+console.log("NODE_ENV:", process.env.NODE_ENV);
+
 const router = express.Router();
 
 function safeJsonParse(value, fallback) {
