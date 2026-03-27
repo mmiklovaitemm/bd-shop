@@ -204,6 +204,38 @@ function sanitizeDetails(input = {}, fallbackDescription = "") {
   };
 }
 
+function mapProductRowForListing(row) {
+  const colors = safeJsonParse(row.colors, []);
+  const sizes = safeJsonParse(row.sizes, []);
+  const details = safeJsonParse(row.details, {});
+
+  const normalizedGemstones = Array.isArray(details?.gemstones)
+    ? details.gemstones
+    : Array.isArray(row.gemstones)
+      ? row.gemstones
+      : [];
+
+  return {
+    id: row.id,
+    name: row.name,
+    category: row.category,
+    priceValue: Number(row.price_value),
+    price: `€${Number(row.price_value)}`,
+    createdAt: row.created_at,
+    isBestSeller: Boolean(row.is_best_seller),
+    thumbnail: normalizeFrontendAssetUrl(row.thumbnail),
+    colors,
+    sizes,
+    stockQuantity: Math.max(0, Number(row.stock_quantity) || 0),
+    isSoldOut: Math.max(0, Number(row.stock_quantity) || 0) <= 0,
+    hasGem: Boolean(details?.hasGem ?? row.has_gem ?? false),
+    surface: String(details?.surface ?? row.surface ?? "")
+      .trim()
+      .toLowerCase(),
+    gemstones: normalizedGemstones,
+  };
+}
+
 function mapProductRow(row) {
   const colors = safeJsonParse(row.colors, []);
   const variantsRaw = safeJsonParse(row.variants, {});
@@ -248,8 +280,18 @@ function mapProductRow(row) {
  */
 router.get("/", async (req, res) => {
   try {
+    const view = String(req.query.view || "")
+      .trim()
+      .toLowerCase();
+    const isListingView = view === "listing";
+
     const [rows] = await db.query("SELECT * FROM products");
-    res.json(rows.map(mapProductRow));
+
+    if (isListingView) {
+      return res.json(rows.map(mapProductRowForListing));
+    }
+
+    return res.json(rows.map(mapProductRow));
   } catch {
     res.status(500).json({ message: "Failed to fetch products" });
   }

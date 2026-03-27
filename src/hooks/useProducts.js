@@ -10,7 +10,9 @@ export function useProducts() {
   useEffect(() => {
     const controller = new AbortController();
 
-    fetch(`${API_ORIGIN}/api/products`, { signal: controller.signal })
+    fetch(`${API_ORIGIN}/api/products?view=listing`, {
+      signal: controller.signal,
+    })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         const list = Array.isArray(data)
