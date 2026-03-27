@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 
 import AdminProductCreateModal from "@/pages/admin/components/AdminProductCreateModal";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
+import Pagination from "@/components/ui/Pagination";
 import useAdminProducts from "@/pages/admin/hooks/useAdminProducts";
 import AdminProductsTable from "@/pages/admin/components/AdminProductsTable";
 import AdminProductDeleteModal from "@/pages/admin/components/AdminProductDeleteModal";
@@ -28,8 +29,13 @@ export default function AdminProducts() {
   const [sortValue, setSortValue] = useState("newest");
 
   const [selectedProductIds, setSelectedProductIds] = useState([]);
-
   const [errorMessage, setErrorMessage] = useState("");
+
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(() => {
+    if (typeof window === "undefined") return 10;
+    return window.matchMedia("(max-width: 1023px)").matches ? 6 : 10;
+  });
 
   useEffect(() => {
     if (!successMessage) return;
@@ -41,41 +47,87 @@ export default function AdminProducts() {
     return () => clearTimeout(timer);
   }, [successMessage]);
 
-  const filteredProducts = [...products]
-    .filter((product) => {
-      const query = searchValue.trim().toLowerCase();
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 1023px)");
 
-      const matchesSearch =
-        !query ||
-        String(product.name || "")
-          .toLowerCase()
-          .includes(query) ||
-        String(product.id || "")
-          .toLowerCase()
-          .includes(query);
+    const handleChange = (event) => {
+      setPageSize(event.matches ? 6 : 10);
+    };
 
-      const matchesCategory =
-        categoryFilter === "all" || product.category === categoryFilter;
+    if (media.addEventListener) {
+      media.addEventListener("change", handleChange);
+    } else {
+      media.addListener(handleChange);
+    }
 
-      return matchesSearch && matchesCategory;
-    })
-    .sort((a, b) => {
-      if (sortValue === "price-low") {
-        return Number(a.priceValue || 0) - Number(b.priceValue || 0);
+    return () => {
+      if (media.removeEventListener) {
+        media.removeEventListener("change", handleChange);
+      } else {
+        media.removeListener(handleChange);
       }
+    };
+  }, []);
 
-      if (sortValue === "price-high") {
-        return Number(b.priceValue || 0) - Number(a.priceValue || 0);
-      }
+  const filteredProducts = useMemo(() => {
+    return [...products]
+      .filter((product) => {
+        const query = searchValue.trim().toLowerCase();
 
-      if (sortValue === "oldest") {
-        return String(a.createdAt || "").localeCompare(
-          String(b.createdAt || ""),
+        const matchesSearch =
+          !query ||
+          String(product.name || "")
+            .toLowerCase()
+            .includes(query) ||
+          String(product.id || "")
+            .toLowerCase()
+            .includes(query);
+
+        const matchesCategory =
+          categoryFilter === "all" || product.category === categoryFilter;
+
+        return matchesSearch && matchesCategory;
+      })
+      .sort((a, b) => {
+        if (sortValue === "price-low") {
+          return Number(a.priceValue || 0) - Number(b.priceValue || 0);
+        }
+
+        if (sortValue === "price-high") {
+          return Number(b.priceValue || 0) - Number(a.priceValue || 0);
+        }
+
+        if (sortValue === "oldest") {
+          return String(a.createdAt || "").localeCompare(
+            String(b.createdAt || ""),
+          );
+        }
+
+        return String(b.createdAt || "").localeCompare(
+          String(a.createdAt || ""),
         );
-      }
+      });
+  }, [products, searchValue, categoryFilter, sortValue]);
 
-      return String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
-    });
+  const totalItems = filteredProducts.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const showingCount = Math.min(safePage * pageSize, totalItems);
+
+  const paginatedProducts = useMemo(() => {
+    const start = (safePage - 1) * pageSize;
+    return filteredProducts.slice(start, start + pageSize);
+  }, [filteredProducts, safePage, pageSize]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchValue, categoryFilter, sortValue]);
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
 
   const toggleSelectProduct = (productId) => {
     setSelectedProductIds((prev) =>
@@ -85,7 +137,7 @@ export default function AdminProducts() {
     );
   };
 
-  const visibleProductIds = filteredProducts.map((product) => product.id);
+  const visibleProductIds = paginatedProducts.map((product) => product.id);
 
   const allVisibleSelected =
     visibleProductIds.length > 0 &&
@@ -327,7 +379,7 @@ export default function AdminProducts() {
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           <p className="font-ui text-sm text-black/60">
-            Showing {filteredProducts.length} of {products.length} products
+            Showing {showingCount} of {totalItems} filtered products
           </p>
 
           <button
@@ -338,6 +390,7 @@ export default function AdminProducts() {
               setCategoryFilter("all");
               setSortValue("newest");
               setSelectedProductIds([]);
+              setPage(1);
             }}
           >
             Reset filters
@@ -401,7 +454,7 @@ export default function AdminProducts() {
             </div>
 
             <div className="mt-6 grid gap-3 lg:hidden">
-              {filteredProducts.map((product) => (
+              {paginatedProducts.map((product) => (
                 <div
                   key={product.id}
                   className={`border bg-white p-4 ${
@@ -516,13 +569,27 @@ export default function AdminProducts() {
             </div>
 
             <AdminProductsTable
-              products={filteredProducts}
+              products={paginatedProducts}
               onDelete={handleDeleteProduct}
               onEdit={handleEditProduct}
               selectedProductIds={selectedProductIds}
               onToggleSelectProduct={toggleSelectProduct}
               onToggleSelectAllProducts={toggleSelectAllProducts}
             />
+
+            <div className="mt-8 flex flex-col items-center gap-3">
+              <p className="font-ui text-sm text-black/60">
+                Showing {showingCount} of {totalItems} products
+              </p>
+
+              <Pagination
+                totalItems={totalItems}
+                page={safePage}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                siblingCount={1}
+              />
+            </div>
           </>
         )}
 
