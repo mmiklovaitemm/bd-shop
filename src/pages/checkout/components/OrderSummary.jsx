@@ -99,12 +99,12 @@ export default function OrderSummary({
                     </div>
 
                     <div className="mt-2 flex flex-wrap gap-2">
-                      <span className="bg-black/5 px-3 py-2 font-ui text-[12px] text-black/70">
-                        {t.color}:{" "}
-                        <span className="font-semibold">
-                          {item.color || "—"}
+                      {String(item.color || "").trim() && (
+                        <span className="bg-black/5 px-3 py-2 font-ui text-[12px] text-black/70">
+                          {t.color}:{" "}
+                          <span className="font-semibold">{item.color}</span>
                         </span>
-                      </span>
+                      )}
 
                       <span className="bg-black/5 px-3 py-2 font-ui text-[12px] text-black/70">
                         {t.size}:{" "}
@@ -122,9 +122,17 @@ export default function OrderSummary({
                     </div>
 
                     {item?.category === "personal" &&
-                    String(item?.serviceOption || "")
-                      .toLowerCase()
-                      .includes("shipping") ? (
+                    (() => {
+                      const service = String(
+                        item?.serviceOption || "",
+                      ).toLowerCase();
+                      const isShippingKit =
+                        service === "shipping" ||
+                        service === "shipping-kit" ||
+                        service === "shipping_kit";
+
+                      return isShippingKit;
+                    })() ? (
                       <p className="mt-2 font-ui text-[12px] text-black/50">
                         {t.shippingKit} + {fmtPrice(15)}
                       </p>

@@ -17,6 +17,51 @@ import FullWidthDivider from "@/components/ui/FullWidthDivider";
 
 const API_ORIGIN = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
+function isVariantObject(value) {
+  return (
+    value &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    Array.isArray(value.images)
+  );
+}
+
+function usesVariantLevelStock(product) {
+  return Object.values(product?.variants || {}).some(
+    (value) =>
+      Array.isArray(value) && value.length > 0 && isVariantObject(value[0]),
+  );
+}
+
+function getColorEntries(product, color) {
+  if (!product) return [];
+
+  return Array.isArray(product?.variants?.[color])
+    ? product.variants[color]
+    : [];
+}
+
+function getSelectedVariant(product, color, size) {
+  if (!product || !usesVariantLevelStock(product)) return null;
+
+  const entries = getColorEntries(product, color);
+
+  return (
+    entries.find((variant) => String(variant?.size) === String(size)) || null
+  );
+}
+
+function getVariantStock(product, color, size) {
+  if (!product) return 0;
+
+  if (!usesVariantLevelStock(product)) {
+    return Math.max(0, Number(product?.stockQuantity) || 0);
+  }
+
+  const selectedVariant = getSelectedVariant(product, color, size);
+  return Math.max(0, Number(selectedVariant?.stock) || 0);
+}
+
 export default function Checkout() {
   const navigate = useNavigate();
   const { t } = useLanguage();
@@ -226,6 +271,44 @@ export default function Checkout() {
             item.name || item.title || productId || t.product.label,
           ),
         );
+        continue;
+      }
+
+      const color = String(item.color || "").trim();
+      const size = String(item.size || "").trim();
+
+      if (usesVariantLevelStock(product)) {
+        if (!color || !size) {
+          stockErrors.push(
+            t.checkout.errors.productSoldOut.replace(
+              "{productName}",
+              product.name,
+            ),
+          );
+          continue;
+        }
+
+        const variantStock = getVariantStock(product, color, size);
+
+        if (variantStock <= 0) {
+          stockErrors.push(
+            t.checkout.errors.productSoldOut.replace(
+              "{productName}",
+              product.name,
+            ),
+          );
+          continue;
+        }
+
+        if (qty > variantStock) {
+          stockErrors.push(
+            t.checkout.errors.notEnoughStock
+              .replace("{stockQuantity}", variantStock)
+              .replace("{productName}", product.name)
+              .replace("{qty}", qty),
+          );
+        }
+
         continue;
       }
 

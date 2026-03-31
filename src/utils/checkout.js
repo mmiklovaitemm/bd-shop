@@ -19,12 +19,12 @@ export const getEmailFromLocalStorage = () => {
 };
 
 export const isShippingKit = (serviceOption) => {
+  const service = String(serviceOption || "").toLowerCase();
+
   return (
-    serviceOption === "shipping-kit" ||
-    serviceOption === "shipping_kit" ||
-    String(serviceOption || "")
-      .toLowerCase()
-      .includes("shipping")
+    service === "shipping" ||
+    service === "shipping-kit" ||
+    service === "shipping_kit"
   );
 };
 
@@ -33,7 +33,7 @@ export const calcLineTotal = (
   shippingKitFee = SHIPPING_KIT_FEE_DEFAULT,
 ) => {
   const base = Number(item?.price) || 0;
-  const qty = item?.quantity || 1;
+  const qty = Math.max(1, Number(item?.quantity ?? item?.qty ?? 1));
 
   const fee =
     item?.category === "personal" && isShippingKit(item?.serviceOption)

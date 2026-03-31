@@ -42,10 +42,12 @@ function getAvailableColors(product) {
     );
   }
 
-  return colors.filter((color) => {
+  const inStockColors = colors.filter((color) => {
     const entries = product?.variants?.[color] || [];
     return entries.some((variant) => Number(variant?.stock || 0) > 0);
   });
+
+  return inStockColors.length ? inStockColors : colors;
 }
 
 function getColorEntries(product, color) {
@@ -63,8 +65,16 @@ function getAvailableSizesForColor(product, color) {
     return (product?.sizes || []).map(String);
   }
 
-  return getColorEntries(product, color)
+  const inStockSizes = getColorEntries(product, color)
     .filter((variant) => Number(variant?.stock || 0) > 0)
+    .map((variant) => String(variant?.size))
+    .filter(Boolean);
+
+  if (inStockSizes.length) {
+    return inStockSizes;
+  }
+
+  return getColorEntries(product, color)
     .map((variant) => String(variant?.size))
     .filter(Boolean);
 }
@@ -88,6 +98,7 @@ function getSelectedVariant(product, color, size) {
   if (!product || !usesVariantLevelStock(product)) return null;
 
   const entries = getColorEntries(product, color);
+
   return (
     entries.find((variant) => String(variant?.size) === String(size)) || null
   );
@@ -226,7 +237,8 @@ export default function ShoppingBagDrawer() {
         item.product?.productId ??
         String(item.key || "").split("|")[0];
 
-      const product = getProductById(pid) || item.product || null;
+      const resolvedProduct = getProductById(pid);
+      const product = resolvedProduct || item.product || null;
       if (!product) return;
 
       const nextColor = getEffectiveColor(product, item);
@@ -235,6 +247,7 @@ export default function ShoppingBagDrawer() {
 
       const normalizedItemSize = item?.size == null ? null : String(item.size);
       const currentImage = item?.image || "";
+
       const shouldUpdate =
         item.color !== nextColor ||
         normalizedItemSize !== nextSize ||
@@ -299,8 +312,8 @@ export default function ShoppingBagDrawer() {
   return (
     <div
       className={[
-        "fixed inset-0 z-[90] transition-opacity duration-300 ease-out select-none",
-        isOpen ? "opacity-100" : "opacity-0 pointer-events-none",
+        "fixed inset-0 z-[90] select-none transition-opacity duration-300 ease-out",
+        isOpen ? "opacity-100" : "pointer-events-none opacity-0",
       ].join(" ")}
       onDragStart={preventDragHandler}
     >
@@ -317,7 +330,7 @@ export default function ShoppingBagDrawer() {
       <aside
         data-bag-panel
         className={[
-          "absolute top-0 right-0 h-full w-[min(92vw,420px)] bg-white border-l border-black",
+          "absolute right-0 top-0 h-full w-[min(92vw,420px)] border-l border-black bg-white",
           "transform transition-transform duration-300 ease-out",
           isOpen ? "translate-x-0" : "translate-x-full",
         ].join(" ")}
@@ -328,7 +341,7 @@ export default function ShoppingBagDrawer() {
           <button
             type="button"
             onClick={close}
-            className="ui-close inline-flex items-center gap-2 font-ui text-[14px] select-none"
+            className="ui-close inline-flex select-none items-center gap-2 font-ui text-[14px]"
           >
             <span className="ui-close__inner">
               <span className="inline-block">{t.close}</span>
@@ -338,7 +351,7 @@ export default function ShoppingBagDrawer() {
                 aria-hidden="true"
                 draggable={false}
                 onDragStart={preventDragHandler}
-                className="h-3 w-3 transition-transform duration-300 ease-out select-none"
+                className="h-3 w-3 select-none transition-transform duration-300 ease-out"
               />
             </span>
           </button>
@@ -361,7 +374,8 @@ export default function ShoppingBagDrawer() {
                   item.product?.productId ??
                   String(item.key || "").split("|")[0];
 
-                const product = getProductById(pid) || item.product || null;
+                const resolvedProduct = getProductById(pid);
+                const product = resolvedProduct || item.product || null;
 
                 const availableColors = getAvailableColors(product);
                 const currentColor = getEffectiveColor(product, item);
@@ -378,16 +392,19 @@ export default function ShoppingBagDrawer() {
                 const hasSizes = availableSizes.length > 0;
                 const hasColors = availableColors.length > 0;
 
-                const variantStock = getVariantStock(
-                  product,
-                  currentColor,
-                  currentSize,
-                );
+                const variantStock = resolvedProduct
+                  ? getVariantStock(product, currentColor, currentSize)
+                  : null;
 
-                const isSoldOut = variantStock <= 0;
+                const isSoldOut = resolvedProduct ? variantStock <= 0 : false;
+
                 const itemQuantity = Math.max(1, Number(item.quantity || 1));
-                const reachedMaxStock =
-                  variantStock > 0 ? itemQuantity >= variantStock : true;
+
+                const reachedMaxStock = resolvedProduct
+                  ? variantStock > 0
+                    ? itemQuantity >= variantStock
+                    : true
+                  : false;
 
                 return (
                   <div
@@ -405,7 +422,7 @@ export default function ShoppingBagDrawer() {
                           alt={item.name || ""}
                           draggable={false}
                           onDragStart={preventDragHandler}
-                          className="h-full w-full object-cover select-none"
+                          className="h-full w-full select-none object-cover"
                           loading="lazy"
                         />
                       </div>
@@ -416,15 +433,17 @@ export default function ShoppingBagDrawer() {
                             {item.name}
                           </p>
 
-                          {isSoldOut ? (
-                            <p className="mt-1 font-ui text-[12px] uppercase tracking-[0.08em] text-red-600">
-                              {t.soldOut}
-                            </p>
-                          ) : (
-                            <p className="mt-1 font-ui text-[12px] text-black/55">
-                              {t.inStock}: {variantStock}
-                            </p>
-                          )}
+                          {resolvedProduct ? (
+                            isSoldOut ? (
+                              <p className="mt-1 font-ui text-[12px] uppercase tracking-[0.08em] text-red-600">
+                                {t.soldOut}
+                              </p>
+                            ) : (
+                              <p className="mt-1 font-ui text-[12px] text-black/55">
+                                {t.inStock}: {variantStock}
+                              </p>
+                            )
+                          ) : null}
 
                           {(() => {
                             const base = Number(item.price) || 0;
@@ -432,6 +451,7 @@ export default function ShoppingBagDrawer() {
                             const service = String(
                               item.serviceOption || "",
                             ).toLowerCase();
+
                             const isShippingKit =
                               service === "shipping" ||
                               service === "shipping-kit" ||
@@ -562,7 +582,7 @@ export default function ShoppingBagDrawer() {
                               type="button"
                               aria-label={t.decreaseQuantity}
                               disabled={itemQuantity <= 1}
-                              className="grid w-9 place-items-center bg-black/5 font-ui text-[18px] select-none lg:hover:bg-black/10 disabled:cursor-not-allowed disabled:opacity-40"
+                              className="grid w-9 select-none place-items-center bg-black/5 font-ui text-[18px] disabled:cursor-not-allowed disabled:opacity-40 lg:hover:bg-black/10"
                               onClick={(e) => {
                                 e.preventDefault();
                                 if (itemQuantity <= 1) return;
@@ -580,7 +600,7 @@ export default function ShoppingBagDrawer() {
                               type="button"
                               aria-label={t.increaseQuantity}
                               disabled={isSoldOut || reachedMaxStock}
-                              className="grid w-9 place-items-center bg-black/5 font-ui text-[18px] select-none lg:hover:bg-black/10 disabled:cursor-not-allowed disabled:opacity-40"
+                              className="grid w-9 select-none place-items-center bg-black/5 font-ui text-[18px] disabled:cursor-not-allowed disabled:opacity-40 lg:hover:bg-black/10"
                               onClick={(e) => {
                                 e.preventDefault();
                                 if (isSoldOut || reachedMaxStock) return;
@@ -594,7 +614,7 @@ export default function ShoppingBagDrawer() {
                           <button
                             type="button"
                             aria-label={t.removeItem}
-                            className="p-2 select-none lg:hover:opacity-70"
+                            className="select-none p-2 lg:hover:opacity-70"
                             onClick={(e) => {
                               e.preventDefault();
                               removeItem(item.key);
@@ -606,7 +626,7 @@ export default function ShoppingBagDrawer() {
                               aria-hidden="true"
                               draggable={false}
                               onDragStart={preventDragHandler}
-                              className="h-5 w-5 opacity-60 select-none"
+                              className="h-5 w-5 select-none opacity-60"
                             />
                           </button>
                         </div>
@@ -627,7 +647,7 @@ export default function ShoppingBagDrawer() {
           <div className="border-t border-black p-6">
             <button
               type="button"
-              className="ui-interact flex h-12 w-full items-center justify-center gap-4 bg-black font-ui text-[14px] text-white select-none disabled:opacity-50"
+              className="ui-interact flex h-12 w-full select-none items-center justify-center gap-4 bg-black font-ui text-[14px] text-white disabled:opacity-50"
               onClick={(e) => {
                 e.preventDefault();
                 if (items.length === 0) return;
