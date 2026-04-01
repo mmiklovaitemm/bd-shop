@@ -16,7 +16,6 @@ export function useProducts() {
   useEffect(() => {
     const controller = new AbortController();
 
-    // Suformuojame pilną užklausos adresą
     const url = getUrl("/products?view=listing");
 
     fetch(url, {
