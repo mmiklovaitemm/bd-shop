@@ -1,10 +1,56 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { Reveal } from "@/components/sections/Reveal";
 
 import useLanguage from "@/context/useLanguage";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 import OurSalons from "./about/OurSalons";
 import useAuth from "@/store/useAuth";
+import cn from "@/utils/cn";
+
+const pageVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+  },
+};
+
+const formVariants = {
+  hidden: (isRegister) => ({
+    opacity: 0,
+    x: isRegister ? 20 : -20,
+  }),
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: { duration: 0.4, ease: "easeOut" },
+  },
+  exit: (isRegister) => ({
+    opacity: 0,
+    x: isRegister ? -20 : 20,
+    transition: { duration: 0.3, ease: "easeIn" },
+  }),
+};
+
+function InputError({ error, visible }) {
+  return (
+    <AnimatePresence>
+      {error && visible && (
+        <motion.p
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          exit={{ opacity: 0, height: 0 }}
+          className="mt-2 text-sm text-red-600 overflow-hidden"
+        >
+          {error}
+        </motion.p>
+      )}
+    </AnimatePresence>
+  );
+}
 
 function PasswordInput({
   label,
@@ -35,13 +81,12 @@ function PasswordInput({
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           autoComplete={autoComplete}
-          className={[
-            "w-full px-4 py-4 pr-12 text-[15px] font-semibold outline-none transition-all duration-200",
-            "bg-transparent focus:bg-black/5",
-            error && !isFocused
-              ? "border border-red-600"
-              : "border border-black focus:border-black",
-          ].join(" ")}
+          className={cn(
+            "w-full px-4 py-4 pr-12 text-[15px] font-semibold outline-none transition-all duration-200 bg-transparent border",
+            isFocused ? "bg-black/5 border-black" : "border-black/40",
+            error && !isFocused ? "border-red-600" : "",
+            "focus:border-black",
+          )}
           aria-invalid={!!error}
         />
 
@@ -90,10 +135,7 @@ function PasswordInput({
           )}
         </button>
       </div>
-
-      {error && !isFocused ? (
-        <p className="mt-2 text-sm text-red-600">{error}</p>
-      ) : null}
+      <InputError error={error} visible={!isFocused} />
     </div>
   );
 }
@@ -124,30 +166,26 @@ function TextInput({
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         autoComplete={autoComplete}
-        className={[
-          "mt-2 w-full px-4 py-4 text-[15px] font-semibold outline-none transition-all duration-200",
-          "bg-transparent focus:bg-black/5",
-          error && !isFocused
-            ? "border border-red-600"
-            : "border border-black focus:border-black",
-        ].join(" ")}
+        className={cn(
+          "mt-2 w-full px-4 py-4 text-[15px] font-semibold outline-none transition-all duration-200 bg-transparent border",
+          isFocused ? "bg-black/5 border-black" : "border-black/40",
+          error && !isFocused ? "border-red-600" : "",
+          "focus:border-black",
+        )}
         aria-invalid={!!error}
       />
-
-      {error && !isFocused ? (
-        <p className="mt-2 text-sm text-red-600">{error}</p>
-      ) : null}
+      <InputError error={error} visible={!isFocused} />
     </div>
   );
 }
 
 export default function Login() {
   const { t } = useLanguage();
-  const location = useLocation();
   const { pathname } = useLocation();
-  const isRegister = pathname === "/register";
-
+  const location = useLocation();
   const navigate = useNavigate();
+
+  const isRegister = pathname === "/register";
   const from = location.state?.from || "/account";
 
   const login = useAuth((s) => s.login);
@@ -158,9 +196,7 @@ export default function Login() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      navigate(from, { replace: true });
-    }
+    if (user) navigate(from, { replace: true });
   }, [user, navigate, from]);
 
   const firstNameRef = useRef(null);
@@ -171,14 +207,11 @@ export default function Login() {
   const confirmPasswordRef = useRef(null);
 
   const [email, setEmail] = useState("");
-
   const [loginPassword, setLoginPassword] = useState("");
-
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-
   const [errors, setErrors] = useState({});
 
   const clearError = (key) => {
@@ -190,88 +223,26 @@ export default function Login() {
     });
   };
 
-  const resetLoginFields = () => {
-    setEmail("");
-    setLoginPassword("");
-  };
-
-  const resetRegisterFields = () => {
-    setFirstName("");
-    setLastName("");
-    setEmail("");
-    setRegisterPassword("");
-    setConfirmPassword("");
-  };
-
-  const validateEmail = (val) => {
-    const v = String(val || "").trim();
-    if (!v) return t.thisFieldIsRequired;
-    if (!v.includes("@") || !v.includes(".")) {
-      return t.enterValidEmailAddress;
-    }
-    return "";
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     const nextErrors = {};
 
     if (isRegister) {
       if (!firstName.trim()) nextErrors.firstName = t.thisFieldIsRequired;
       if (!lastName.trim()) nextErrors.lastName = t.thisFieldIsRequired;
-
-      const emailErr = validateEmail(email);
-      if (emailErr) nextErrors.email = emailErr;
-
-      if (!registerPassword.trim()) {
+      if (!email.includes("@")) nextErrors.email = t.enterValidEmailAddress;
+      if (!registerPassword.trim())
         nextErrors.registerPassword = t.thisFieldIsRequired;
-      }
-
-      if (!confirmPassword.trim()) {
-        nextErrors.confirmPassword = t.thisFieldIsRequired;
-      }
-
-      if (
-        registerPassword.trim() &&
-        confirmPassword.trim() &&
-        registerPassword !== confirmPassword
-      ) {
+      if (registerPassword !== confirmPassword)
         nextErrors.confirmPassword = t.passwordsDoNotMatch;
-      }
     } else {
-      const emailErr = validateEmail(email);
-      if (emailErr) nextErrors.email = emailErr;
-      if (!loginPassword.trim()) {
+      if (!email.trim()) nextErrors.email = t.thisFieldIsRequired;
+      if (!loginPassword.trim())
         nextErrors.loginPassword = t.thisFieldIsRequired;
-      }
     }
 
     setErrors(nextErrors);
-
-    if (Object.keys(nextErrors).length > 0) {
-      const order = isRegister
-        ? [
-            ["firstName", firstNameRef],
-            ["lastName", lastNameRef],
-            ["email", emailRef],
-            ["registerPassword", registerPasswordRef],
-            ["confirmPassword", confirmPasswordRef],
-          ]
-        : [
-            ["email", emailRef],
-            ["loginPassword", loginPasswordRef],
-          ];
-
-      const first = order.find(([key]) => nextErrors[key]);
-      const ref = first?.[1]?.current;
-
-      if (ref) {
-        ref.focus();
-        ref.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-      return;
-    }
+    if (Object.keys(nextErrors).length > 0) return;
 
     setServerError("");
     setSubmitting(true);
@@ -284,11 +255,10 @@ export default function Login() {
           firstName,
           lastName,
         });
-        navigate(from, { replace: true });
       } else {
         await login({ email, password: loginPassword });
-        navigate(from, { replace: true });
       }
+      navigate(from, { replace: true });
     } catch (err) {
       setServerError(err.message || t.somethingWentWrong);
     } finally {
@@ -296,196 +266,197 @@ export default function Login() {
     }
   };
 
-  const goLogin = () => {
-    setErrors({});
-    setServerError("");
-    resetLoginFields();
-  };
-
-  const goRegister = () => {
-    setErrors({});
-    setServerError("");
-    resetRegisterFields();
-  };
-
   return (
     <>
-      <main className="overflow-x-hidden py-6">
+      <motion.main
+        initial="hidden"
+        animate="visible"
+        variants={pageVariants}
+        className="overflow-x-hidden py-6"
+      >
         <section className="mx-auto w-full max-w-[420px] bg-white md:max-w-[560px] md:border md:border-black/40 lg:max-w-[680px]">
           <div className="px-6 pb-8 pt-6">
             <div className="flex w-full gap-3">
-              {isRegister ? (
-                <Link
-                  to="/login"
-                  className="block min-w-0 flex-1 border border-black/60 bg-white py-4 text-center text-base tracking-wide"
-                  onClick={goLogin}
-                >
-                  {t.signIn}
-                </Link>
-              ) : (
-                <div className="block min-w-0 flex-1 bg-black py-4 text-center text-base tracking-wide text-white">
-                  {t.signIn}
-                </div>
-              )}
-
-              {isRegister ? (
-                <div className="block min-w-0 flex-1 bg-black py-4 text-center text-base tracking-wide text-white">
-                  {t.createAccount}
-                </div>
-              ) : (
-                <Link
-                  to="/register"
-                  className="block min-w-0 flex-1 border border-black/60 bg-white py-4 text-center text-base tracking-wide"
-                  onClick={goRegister}
-                >
-                  {t.createAccount}
-                </Link>
-              )}
+              <Link
+                to="/login"
+                className={cn(
+                  "block min-w-0 flex-1 py-4 text-center text-base tracking-wide transition-all duration-300 border",
+                  !isRegister
+                    ? "bg-black text-white border-black"
+                    : "border-black/40 bg-white text-black",
+                )}
+              >
+                {t.signIn}
+              </Link>
+              <Link
+                to="/register"
+                className={cn(
+                  "block min-w-0 flex-1 py-4 text-center text-base tracking-wide transition-all duration-300 border",
+                  isRegister
+                    ? "bg-black text-white border-black"
+                    : "border-black/40 bg-white text-black",
+                )}
+              >
+                {t.createAccount}
+              </Link>
             </div>
 
-            <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-              {serverError ? (
-                <div className="border border-red-600 bg-red-50 px-4 py-3 text-sm text-red-700">
-                  {serverError}
-                </div>
-              ) : null}
-
-              {isRegister ? (
-                <>
-                  <TextInput
-                    label={t.firstName}
-                    required
-                    value={firstName}
-                    onChange={(e) => {
-                      setFirstName(e.target.value);
-                      clearError("firstName");
-                    }}
-                    autoComplete="given-name"
-                    error={errors.firstName}
-                    inputRef={firstNameRef}
-                  />
-
-                  <TextInput
-                    label={t.lastName}
-                    required
-                    value={lastName}
-                    onChange={(e) => {
-                      setLastName(e.target.value);
-                      clearError("lastName");
-                    }}
-                    autoComplete="family-name"
-                    error={errors.lastName}
-                    inputRef={lastNameRef}
-                  />
-
-                  <TextInput
-                    label={t.emailAddress}
-                    required
-                    type="email"
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      clearError("email");
-                    }}
-                    autoComplete="email"
-                    error={errors.email}
-                    inputRef={emailRef}
-                  />
-
-                  <PasswordInput
-                    label={t.password}
-                    value={registerPassword}
-                    onChange={(e) => {
-                      setRegisterPassword(e.target.value);
-                      clearError("registerPassword");
-                    }}
-                    autoComplete="new-password"
-                    required
-                    error={errors.registerPassword}
-                    inputRef={registerPasswordRef}
-                  />
-
-                  <PasswordInput
-                    label={t.confirmPassword}
-                    value={confirmPassword}
-                    onChange={(e) => {
-                      setConfirmPassword(e.target.value);
-                      clearError("confirmPassword");
-                    }}
-                    autoComplete="new-password"
-                    required
-                    error={errors.confirmPassword}
-                    inputRef={confirmPasswordRef}
-                  />
-
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className={[
-                      "mt-6 w-full bg-black py-5 text-center text-base tracking-wide text-white",
-                      submitting ? "cursor-not-allowed opacity-60" : "",
-                    ].join(" ")}
+            <AnimatePresence mode="wait" custom={isRegister}>
+              <motion.form
+                key={isRegister ? "register-form" : "login-form"}
+                custom={isRegister}
+                variants={formVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                onSubmit={handleSubmit}
+                className="mt-8 space-y-5"
+              >
+                {serverError && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    className="border border-red-600 bg-red-50 px-4 py-3 text-sm text-red-700 overflow-hidden"
                   >
-                    {submitting ? t.pleaseWait : t.createAccount}
-                  </button>
-                </>
-              ) : (
-                <>
-                  <TextInput
-                    label={t.emailAddress}
-                    required
-                    type="email"
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      clearError("email");
-                    }}
-                    autoComplete="email"
-                    error={errors.email}
-                    inputRef={emailRef}
-                  />
+                    {serverError}
+                  </motion.div>
+                )}
 
-                  <PasswordInput
-                    label={t.password}
-                    value={loginPassword}
-                    onChange={(e) => {
-                      setLoginPassword(e.target.value);
-                      clearError("loginPassword");
-                    }}
-                    autoComplete="current-password"
-                    required
-                    error={errors.loginPassword}
-                    inputRef={loginPasswordRef}
-                  />
+                {isRegister ? (
+                  <>
+                    <TextInput
+                      label={t.firstName}
+                      required
+                      value={firstName}
+                      onChange={(e) => {
+                        setFirstName(e.target.value);
+                        clearError("firstName");
+                      }}
+                      autoComplete="given-name"
+                      error={errors.firstName}
+                      inputRef={firstNameRef}
+                    />
+                    <TextInput
+                      label={t.lastName}
+                      required
+                      value={lastName}
+                      onChange={(e) => {
+                        setLastName(e.target.value);
+                        clearError("lastName");
+                      }}
+                      autoComplete="family-name"
+                      error={errors.lastName}
+                      inputRef={lastNameRef}
+                    />
+                    <TextInput
+                      label={t.emailAddress}
+                      required
+                      type="email"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        clearError("email");
+                      }}
+                      autoComplete="email"
+                      error={errors.email}
+                      inputRef={emailRef}
+                    />
+                    <PasswordInput
+                      label={t.password}
+                      value={registerPassword}
+                      onChange={(e) => {
+                        setRegisterPassword(e.target.value);
+                        clearError("registerPassword");
+                      }}
+                      autoComplete="new-password"
+                      required
+                      error={errors.registerPassword}
+                      inputRef={registerPasswordRef}
+                    />
+                    <PasswordInput
+                      label={t.confirmPassword}
+                      value={confirmPassword}
+                      onChange={(e) => {
+                        setConfirmPassword(e.target.value);
+                        clearError("confirmPassword");
+                      }}
+                      autoComplete="new-password"
+                      required
+                      error={errors.confirmPassword}
+                      inputRef={confirmPasswordRef}
+                    />
 
-                  <div className="-mt-2 flex justify-end">
-                    <Link
-                      to="/forgot-password"
-                      className="text-sm text-black/50 underline underline-offset-2"
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      className={cn(
+                        "mt-6 w-full bg-black py-5 text-center text-base tracking-wide text-white transition-opacity active:scale-[0.99]",
+                        submitting && "opacity-60 cursor-not-allowed",
+                      )}
                     >
-                      {t.forgotPassword}
-                    </Link>
-                  </div>
+                      {submitting ? t.pleaseWait : t.createAccount}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <TextInput
+                      label={t.emailAddress}
+                      required
+                      type="email"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        clearError("email");
+                      }}
+                      autoComplete="email"
+                      error={errors.email}
+                      inputRef={emailRef}
+                    />
+                    <PasswordInput
+                      label={t.password}
+                      value={loginPassword}
+                      onChange={(e) => {
+                        setLoginPassword(e.target.value);
+                        clearError("loginPassword");
+                      }}
+                      autoComplete="current-password"
+                      required
+                      error={errors.loginPassword}
+                      inputRef={loginPasswordRef}
+                    />
 
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className={[
-                      "mt-6 w-full bg-black py-5 text-center text-base tracking-wide text-white",
-                      submitting ? "cursor-not-allowed opacity-60" : "",
-                    ].join(" ")}
-                  >
-                    {submitting ? t.pleaseWait : t.logIn}
-                  </button>
-                </>
-              )}
-            </form>
+                    <div className="-mt-2 flex justify-end">
+                      <Link
+                        to="/forgot-password"
+                        name="forgot-password"
+                        className="text-sm text-black/50 underline underline-offset-2 hover:text-black transition-colors"
+                      >
+                        {t.forgotPassword}
+                      </Link>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      className={cn(
+                        "mt-6 w-full bg-black py-5 text-center text-base tracking-wide text-white transition-opacity active:scale-[0.99]",
+                        submitting && "opacity-60 cursor-not-allowed",
+                      )}
+                    >
+                      {submitting ? t.pleaseWait : t.logIn}
+                    </button>
+                  </>
+                )}
+              </motion.form>
+            </AnimatePresence>
           </div>
         </section>
-      </main>
+      </motion.main>
 
       <FullWidthDivider />
-      <OurSalons />
+      <Reveal>
+        <OurSalons />
+      </Reveal>
       <FullWidthDivider />
     </>
   );
