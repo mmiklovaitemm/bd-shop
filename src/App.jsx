@@ -79,7 +79,6 @@ export default function App() {
               </PageWrapper>
             }
           />
-
           <Route
             path="/login"
             element={
@@ -107,6 +106,58 @@ export default function App() {
               </RequireAuth>
             }
           />
+          <Route
+            path="/account/orders"
+            element={
+              <RequireAuth>
+                <PageWrapper>
+                  <OrderHistory />
+                </PageWrapper>
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/account/profile"
+            element={
+              <RequireAuth>
+                <PageWrapper>
+                  <Profile />
+                </PageWrapper>
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/account/change-password"
+            element={
+              <RequireAuth>
+                <PageWrapper>
+                  <ChangePassword />
+                </PageWrapper>
+              </RequireAuth>
+            }
+          />
+
+          {/* ADMIN ROUTES (if needed) */}
+          <Route
+            path="/admin/orders"
+            element={
+              <RequireAdmin>
+                <PageWrapper>
+                  <AdminOrders />
+                </PageWrapper>
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/admin/products"
+            element={
+              <RequireAdmin>
+                <PageWrapper>
+                  <AdminProducts />
+                </PageWrapper>
+              </RequireAdmin>
+            }
+          />
 
           <Route
             path="/about"
@@ -132,6 +183,15 @@ export default function App() {
               </PageWrapper>
             }
           />
+          <Route
+            path="/thank-you"
+            element={
+              <PageWrapper>
+                <ThankYou />
+              </PageWrapper>
+            }
+          />
+
           <Route
             path="*"
             element={
