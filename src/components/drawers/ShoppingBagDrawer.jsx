@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { apiGet } from "@/lib/api";
 
@@ -178,6 +179,15 @@ function getEffectiveSize(product, color, item) {
   return getFirstAvailableSize(product, color);
 }
 
+const drawerVariants = {
+  hidden: { x: "100%" },
+  visible: {
+    x: 0,
+    transition: { type: "spring", damping: 27, stiffness: 200 },
+  },
+  exit: { x: "100%", transition: { ease: "easeInOut", duration: 0.3 } },
+};
+
 export default function ShoppingBagDrawer() {
   const navigate = useNavigate();
   const isOpen = useBagDrawer((s) => s.isOpen);
@@ -310,360 +320,256 @@ export default function ShoppingBagDrawer() {
   );
 
   return (
-    <div
-      className={[
-        "fixed inset-0 z-[90] select-none transition-opacity duration-300 ease-out",
-        isOpen ? "opacity-100" : "pointer-events-none opacity-0",
-      ].join(" ")}
-      onDragStart={preventDragHandler}
-    >
-      <button
-        type="button"
-        aria-label={t.closeBag}
-        onClick={close}
-        className={[
-          "absolute inset-0 bg-black/40 transition-opacity duration-300 ease-out",
-          isOpen ? "opacity-100" : "opacity-0",
-        ].join(" ")}
-      />
-
-      <aside
-        data-bag-panel
-        className={[
-          "absolute right-0 top-0 h-full w-[min(92vw,420px)] border-l border-black bg-white",
-          "transform transition-transform duration-300 ease-out",
-          isOpen ? "translate-x-0" : "translate-x-full",
-        ].join(" ")}
-      >
-        <div className="flex h-16 items-center justify-between border-b border-black px-6">
-          <p className="font-display text-[20px] leading-none">{t.bag}</p>
-
-          <button
-            type="button"
+    <AnimatePresence>
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-[90] select-none overflow-hidden"
+          onDragStart={preventDragHandler}
+        >
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
             onClick={close}
-            className="ui-close inline-flex select-none items-center gap-2 font-ui text-[14px]"
+            className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
+          />
+
+          {/* Drawer */}
+          <motion.aside
+            data-bag-panel
+            variants={drawerVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="absolute right-0 top-0 h-full w-[min(92vw,420px)] border-l border-black bg-white shadow-2xl"
           >
-            <span className="ui-close__inner">
-              <span className="inline-block">{t.close}</span>
-              <img
-                src={arrowUpRightIcon}
-                alt=""
-                aria-hidden="true"
-                draggable={false}
-                onDragStart={preventDragHandler}
-                className="h-3 w-3 select-none transition-transform duration-300 ease-out"
-              />
-            </span>
-          </button>
-        </div>
+            <div className="flex h-16 items-center justify-between border-b border-black px-6">
+              <p className="font-display text-[20px] leading-none uppercase tracking-tight">
+                {t.bag}
+              </p>
 
-        <div className="flex h-[calc(100vh-64px)] flex-col">
-          <div className="flex-1 overflow-y-auto">
-            {items.length === 0 ? (
-              <div className="px-6 py-10 text-center font-ui text-[14px] text-black/60">
-                {t.bagEmpty}
-              </div>
-            ) : (
-              items.map((item, idx) => {
-                const isLast = idx === items.length - 1;
+              <button
+                type="button"
+                onClick={close}
+                className="ui-close inline-flex select-none items-center gap-2 font-ui text-[14px] group"
+              >
+                <span className="ui-close__inner">
+                  <span className="inline-block">{t.close}</span>
+                  <img
+                    src={arrowUpRightIcon}
+                    alt=""
+                    aria-hidden="true"
+                    className="h-3 w-3 select-none transition-transform duration-300 ease-out group-hover:rotate-45"
+                  />
+                </span>
+              </button>
+            </div>
 
-                const pid =
-                  item.productId ??
-                  item.id ??
-                  item.product?.id ??
-                  item.product?.productId ??
-                  String(item.key || "").split("|")[0];
-
-                const resolvedProduct = getProductById(pid);
-                const product = resolvedProduct || item.product || null;
-
-                const availableColors = getAvailableColors(product);
-                const currentColor = getEffectiveColor(product, item);
-                const availableSizes = getAvailableSizesForColor(
-                  product,
-                  currentColor,
-                );
-                const currentSize = getEffectiveSize(
-                  product,
-                  currentColor,
-                  item,
-                );
-
-                const hasSizes = availableSizes.length > 0;
-                const hasColors = availableColors.length > 0;
-
-                const variantStock = resolvedProduct
-                  ? getVariantStock(product, currentColor, currentSize)
-                  : null;
-
-                const isSoldOut = resolvedProduct ? variantStock <= 0 : false;
-
-                const itemQuantity = Math.max(1, Number(item.quantity || 1));
-
-                const reachedMaxStock = resolvedProduct
-                  ? variantStock > 0
-                    ? itemQuantity >= variantStock
-                    : true
-                  : false;
-
-                return (
-                  <div
-                    key={item.key}
-                    className={[
-                      "px-6 py-6",
-                      idx !== 0 ? "border-t border-black/80" : "",
-                      isLast ? "border-b border-black/80" : "",
-                    ].join(" ")}
+            <div className="flex h-[calc(100vh-64px)] flex-col">
+              <div className="flex-1 overflow-y-auto">
+                {items.length === 0 ? (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="px-6 py-10 text-center font-ui text-[14px] text-black/60 italic"
                   >
-                    <div className="grid grid-cols-[90px_1fr] gap-5">
-                      <div className="h-[110px] w-[90px] overflow-hidden bg-black/5">
-                        <img
-                          src={item.image}
-                          alt={item.name || ""}
-                          draggable={false}
-                          onDragStart={preventDragHandler}
-                          className="h-full w-full select-none object-cover"
-                          loading="lazy"
-                        />
-                      </div>
+                    {t.bagEmpty}
+                  </motion.div>
+                ) : (
+                  <div className="divide-y divide-black/5">
+                    <AnimatePresence mode="popLayout">
+                      {items.map((item) => {
+                        const pid =
+                          item.productId ??
+                          item.id ??
+                          item.product?.id ??
+                          item.product?.productId ??
+                          String(item.key || "").split("|")[0];
+                        const resolvedProduct = getProductById(pid);
+                        const product = resolvedProduct || item.product || null;
+                        const availableColors = getAvailableColors(product);
+                        const currentColor = getEffectiveColor(product, item);
+                        const currentSize = getEffectiveSize(
+                          product,
+                          currentColor,
+                          item,
+                        );
+                        const variantStock = resolvedProduct
+                          ? getVariantStock(product, currentColor, currentSize)
+                          : null;
+                        const isSoldOut = resolvedProduct
+                          ? variantStock <= 0
+                          : false;
+                        const itemQuantity = Math.max(
+                          1,
+                          Number(item.quantity || 1),
+                        );
+                        const reachedMaxStock = resolvedProduct
+                          ? variantStock > 0
+                            ? itemQuantity >= variantStock
+                            : true
+                          : false;
 
-                      <div className="min-w-0">
-                        <div className="flex items-start justify-between gap-3">
-                          <p className="font-display text-[18px] leading-tight">
-                            {item.name}
-                          </p>
-
-                          {resolvedProduct ? (
-                            isSoldOut ? (
-                              <p className="mt-1 font-ui text-[12px] uppercase tracking-[0.08em] text-red-600">
-                                {t.soldOut}
-                              </p>
-                            ) : (
-                              <p className="mt-1 font-ui text-[12px] text-black/55">
-                                {t.inStock}: {variantStock}
-                              </p>
-                            )
-                          ) : null}
-
-                          {(() => {
-                            const base = Number(item.price) || 0;
-
-                            const service = String(
-                              item.serviceOption || "",
-                            ).toLowerCase();
-
-                            const isShippingKit =
-                              service === "shipping" ||
-                              service === "shipping-kit" ||
-                              service === "shipping_kit";
-
-                            const fee = isShippingKit ? 15 : 0;
-                            const unitTotal = base + fee;
-
-                            return (
-                              <div className="text-right">
-                                <p className="whitespace-nowrap font-ui text-[14px]">
-                                  {fmtPrice(unitTotal)}
-                                </p>
-
-                                {fee > 0 ? (
-                                  <p className="mt-1 whitespace-nowrap font-ui text-[12px] text-black/60">
-                                    {t.shippingKit} + {fmtPrice(fee)}
-                                  </p>
-                                ) : null}
-                              </div>
-                            );
-                          })()}
-                        </div>
-
-                        <div className="mt-3 grid grid-cols-2 gap-3">
-                          {product?.category === "personal" ? (
-                            <div className="bg-black/5 px-3 py-2">
-                              <p className="font-ui text-[12px] text-black/50">
-                                {t.serviceOption}
-                              </p>
-
-                              <select
-                                className="mt-1 w-full bg-transparent font-ui text-[13px] text-black/80 outline-none"
-                                value={item.serviceOption || "shipping"}
-                                onChange={(e) =>
-                                  updateServiceOption(item.key, e.target.value)
-                                }
-                              >
-                                <option value="shipping">
-                                  {t.shippingKit} (+15€)
-                                </option>
-                                <option value="in_store">{t.inStore}</option>
-                              </select>
-                            </div>
-                          ) : null}
-
-                          <div className="bg-black/5 px-3 py-2">
-                            <p className="font-ui text-[12px] text-black/50">
-                              {t.color}
-                            </p>
-
-                            {hasColors ? (
-                              <select
-                                className="mt-1 w-full bg-transparent font-ui text-[13px] text-black/80 outline-none"
-                                value={currentColor}
-                                onChange={(e) => {
-                                  const nextColor = e.target.value;
-                                  const nextSize = getFirstAvailableSize(
-                                    product,
-                                    nextColor,
-                                  );
-                                  const nextImage = pickVariantImage(
-                                    product,
-                                    nextColor,
-                                    nextSize,
-                                  );
-
-                                  updateVariant(item.key, {
-                                    color: nextColor,
-                                    size: nextSize,
-                                    image: nextImage,
-                                  });
-                                }}
-                              >
-                                {availableColors.map((c) => (
-                                  <option key={c} value={c}>
-                                    {c}
-                                  </option>
-                                ))}
-                              </select>
-                            ) : (
-                              <p className="mt-1 font-ui text-[13px] text-black/60">
-                                —
-                              </p>
-                            )}
-                          </div>
-
-                          <div className="bg-black/5 px-3 py-2">
-                            <p className="font-ui text-[12px] text-black/50">
-                              {t.size}
-                            </p>
-
-                            {hasSizes ? (
-                              <select
-                                className="mt-1 w-full bg-transparent font-ui text-[13px] text-black/80 outline-none"
-                                value={currentSize || ""}
-                                onChange={(e) => {
-                                  const nextSize = e.target.value || null;
-
-                                  updateVariant(item.key, {
-                                    color: currentColor,
-                                    size: nextSize,
-                                    image: pickVariantImage(
-                                      product,
-                                      currentColor,
-                                      nextSize,
-                                    ),
-                                  });
-                                }}
-                              >
-                                {availableSizes.map((s) => (
-                                  <option key={s} value={s}>
-                                    {s}
-                                  </option>
-                                ))}
-                              </select>
-                            ) : (
-                              <p className="mt-1 font-ui text-[13px] text-black/60">
-                                {t.oneSize}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="mt-4 flex items-center justify-between gap-4">
-                          <div className="inline-flex h-10 items-stretch border border-black bg-white">
-                            <button
-                              type="button"
-                              aria-label={t.decreaseQuantity}
-                              disabled={itemQuantity <= 1}
-                              className="grid w-9 select-none place-items-center bg-black/5 font-ui text-[18px] disabled:cursor-not-allowed disabled:opacity-40 lg:hover:bg-black/10"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                if (itemQuantity <= 1) return;
-                                dec(item.key);
-                              }}
-                            >
-                              –
-                            </button>
-
-                            <div className="grid w-9 place-items-center border-x border-black bg-white font-ui text-[13px]">
-                              {itemQuantity}
-                            </div>
-
-                            <button
-                              type="button"
-                              aria-label={t.increaseQuantity}
-                              disabled={isSoldOut || reachedMaxStock}
-                              className="grid w-9 select-none place-items-center bg-black/5 font-ui text-[18px] disabled:cursor-not-allowed disabled:opacity-40 lg:hover:bg-black/10"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                if (isSoldOut || reachedMaxStock) return;
-                                inc(item.key);
-                              }}
-                            >
-                              +
-                            </button>
-                          </div>
-
-                          <button
-                            type="button"
-                            aria-label={t.removeItem}
-                            className="select-none p-2 lg:hover:opacity-70"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              removeItem(item.key);
-                            }}
+                        return (
+                          <motion.div
+                            layout
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            key={item.key}
+                            className="px-6 py-6"
                           >
-                            <img
-                              src={trashIcon}
-                              alt=""
-                              aria-hidden="true"
-                              draggable={false}
-                              onDragStart={preventDragHandler}
-                              className="h-5 w-5 select-none opacity-60"
-                            />
-                          </button>
-                        </div>
+                            <div className="grid grid-cols-[90px_1fr] gap-5">
+                              <div className="h-[110px] w-[90px] overflow-hidden bg-black/5">
+                                <img
+                                  src={item.image}
+                                  alt={item.name || ""}
+                                  className="h-full w-full select-none object-cover"
+                                  loading="lazy"
+                                />
+                              </div>
 
-                        {item.note ? (
-                          <div className="mt-5 bg-black/55 px-4 py-3 font-ui text-[13px] text-white">
-                            {item.note}
-                          </div>
-                        ) : null}
-                      </div>
-                    </div>
+                              <div className="min-w-0">
+                                <div className="flex items-start justify-between gap-3">
+                                  <p className="font-display text-[18px] leading-tight">
+                                    {item.name}
+                                  </p>
+                                  <div className="text-right">
+                                    <p className="whitespace-nowrap font-ui text-[14px]">
+                                      {fmtPrice(
+                                        (Number(item.price) || 0) +
+                                          (String(item?.serviceOption)
+                                            .toLowerCase()
+                                            .includes("shipping")
+                                            ? 15
+                                            : 0),
+                                      )}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <div className="mt-3 grid grid-cols-2 gap-3">
+                                  {product?.category === "personal" && (
+                                    <div className="bg-black/5 px-3 py-2">
+                                      <p className="font-ui text-[12px] text-black/50">
+                                        {t.serviceOption}
+                                      </p>
+                                      <select
+                                        className="mt-1 w-full bg-transparent font-ui text-[13px] outline-none"
+                                        value={item.serviceOption || "shipping"}
+                                        onChange={(e) =>
+                                          updateServiceOption(
+                                            item.key,
+                                            e.target.value,
+                                          )
+                                        }
+                                      >
+                                        <option value="shipping">
+                                          {t.shippingKit} (+15€)
+                                        </option>
+                                        <option value="in_store">
+                                          {t.inStore}
+                                        </option>
+                                      </select>
+                                    </div>
+                                  )}
+                                  <div className="bg-black/5 px-3 py-2">
+                                    <p className="font-ui text-[12px] text-black/50">
+                                      {t.color}
+                                    </p>
+                                    <select
+                                      className="mt-1 w-full bg-transparent font-ui text-[13px] outline-none"
+                                      value={currentColor}
+                                      onChange={(e) => {
+                                        const nextColor = e.target.value;
+                                        const nextSize = getFirstAvailableSize(
+                                          product,
+                                          nextColor,
+                                        );
+                                        updateVariant(item.key, {
+                                          color: nextColor,
+                                          size: nextSize,
+                                          image: pickVariantImage(
+                                            product,
+                                            nextColor,
+                                            nextSize,
+                                          ),
+                                        });
+                                      }}
+                                    >
+                                      {availableColors.map((c) => (
+                                        <option key={c} value={c}>
+                                          {c}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                </div>
+
+                                <div className="mt-4 flex items-center justify-between gap-4">
+                                  <div className="inline-flex h-10 items-stretch border border-black bg-white">
+                                    <button
+                                      className="grid w-9 place-items-center bg-black/5 disabled:opacity-30"
+                                      disabled={itemQuantity <= 1}
+                                      onClick={() => dec(item.key)}
+                                    >
+                                      –
+                                    </button>
+                                    <div className="grid w-9 place-items-center border-x border-black font-ui text-[13px]">
+                                      {itemQuantity}
+                                    </div>
+                                    <button
+                                      className="grid w-9 place-items-center bg-black/5 disabled:opacity-30"
+                                      disabled={isSoldOut || reachedMaxStock}
+                                      onClick={() => inc(item.key)}
+                                    >
+                                      +
+                                    </button>
+                                  </div>
+
+                                  <button
+                                    className="p-2 transition-opacity hover:opacity-50"
+                                    onClick={() => removeItem(item.key)}
+                                  >
+                                    <img
+                                      src={trashIcon}
+                                      alt=""
+                                      className="h-5 w-5 opacity-60"
+                                    />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </AnimatePresence>
                   </div>
-                );
-              })
-            )}
-          </div>
+                )}
+              </div>
 
-          <div className="border-t border-black p-6">
-            <button
-              type="button"
-              className="ui-interact flex h-12 w-full select-none items-center justify-center gap-4 bg-black font-ui text-[14px] text-white disabled:opacity-50"
-              onClick={(e) => {
-                e.preventDefault();
-                if (items.length === 0) return;
-
-                close();
-                navigate("/checkout");
-              }}
-              disabled={items.length === 0}
-            >
-              <span>{t.checkout}</span>
-              <span className="inline-block h-px w-10 bg-white/90" />
-              <span className="font-ui">{fmtPrice(subtotal)}</span>
-            </button>
-          </div>
+              {/* Checkout */}
+              <div className="border-t border-black p-6 bg-white">
+                <button
+                  type="button"
+                  className="ui-interact flex h-12 w-full items-center justify-center gap-4 bg-black font-ui text-[14px] text-white transition-transform active:scale-[0.98] disabled:opacity-50"
+                  onClick={() => {
+                    close();
+                    navigate("/checkout");
+                  }}
+                  disabled={items.length === 0}
+                >
+                  <span>{t.checkout}</span>
+                  <span className="inline-block h-px w-10 bg-white/90" />
+                  <span className="font-ui">{fmtPrice(subtotal)}</span>
+                </button>
+              </div>
+            </div>
+          </motion.aside>
         </div>
-      </aside>
-    </div>
+      )}
+    </AnimatePresence>
   );
 }
