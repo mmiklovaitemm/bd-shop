@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
-const API_ORIGIN = import.meta.env.VITE_API_URL || "http://localhost:4000";
+const API_ORIGIN =
+  import.meta.env.VITE_API_URL || "https://bd-shop-gfva.onrender.com";
 
 export default function useAdminOrders() {
   const [orders, setOrders] = useState([]);

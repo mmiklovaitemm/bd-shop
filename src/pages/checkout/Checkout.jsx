@@ -15,7 +15,8 @@ import PickupSection from "./components/PickupSection";
 
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 
-const API_ORIGIN = import.meta.env.VITE_API_URL || "http://localhost:4000";
+const API_ORIGIN =
+  import.meta.env.VITE_API_URL || "https://bd-shop-gfva.onrender.com";
 
 function isVariantObject(value) {
   return (

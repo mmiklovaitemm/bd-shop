@@ -23,7 +23,7 @@ const FRONTEND_BASE_PATH = process.env.FRONTEND_BASE_PATH || "/";
 const BACKEND_ORIGIN =
   process.env.BACKEND_ORIGIN ||
   process.env.API_ORIGIN ||
-  "http://localhost:4000";
+  "https://bd-shop-gfva.onrender.com";
 
 function joinUrl(origin, path) {
   const o = String(origin).replace(/\/+$/, "");

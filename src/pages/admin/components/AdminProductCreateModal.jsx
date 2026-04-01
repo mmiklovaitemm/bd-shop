@@ -11,7 +11,8 @@ export default function AdminProductCreateModal({
   initialData,
   isSaving = false,
 }) {
-  const API_ORIGIN = import.meta.env.VITE_API_URL || "http://localhost:4000";
+  const API_ORIGIN =
+    import.meta.env.VITE_API_URL || "https://bd-shop-gfva.onrender.com";
   const FRONTEND_BASE_PATH = import.meta.env.BASE_URL || "/";
 
   const [form, setForm] = useState({

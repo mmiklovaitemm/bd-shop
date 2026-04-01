@@ -1,6 +1,7 @@
 import { useState } from "react";
 
-const API_ORIGIN = import.meta.env.VITE_API_URL || "http://localhost:4000";
+const API_ORIGIN =
+  import.meta.env.VITE_API_URL || "https://bd-shop-gfva.onrender.com";
 
 export default function useOrderStatusUpdate({ setOrders, fetchOrders }) {
   const [savingId, setSavingId] = useState(null);
