@@ -638,34 +638,35 @@ export default function Collections() {
               </div>
             ) : (
               <>
-                {/* Čia prasideda animuotas tinklelis */}
-                <motion.div
-                  key={activeCategory + safePage}
-                  variants={containerVariants}
-                  initial="hidden"
-                  animate="visible"
-                  className={[
-                    "grid grid-cols-2 gap-x-3 gap-y-5 min-[460px]:grid-cols-2 md:grid-cols-3 md:gap-x-4 md:gap-y-6",
-                    desktopColsClass,
-                  ].join(" ")}
-                >
-                  {pageItems.map((product, idx) => (
-                    <motion.div key={product.id} variants={itemVariants}>
-                      <ProductCard
-                        product={{ ...product, image: product.thumbnail }}
-                        priority={idx < 4}
-                        onAddToCart={() => {}}
-                        onAddToFavorites={() => {}}
-                        onMediaReady={() => {}}
-                        onImageError={(e) => {
-                          e.currentTarget.src = `${import.meta.env.BASE_URL}products/fallback.png`;
-                        }}
-                      />
-                    </motion.div>
-                  ))}
-                </motion.div>
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={activeCategory + safePage}
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="hidden"
+                    className={[
+                      "grid grid-cols-2 gap-x-3 gap-y-5 min-[460px]:grid-cols-2 md:grid-cols-3 md:gap-x-4 md:gap-y-6",
+                      desktopColsClass,
+                    ].join(" ")}
+                  >
+                    {pageItems.map((product, idx) => (
+                      <motion.div key={product.id} variants={itemVariants}>
+                        <ProductCard
+                          product={{ ...product, image: product.thumbnail }}
+                          priority={idx < 4}
+                          onAddToCart={() => {}}
+                          onAddToFavorites={() => {}}
+                          onMediaReady={() => {}}
+                          onImageError={(e) => {
+                            e.currentTarget.src = `${import.meta.env.BASE_URL}products/fallback.png`;
+                          }}
+                        />
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                </AnimatePresence>
 
-                {/* Puslapiavimo dalis */}
                 <div className="mt-8 flex flex-col items-center gap-3">
                   <p className="font-ui text-[13px] text-black/70">
                     {t.showing} {showingCount} {t.of} {totalItems}
