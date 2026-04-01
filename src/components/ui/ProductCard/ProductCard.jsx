@@ -129,9 +129,9 @@ export default function ProductCard({
       draggable={false}
       onDragStart={(e) => e.preventDefault()}
       className={cn(
-        "group bg-white w-full h-full select-none",
+        "group bg-white w-full h-full select-none transition-all duration-500 ease-out",
         isDesktop
-          ? "active:brightness-95"
+          ? "hover:-translate-y-1 active:brightness-95"
           : "active:brightness-100 focus:outline-none focus:ring-0",
       )}
     >
