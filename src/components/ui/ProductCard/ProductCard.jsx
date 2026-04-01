@@ -38,22 +38,20 @@ export default function ProductCard({
 
   const isWishlisted = has(safeProduct?.id);
   const enqueuePreload = usePreloadQueue();
-
   const [cardRef, isInView] = useIntersectionObserver();
 
-  // Loading states
   const [loadedMain, setLoadedMain] = useState(false);
   const [loadedHover, setLoadedHover] = useState(false);
 
-  const [prevSrc, setPrevSrc] = useState(mainSrc);
+  // Synchronous State Syncing
+  const [prevId, setPrevId] = useState(safeProduct?.id);
 
-  if (mainSrc !== prevSrc) {
-    setPrevSrc(mainSrc);
+  if (safeProduct?.id !== prevId) {
+    setPrevId(safeProduct?.id);
     setLoadedMain(false);
     setLoadedHover(false);
   }
 
-  // Preload hover image on desktop when in view
   useImagePreload(
     hoverSrc,
     isDesktop && isInView,
@@ -82,9 +80,7 @@ export default function ProductCard({
     (e) => {
       e?.preventDefault?.();
       e?.stopPropagation?.();
-
       if (!safeProduct?.id || safeProduct?.isSoldOut) return;
-
       addToCart({
         product: safeProduct,
         color: baseColor || "silver",
@@ -93,7 +89,6 @@ export default function ProductCard({
         image: mainSrc || safeProduct.thumbnail || "",
         serviceOption: safeProduct.category === "personal" ? "shipping" : null,
       });
-
       onAddToCart?.(e);
     },
     [addToCart, safeProduct, baseColor, mainSrc, onAddToCart],
@@ -118,19 +113,10 @@ export default function ProductCard({
         aria-label={`${t.open} ${safeProduct.name}`}
       >
         <div className="relative w-full h-[340px] overflow-hidden bg-[#F5F5F5]">
-          {/* Sold Out Badge */}
-          {safeProduct.isSoldOut && (
-            <div className="absolute left-4 top-4 z-[20] border border-black/70 bg-white/90 px-3 py-1 font-ui text-[10px] uppercase tracking-[0.12em]">
-              {t.soldOut}
-            </div>
-          )}
-
-          {/* Skeleton Loader */}
           {!loadedMain && (
             <div className="absolute inset-0 z-[1] animate-pulse bg-neutral-200" />
           )}
 
-          {/* Main Image */}
           <div
             className={cn(
               "absolute inset-0 z-[2] transition-all duration-700 ease-in-out",
@@ -152,12 +138,11 @@ export default function ProductCard({
             />
           </div>
 
-          {/* Hover Image */}
           {isDesktop && hasHoverImage && (
             <div className="absolute inset-0 z-[3] opacity-0 transition-all duration-700 ease-in-out lg:group-hover:opacity-100 lg:group-hover:scale-105">
               <ProductImage
                 src={hoverSrc}
-                alt={`${safeProduct.name} - hover`}
+                alt={`${safeProduct.name} - alternate view`}
                 loaded={loadedHover}
                 onLoad={handleHoverLoad}
                 onError={onImageError}
@@ -167,7 +152,6 @@ export default function ProductCard({
             </div>
           )}
 
-          {/* Overlay & Title */}
           {isDesktop && (
             <>
               <div className="pointer-events-none absolute inset-0 z-[10] bg-black/25 opacity-0 transition-opacity duration-300 ease-out lg:group-hover:opacity-100" />
@@ -177,8 +161,13 @@ export default function ProductCard({
             </>
           )}
 
-          {/* Action UI */}
-          <div className="absolute inset-0 z-[20]">
+          {safeProduct.isSoldOut && (
+            <div className="absolute left-4 top-4 z-[20] border border-black/70 bg-white/90 px-3 py-1 font-ui text-[10px] uppercase tracking-[0.12em]">
+              {t.soldOut}
+            </div>
+          )}
+
+          <div className="absolute inset-0 z-[25]">
             <ActionButtons
               product={safeProduct}
               onAddToCart={handleAddToCart}
@@ -192,7 +181,7 @@ export default function ProductCard({
             />
           </div>
 
-          <div className="absolute inset-x-0 bottom-0 z-[20]">
+          <div className="absolute inset-x-0 bottom-0 z-[25]">
             <BottomBar
               product={safeProduct}
               onAddToCart={handleAddToCart}
