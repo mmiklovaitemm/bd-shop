@@ -9,12 +9,14 @@ import SubscribeBanner from "@/components/ui/SubscribeBanner";
 
 export default function RootLayout() {
   return (
-    <div className="min-h-screen bg-white text-neutral-900">
+    <div className="flex min-h-screen flex-col bg-white text-neutral-900">
       <ScrollToTop />
       <AnnouncementBar />
       <Header />
       <ShoppingBagDrawer />
-      <main className="mx-auto w-full max-w-6xl">
+
+      {/* flex-1 uztikrina, kad jei turinio mazai, Footeris visada bus apacioje */}
+      <main className="flex-1 w-full">
         <Outlet />
       </main>
 

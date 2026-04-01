@@ -1,55 +1,55 @@
+import { motion } from "framer-motion";
 import useLanguage from "@/context/useLanguage";
 
 import store1 from "@/assets/images/store-images/store-1.webp";
 import store2 from "@/assets/images/store-images/store-2.webp";
 
-function SalonCard({ image, city, address, phone, hours }) {
+function SalonCard({ image, city, address, phone, hours, index }) {
   const { t } = useLanguage();
 
   return (
-    <article className="w-full object-cover h-[360px] md:h-[380px] lg:h-[360px] lg:min-w-[380px]">
-      <div className="relative">
-        <img
-          src={image}
-          alt={`${city} ${t.salon}`}
-          className="w-full object-cover h-[360px] md:h-[380px] lg:h-[360px]"
-        />
+    <motion.article
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{
+        duration: 0.8,
+        delay: index * 0.2,
+        ease: [0.215, 0.61, 0.355, 1],
+      }}
+      className="group relative w-full overflow-hidden cursor-pointer h-[400px] md:h-[420px] lg:flex-1"
+    >
+      {/* Image with hover zoom */}
+      <motion.img
+        src={image}
+        alt={`${city} ${t.salon}`}
+        transition={{ duration: 0.6 }}
+        className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+      />
 
-        <div className="absolute inset-x-0 bottom-0 h-[52%] bg-black/55 md:bg-black/60 lg:h-[44%] lg:bg-black/70" />
-        <div className="absolute inset-x-0 bottom-[52%] h-[28%] bg-gradient-to-t from-black/35 to-transparent md:from-black/30 lg:bottom-[44%] lg:h-[18%] lg:from-black/30" />
+      {/* Modern Gradient Overlays */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-opacity duration-500 group-hover:opacity-90" />
 
-        <div className="absolute inset-0 p-5 text-white flex flex-col justify-end font-ui">
-          <div className="lg:hidden">
-            <h3 className="font-display mb-2 text-[30px] leading-[1.05] tracking-[-0.02em] md:text-[32px]">
+      {/* Content Container */}
+      <div className="absolute inset-0 flex flex-col justify-end p-6 text-white md:p-8">
+        <div className="flex flex-col space-y-4 lg:flex-row lg:items-end lg:justify-between lg:space-y-0">
+          <div className="space-y-1">
+            <h3 className="font-display text-3xl leading-tight tracking-tight md:text-4xl">
               {city}
             </h3>
-
-            <p className="mb-3 text-[13px] text-white/85 md:text-[14px]">
-              {address}
-            </p>
-
-            <div className="mt-5 space-y-2 text-[13px] text-white/85 md:text-[14px]">
-              <p>{phone}</p>
-              <p>{hours}</p>
-            </div>
+            <p className="font-ui text-sm opacity-80 md:text-base">{address}</p>
           </div>
 
-          <div className="hidden lg:flex lg:items-end lg:justify-between lg:gap-6 lg:mb-2">
-            <div>
-              <h3 className="font-display text-[34px] leading-[1.05] tracking-[-0.02em]">
-                {city}
-              </h3>
-              <p className="mt-2 text-[14px] text-white/85">{address}</p>
-            </div>
-
-            <div className="text-right text-[14px] text-white/85 space-y-2 min-w-[170px]">
-              <p className="whitespace-nowrap">{phone}</p>
-              <p className="whitespace-nowrap">{hours}</p>
-            </div>
+          <div className="font-ui text-sm space-y-1 opacity-80 lg:text-right lg:min-w-[180px]">
+            <p className="whitespace-nowrap">{phone}</p>
+            <p className="whitespace-nowrap">{hours}</p>
           </div>
         </div>
+
+        {/* Aesthetic underline effect on hover */}
+        <motion.div className="mt-4 h-px w-0 bg-white/40 transition-all duration-500 group-hover:w-full" />
       </div>
-    </article>
+    </motion.article>
   );
 }
 
@@ -57,29 +57,47 @@ export default function OurSalons() {
   const { t } = useLanguage();
 
   return (
-    <section className="px-2 py-8">
-      <div className="lg:flex lg:items-start lg:gap-0">
-        <div className="lg:w-[320px] shrink-0">
-          <h2 className="font-display text-[44px] leading-[1.05] tracking-[-0.02em] text-black">
-            {t.ourSalons}
-          </h2>
+    <section className="mx-auto w-full max-w-[1400px] px-4 py-6 md:px-8 lg:py-10">
+      <div className="flex flex-col lg:flex-row lg:items-start lg:gap-16">
+        {/* Title side */}
+        <div className="mb-10 lg:mb-0 lg:w-[300px] lg:shrink-0">
+          <motion.h2
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="font-display text-4xl leading-[1.1] tracking-tight text-black md:text-5xl lg:text-6xl"
+          >
+            {t.ourSalons || "Our Salons"}
+          </motion.h2>
+
+          <motion.div
+            initial={{ width: 0 }}
+            whileInView={{ width: "60px" }}
+            viewport={{ once: true }}
+            transition={{ duration: 1, delay: 0.4 }}
+            className="mt-6 h-px bg-black hidden lg:block"
+          />
         </div>
 
-        <div className="mt-6 grid gap-6 font-ui md:grid-cols-2 lg:mt-0 lg:flex lg:gap-8">
+        {/* Cards side */}
+        <div className="grid w-full gap-8 md:grid-cols-2 lg:flex lg:gap-10">
           <SalonCard
+            index={0}
             image={store1}
             city="Vilnius, Lithuania"
             address="Kauno str. 24"
             phone="+370 689 76546"
-            hours={t.workingHours}
+            hours={t.workingHours || "Mon-Fri: 10:00 - 19:00"}
           />
 
           <SalonCard
+            index={1}
             image={store2}
             city="Kaunas, Lithuania"
             address="Žemaičių str. 24"
             phone="+370 612 33445"
-            hours={t.workingHours}
+            hours={t.workingHours || "Mon-Fri: 10:00 - 19:00"}
           />
         </div>
       </div>
