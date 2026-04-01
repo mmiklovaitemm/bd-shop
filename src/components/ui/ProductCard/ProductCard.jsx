@@ -1,10 +1,9 @@
-import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { Link } from "react-router-dom";
 
 import useFavorites from "@/context/useFavorites";
 import useLanguage from "@/context/useLanguage";
 import useAddToCart from "@/hooks/useAddToCart";
-
 import cn from "@/utils/cn";
 
 import useMediaQuery from "@/hooks/useMediaQuery";
@@ -42,27 +41,11 @@ export default function ProductCard({
 
   const [cardRef, isInView] = useIntersectionObserver();
 
+  // Loading states
   const [loadedMain, setLoadedMain] = useState(false);
   const [loadedHover, setLoadedHover] = useState(false);
-  const [mainError, setMainError] = useState(false);
 
-  const prevMainSrc = useRef(mainSrc);
-  const prevHoverSrc = useRef(hoverSrc);
-
-  useLayoutEffect(() => {
-    if (mainSrc !== prevMainSrc.current) {
-      prevMainSrc.current = mainSrc;
-      setTimeout(() => {
-        setLoadedMain(false);
-        setMainError(false);
-      }, 0);
-    }
-    if (hoverSrc !== prevHoverSrc.current) {
-      prevHoverSrc.current = hoverSrc;
-      setTimeout(() => setLoadedHover(false), 0);
-    }
-  }, [mainSrc, hoverSrc]);
-
+  // Preload hover image on desktop when in view
   useImagePreload(
     hoverSrc,
     isDesktop && isInView,
@@ -86,14 +69,6 @@ export default function ProductCard({
   const handleHoverLoad = useCallback(() => {
     setLoadedHover(true);
   }, []);
-
-  const handleImageError = useCallback(
-    (e) => {
-      setMainError(true);
-      onImageError?.(e);
-    },
-    [onImageError],
-  );
 
   const handleAddToCart = useCallback(
     (e) => {
@@ -120,111 +95,104 @@ export default function ProductCard({
 
   const hasHoverImage = Boolean(hoverSrc);
   const href = `/collections/${safeProduct.id}`;
-  const reduceMotion = !isDesktop;
 
   return (
     <article
       ref={cardRef}
-      data-card
-      draggable={false}
-      onDragStart={(e) => e.preventDefault()}
       className={cn(
         "group bg-white w-full h-full select-none transition-all duration-500 ease-out",
-        isDesktop
-          ? "hover:-translate-y-1 active:brightness-95"
-          : "active:brightness-100 focus:outline-none focus:ring-0",
+        isDesktop ? "hover:-translate-y-1" : "",
       )}
     >
       <Link
         to={href}
-        className={cn(
-          "block select-none",
-          !isDesktop && "active:bg-transparent focus:outline-none",
-        )}
-        style={
-          !isDesktop ? { WebkitTapHighlightColor: "transparent" } : undefined
-        }
+        className="block select-none"
         aria-label={`${t.open} ${safeProduct.name}`}
       >
+        {/* We use mainSrc as key here. When it changes, React resets this div and its state */}
         <div
-          className="relative w-full h-[340px] overflow-hidden bg-black/5 select-none"
-          draggable={false}
-          onDragStart={(e) => e.preventDefault()}
+          key={mainSrc}
+          className="relative w-full h-[340px] overflow-hidden bg-[#F5F5F5]"
         >
-          {safeProduct.isSoldOut ? (
-            <div className="absolute left-4 top-4 z-[3] border border-black/70 bg-white/90 px-3 py-1 font-ui text-[10px] uppercase tracking-[0.12em] text-black backdrop-blur-sm">
+          {safeProduct.isSoldOut && (
+            <div className="absolute left-4 top-4 z-[20] border border-black/70 bg-white/90 px-3 py-1 font-ui text-[10px] uppercase tracking-[0.12em]">
               {t.soldOut}
-            </div>
-          ) : null}
-
-          {!loadedMain && (
-            <div className="absolute inset-0 z-[1] bg-black/5">
-              <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-black/5 via-black/10 to-black/5" />
             </div>
           )}
 
-          {/* Main Product Image */}
-          <ProductImage
-            src={mainSrc}
-            srcSet={imageMeta.srcSet}
-            sizes={imageMeta.sizes}
-            alt={safeProduct.name}
-            loaded={loadedMain}
-            onLoad={handleMainImageLoad}
-            onError={handleImageError}
-            reduceMotion={reduceMotion}
+          {!loadedMain && (
+            <div className="absolute inset-0 z-[1] animate-pulse bg-neutral-200" />
+          )}
+
+          {/* Main Image */}
+          <div
             className={cn(
-              "transition-all duration-700 ease-in-out",
+              "absolute inset-0 z-[2] transition-all duration-700 ease-in-out",
               isDesktop && hasHoverImage
                 ? "lg:group-hover:opacity-0 lg:group-hover:scale-105"
                 : "",
             )}
-          />
+          >
+            <ProductImage
+              src={mainSrc}
+              srcSet={imageMeta.srcSet}
+              sizes={imageMeta.sizes}
+              alt={safeProduct.name}
+              loaded={loadedMain}
+              onLoad={handleMainImageLoad}
+              onError={onImageError}
+              reduceMotion={!isDesktop}
+              className="h-full w-full object-cover"
+            />
+          </div>
 
-          {/* Hover Product Image */}
+          {/* Hover Image */}
           {isDesktop && hasHoverImage && (
-            <div className="absolute inset-0 z-[2] opacity-0 transition-all duration-700 ease-in-out lg:group-hover:opacity-100">
+            <div className="absolute inset-0 z-[3] opacity-0 transition-all duration-700 ease-in-out lg:group-hover:opacity-100 lg:group-hover:scale-105">
               <ProductImage
                 src={hoverSrc}
-                alt={`${safeProduct.name} - alternate view`}
+                alt={`${safeProduct.name} - hover`}
                 loaded={loadedHover}
                 onLoad={handleHoverLoad}
-                onError={handleImageError}
+                onError={onImageError}
                 reduceMotion={false}
-                className={cn(
-                  "scale-100 transition-transform duration-700 ease-in-out lg:group-hover:scale-105",
-                  !loadedHover && "hidden", // Nerodyti, kol neužsikrovė, kad nebūtų "mirksėjimo"
-                )}
+                className="h-full w-full object-cover"
               />
             </div>
           )}
 
-          {/* Dark Overlay on Hover */}
+          {/* Overlay & Title */}
           {isDesktop && (
-            <div className="pointer-events-none absolute inset-0 z-[3] bg-black/20 opacity-0 transition-opacity duration-300 ease-out lg:group-hover:opacity-100" />
+            <>
+              <div className="pointer-events-none absolute inset-0 z-[5] bg-black/25 opacity-0 transition-opacity duration-300 ease-out lg:group-hover:opacity-100" />
+              <div className="absolute inset-0 z-[10] flex items-center justify-center">
+                <DesktopHoverTitle product={safeProduct} />
+              </div>
+            </>
           )}
 
-          {isDesktop ? <DesktopHoverTitle product={safeProduct} /> : null}
+          {/* UI Elements */}
+          <div className="absolute inset-0 z-[15]">
+            <ActionButtons
+              product={safeProduct}
+              onAddToCart={handleAddToCart}
+              isWishlisted={isWishlisted}
+              onToggleWishlist={(e) => {
+                e?.preventDefault?.();
+                e?.stopPropagation?.();
+                toggleFavorite(safeProduct.id);
+                onAddToFavorites?.(e);
+              }}
+            />
+          </div>
 
-          <ActionButtons
-            product={safeProduct}
-            onAddToCart={handleAddToCart}
-            isWishlisted={isWishlisted}
-            onToggleWishlist={(e) => {
-              e?.preventDefault?.();
-              e?.stopPropagation?.();
-              toggleFavorite(safeProduct.id);
-              onAddToFavorites?.(e);
-            }}
-          />
-
-          <BottomBar
-            product={safeProduct}
-            onAddToCart={handleAddToCart}
-            isDesktop={isDesktop}
-          />
-
-          {mainError ? null : null}
+          <div className="absolute inset-x-0 bottom-0 z-[15]">
+            <BottomBar
+              product={safeProduct}
+              onAddToCart={handleAddToCart}
+              isDesktop={isDesktop}
+            />
+          </div>
         </div>
       </Link>
     </article>
