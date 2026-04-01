@@ -45,6 +45,14 @@ export default function ProductCard({
   const [loadedMain, setLoadedMain] = useState(false);
   const [loadedHover, setLoadedHover] = useState(false);
 
+  const [prevSrc, setPrevSrc] = useState(mainSrc);
+
+  if (mainSrc !== prevSrc) {
+    setPrevSrc(mainSrc);
+    setLoadedMain(false);
+    setLoadedHover(false);
+  }
+
   // Preload hover image on desktop when in view
   useImagePreload(
     hoverSrc,
@@ -93,7 +101,7 @@ export default function ProductCard({
 
   if (!safeProduct?.id) return null;
 
-  const hasHoverImage = Boolean(hoverSrc);
+  const hasHoverImage = Boolean(hoverSrc) && hoverSrc !== mainSrc;
   const href = `/collections/${safeProduct.id}`;
 
   return (
@@ -109,17 +117,15 @@ export default function ProductCard({
         className="block select-none"
         aria-label={`${t.open} ${safeProduct.name}`}
       >
-        {/* We use mainSrc as key here. When it changes, React resets this div and its state */}
-        <div
-          key={mainSrc}
-          className="relative w-full h-[340px] overflow-hidden bg-[#F5F5F5]"
-        >
+        <div className="relative w-full h-[340px] overflow-hidden bg-[#F5F5F5]">
+          {/* Sold Out Badge */}
           {safeProduct.isSoldOut && (
             <div className="absolute left-4 top-4 z-[20] border border-black/70 bg-white/90 px-3 py-1 font-ui text-[10px] uppercase tracking-[0.12em]">
               {t.soldOut}
             </div>
           )}
 
+          {/* Skeleton Loader */}
           {!loadedMain && (
             <div className="absolute inset-0 z-[1] animate-pulse bg-neutral-200" />
           )}
@@ -164,15 +170,15 @@ export default function ProductCard({
           {/* Overlay & Title */}
           {isDesktop && (
             <>
-              <div className="pointer-events-none absolute inset-0 z-[5] bg-black/25 opacity-0 transition-opacity duration-300 ease-out lg:group-hover:opacity-100" />
-              <div className="absolute inset-0 z-[10] flex items-center justify-center">
+              <div className="pointer-events-none absolute inset-0 z-[10] bg-black/25 opacity-0 transition-opacity duration-300 ease-out lg:group-hover:opacity-100" />
+              <div className="absolute inset-0 z-[11] flex items-center justify-center opacity-0 transition-opacity duration-300 lg:group-hover:opacity-100">
                 <DesktopHoverTitle product={safeProduct} />
               </div>
             </>
           )}
 
-          {/* UI Elements */}
-          <div className="absolute inset-0 z-[15]">
+          {/* Action UI */}
+          <div className="absolute inset-0 z-[20]">
             <ActionButtons
               product={safeProduct}
               onAddToCart={handleAddToCart}
@@ -186,7 +192,7 @@ export default function ProductCard({
             />
           </div>
 
-          <div className="absolute inset-x-0 bottom-0 z-[15]">
+          <div className="absolute inset-x-0 bottom-0 z-[20]">
             <BottomBar
               product={safeProduct}
               onAddToCart={handleAddToCart}
