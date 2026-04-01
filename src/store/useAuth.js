@@ -1,10 +1,24 @@
-// src/store/useAuth.js
 import { create } from "zustand";
 
-const API_ORIGIN = import.meta.env.DEV ? "http://localhost:4000" : "";
+const API_BASE =
+  import.meta.env.VITE_API_URL || "https://bd-shop-gfva.onrender.com/api";
+
+const getUrl = (path) => {
+  const base = API_BASE.endsWith("/") ? API_BASE.slice(0, -1) : API_BASE;
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+
+  let finalPath = cleanPath;
+  if (base.endsWith("/api") && cleanPath.startsWith("/api")) {
+    finalPath = cleanPath.replace("/api", "");
+  }
+
+  return `${base}${finalPath}`;
+};
 
 async function api(path, options = {}) {
-  const res = await fetch(`${API_ORIGIN}${path}`, {
+  const url = getUrl(path);
+
+  const res = await fetch(url, {
     credentials: "include",
     ...options,
     headers: {
@@ -16,7 +30,7 @@ async function api(path, options = {}) {
   const data = await res.json().catch(() => ({}));
 
   if (!res.ok) {
-    throw new Error(data.message || `API error ${res.status}`);
+    throw new Error(data.message || `API klaida ${res.status}`);
   }
 
   return data;
@@ -31,7 +45,8 @@ const useAuth = create((set) => ({
     try {
       const data = await api("/api/auth/me");
       set({ user: data.user, loading: false });
-    } catch {
+    } catch (err) {
+      console.error("Auth klaida:", err);
       set({ user: null, loading: false });
     }
   },

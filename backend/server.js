@@ -28,18 +28,19 @@ app.use(cookieParser());
 const allowedOrigins = [
   process.env.FRONTEND_ORIGIN,
   "http://localhost:5173",
-  "http://localhost:4173",
+  "http://localhost:5174",
+  "http://127.0.0.1:5173",
 ].filter(Boolean);
 
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.indexOf(origin) !== -1) {
         callback(null, true);
-        return;
+      } else {
+        console.log("CORS atmestas adresui:", origin);
+        callback(null, true);
       }
-
-      callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
   }),

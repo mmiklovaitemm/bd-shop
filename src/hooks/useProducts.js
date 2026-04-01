@@ -1,7 +1,13 @@
-// src/hooks/useProducts.js
 import { useEffect, useMemo, useState } from "react";
 
-const API_ORIGIN = import.meta.env.VITE_API_URL || "http://localhost:4000";
+const API_BASE =
+  import.meta.env.VITE_API_URL || "https://bd-shop-gfva.onrender.com/api";
+
+const getUrl = (path) => {
+  const base = API_BASE.endsWith("/") ? API_BASE.slice(0, -1) : API_BASE;
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  return `${base}${cleanPath}`;
+};
 
 export function useProducts() {
   const [products, setProducts] = useState([]);
@@ -10,8 +16,12 @@ export function useProducts() {
   useEffect(() => {
     const controller = new AbortController();
 
-    fetch(`${API_ORIGIN}/api/products?view=listing`, {
+    // Suformuojame pilną užklausos adresą
+    const url = getUrl("/products?view=listing");
+
+    fetch(url, {
       signal: controller.signal,
+      headers: { Accept: "application/json" },
     })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
@@ -26,9 +36,12 @@ export function useProducts() {
         setProducts(list);
         setLoading(false);
       })
-      .catch(() => {
-        setProducts([]);
-        setLoading(false);
+      .catch((err) => {
+        if (err.name !== "AbortError") {
+          console.error("Klaida kraunant produktus:", err);
+          setProducts([]);
+          setLoading(false);
+        }
       });
 
     return () => controller.abort();
@@ -50,22 +63,23 @@ export function useProduct(id) {
   const [loading, setLoading] = useState(() => !!id);
 
   useEffect(() => {
-    if (!id) {
-      return;
-    }
+    if (!id) return;
 
     const controller = new AbortController();
+    const url = getUrl(`/products/${id}`);
 
-    fetch(`${API_ORIGIN}/api/products/${id}`, { signal: controller.signal })
+    fetch(url, { signal: controller.signal })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         const p = data?.product ?? data?.data ?? data ?? null;
         setProduct(p);
         setLoading(false);
       })
-      .catch(() => {
-        setProduct(null);
-        setLoading(false);
+      .catch((err) => {
+        if (err.name !== "AbortError") {
+          setProduct(null);
+          setLoading(false);
+        }
       });
 
     return () => controller.abort();
