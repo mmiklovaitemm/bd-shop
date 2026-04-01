@@ -163,6 +163,7 @@ export default function ProductCard({
             </div>
           )}
 
+          {/* Main Product Image */}
           <ProductImage
             src={mainSrc}
             srcSet={imageMeta.srcSet}
@@ -173,32 +174,35 @@ export default function ProductCard({
             onError={handleImageError}
             reduceMotion={reduceMotion}
             className={cn(
+              "transition-all duration-700 ease-in-out",
               isDesktop && hasHoverImage
-                ? "lg:group-hover:opacity-0 lg:group-hover:scale-[1.02]"
+                ? "lg:group-hover:opacity-0 lg:group-hover:scale-105"
                 : "",
             )}
           />
 
-          {isDesktop && hasHoverImage ? (
-            <ProductImage
-              src={hoverSrc}
-              alt={`${safeProduct.name} - ${t.hover}`}
-              loaded={loadedHover}
-              onLoad={handleHoverLoad}
-              onError={handleImageError}
-              reduceMotion={false}
-              loadedClassName="opacity-0 lg:group-hover:opacity-100"
-              notLoadedClassName="opacity-0"
-              className={cn(
-                "transition-opacity duration-500 ease-out will-change-opacity",
-                "scale-100 lg:group-hover:scale-[1.04]",
-              )}
-            />
-          ) : null}
+          {/* Hover Product Image */}
+          {isDesktop && hasHoverImage && (
+            <div className="absolute inset-0 z-[2] opacity-0 transition-all duration-700 ease-in-out lg:group-hover:opacity-100">
+              <ProductImage
+                src={hoverSrc}
+                alt={`${safeProduct.name} - alternate view`}
+                loaded={loadedHover}
+                onLoad={handleHoverLoad}
+                onError={handleImageError}
+                reduceMotion={false}
+                className={cn(
+                  "scale-100 transition-transform duration-700 ease-in-out lg:group-hover:scale-105",
+                  !loadedHover && "hidden", // Nerodyti, kol neužsikrovė, kad nebūtų "mirksėjimo"
+                )}
+              />
+            </div>
+          )}
 
-          {isDesktop ? (
-            <div className="pointer-events-none absolute inset-0 bg-black/55 opacity-0 transition-opacity duration-200 ease-out lg:group-hover:opacity-100" />
-          ) : null}
+          {/* Dark Overlay on Hover */}
+          {isDesktop && (
+            <div className="pointer-events-none absolute inset-0 z-[3] bg-black/20 opacity-0 transition-opacity duration-300 ease-out lg:group-hover:opacity-100" />
+          )}
 
           {isDesktop ? <DesktopHoverTitle product={safeProduct} /> : null}
 
