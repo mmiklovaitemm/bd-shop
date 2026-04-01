@@ -2,6 +2,7 @@ import useLanguage from "@/context/useLanguage";
 import AboutStudioSection from "@/components/ui/AboutStudioSection";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 import TestimonialsSlider from "@/components/sections/TestimonialsSlider";
+import { Reveal } from "@/components/sections/Reveal"; // Importuojame tavo Reveal
 
 import BestSellersIntro from "./BestSellersIntro";
 import TwoImageStrip from "./TwoImageStrip";
@@ -23,40 +24,56 @@ export default function About() {
   return (
     <div>
       <section className="px-4 py-5">
-        <h1 className="font-display text-[44px] leading-[1.05] tracking-[-0.02em] text-black xs:text-[36px]">
-          {t.aboutUs}
-        </h1>
+        <Reveal>
+          <h1 className="font-display text-[44px] leading-[1.05] tracking-[-0.02em] text-black xs:text-[36px]">
+            {t.aboutUs}
+          </h1>
+        </Reveal>
       </section>
 
       <FullWidthDivider />
-      <AboutStudioSection />
 
-      <BestSellersIntro
-        title={t.bestSellers}
-        description={t.bestSellersIntroDescription}
-      />
+      <Reveal>
+        <AboutStudioSection />
+      </Reveal>
+
+      <Reveal>
+        <BestSellersIntro
+          title={t.bestSellers}
+          description={t.bestSellersIntroDescription}
+        />
+      </Reveal>
+
       <FullWidthDivider />
 
-      <TwoImageStrip
-        left={{
-          mobile: newColMobile,
-          tablet: newColTablet,
-          desktop: newColDesktop,
-        }}
-        right={{
-          mobile: persMobile,
-          tablet: persTablet,
-          desktop: persDesktop,
-        }}
-        altLeft={t.newCollection}
-        altRight={t.personalizedJewelry}
-      />
+      <Reveal>
+        <TwoImageStrip
+          left={{
+            mobile: newColMobile,
+            tablet: newColTablet,
+            desktop: newColDesktop,
+          }}
+          right={{
+            mobile: persMobile,
+            tablet: persTablet,
+            desktop: persDesktop,
+          }}
+          altLeft={t.newCollection}
+          altRight={t.personalizedJewelry}
+        />
+      </Reveal>
+
       <FullWidthDivider />
 
-      <OurSalons />
+      <Reveal>
+        <OurSalons />
+      </Reveal>
+
       <FullWidthDivider />
 
-      <TestimonialsSlider />
+      <Reveal>
+        <TestimonialsSlider />
+      </Reveal>
     </div>
   );
 }

@@ -1,5 +1,6 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import useAuth from "@/store/useAuth";
 
 import RootLayout from "@/layouts/RootLayout";
@@ -23,91 +24,124 @@ import AdminOrders from "@/pages/admin/AdminOrders";
 import RequireAdmin from "@/components/auth/RequireAdmin";
 import AdminProducts from "@/pages/admin/AdminProducts";
 
+const PageWrapper = ({ children }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -10 }}
+    transition={{ duration: 0.4, ease: "easeInOut" }}
+  >
+    {children}
+  </motion.div>
+);
+
 export default function App() {
   const fetchMe = useAuth((s) => s.fetchMe);
+  const location = useLocation();
 
   useEffect(() => {
     fetchMe();
   }, [fetchMe]);
 
   return (
-    <Routes>
-      <Route element={<RootLayout />}>
-        <Route path="/" element={<Home />} />
-        <Route path="/collections" element={<Collections />} />
-        <Route path="/collections/:id" element={<Product />} />
-        <Route path="/favorites" element={<Favorites />} />
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route element={<RootLayout />}>
+          <Route
+            path="/"
+            element={
+              <PageWrapper>
+                <Home />
+              </PageWrapper>
+            }
+          />
+          <Route
+            path="/collections"
+            element={
+              <PageWrapper>
+                <Collections />
+              </PageWrapper>
+            }
+          />
+          <Route
+            path="/collections/:id"
+            element={
+              <PageWrapper>
+                <Product />
+              </PageWrapper>
+            }
+          />
+          <Route
+            path="/favorites"
+            element={
+              <PageWrapper>
+                <Favorites />
+              </PageWrapper>
+            }
+          />
 
-        <Route path="/login" element={<LogIn />} />
-        <Route path="/register" element={<LogIn />} />
-        <Route
-          path="/account"
-          element={
-            <RequireAuth>
-              <Account />
-            </RequireAuth>
-          }
-        />
+          <Route
+            path="/login"
+            element={
+              <PageWrapper>
+                <LogIn />
+              </PageWrapper>
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              <PageWrapper>
+                <LogIn />
+              </PageWrapper>
+            }
+          />
 
-        <Route
-          path="/account/orders"
-          element={
-            <RequireAuth>
-              <OrderHistory />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/account/profile"
-          element={
-            <RequireAuth>
-              <Profile />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/account/change-password"
-          element={
-            <RequireAuth>
-              <ChangePassword />
-            </RequireAuth>
-          }
-        />
+          <Route
+            path="/account"
+            element={
+              <RequireAuth>
+                <PageWrapper>
+                  <Account />
+                </PageWrapper>
+              </RequireAuth>
+            }
+          />
 
-        <Route
-          path="/admin"
-          element={
-            <RequireAdmin>
-              <Navigate to="/admin/orders" replace />
-            </RequireAdmin>
-          }
-        />
-
-        <Route
-          path="/admin/orders"
-          element={
-            <RequireAdmin>
-              <AdminOrders />
-            </RequireAdmin>
-          }
-        />
-
-        <Route
-          path="/admin/products"
-          element={
-            <RequireAdmin>
-              <AdminProducts />
-            </RequireAdmin>
-          }
-        />
-
-        <Route path="/about" element={<About />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/personalized" element={<PersonalizedProducts />} />
-        <Route path="/checkout" element={<Checkout />} />
-        <Route path="/thank-you" element={<ThankYou />} />
-        <Route path="*" element={<NotFound />} />
-      </Route>
-    </Routes>
+          <Route
+            path="/about"
+            element={
+              <PageWrapper>
+                <About />
+              </PageWrapper>
+            }
+          />
+          <Route
+            path="/contact"
+            element={
+              <PageWrapper>
+                <Contact />
+              </PageWrapper>
+            }
+          />
+          <Route
+            path="/checkout"
+            element={
+              <PageWrapper>
+                <Checkout />
+              </PageWrapper>
+            }
+          />
+          <Route
+            path="*"
+            element={
+              <PageWrapper>
+                <NotFound />
+              </PageWrapper>
+            }
+          />
+        </Route>
+      </Routes>
+    </AnimatePresence>
   );
 }

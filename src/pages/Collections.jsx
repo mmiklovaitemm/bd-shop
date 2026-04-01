@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams } from "react-router-dom";
 
 import useLanguage from "@/context/useLanguage";
@@ -9,7 +10,7 @@ import AboutStudioSection from "@/components/ui/AboutStudioSection";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 import ProductsToolbar from "@/components/sections/ProductsToolbar";
 import ProductsFilterPanel from "@/components/sections/ProductsFilterPanel";
-
+import { Reveal } from "@/components/sections/Reveal";
 import { useProducts } from "@/hooks/useProducts";
 
 function hasGemValue(product) {
@@ -109,6 +110,21 @@ function applySizeFilter(list, selectedSize) {
     (p.sizes || []).map(normalizeSizeValue).includes(normalizedSelected),
   );
 }
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+};
 
 export default function Collections() {
   const { t } = useLanguage();
@@ -622,27 +638,34 @@ export default function Collections() {
               </div>
             ) : (
               <>
-                <div
+                {/* Čia prasideda animuotas tinklelis */}
+                <motion.div
+                  key={activeCategory + safePage}
+                  variants={containerVariants}
+                  initial="hidden"
+                  animate="visible"
                   className={[
                     "grid grid-cols-2 gap-x-3 gap-y-5 min-[460px]:grid-cols-2 md:grid-cols-3 md:gap-x-4 md:gap-y-6",
                     desktopColsClass,
                   ].join(" ")}
                 >
                   {pageItems.map((product, idx) => (
-                    <ProductCard
-                      key={product.id}
-                      product={{ ...product, image: product.thumbnail }}
-                      priority={idx < 4}
-                      onAddToCart={() => {}}
-                      onAddToFavorites={() => {}}
-                      onMediaReady={() => {}}
-                      onImageError={(e) => {
-                        e.currentTarget.src = `${import.meta.env.BASE_URL}products/fallback.png`;
-                      }}
-                    />
+                    <motion.div key={product.id} variants={itemVariants}>
+                      <ProductCard
+                        product={{ ...product, image: product.thumbnail }}
+                        priority={idx < 4}
+                        onAddToCart={() => {}}
+                        onAddToFavorites={() => {}}
+                        onMediaReady={() => {}}
+                        onImageError={(e) => {
+                          e.currentTarget.src = `${import.meta.env.BASE_URL}products/fallback.png`;
+                        }}
+                      />
+                    </motion.div>
                   ))}
-                </div>
+                </motion.div>
 
+                {/* Puslapiavimo dalis */}
                 <div className="mt-8 flex flex-col items-center gap-3">
                   <p className="font-ui text-[13px] text-black/70">
                     {t.showing} {showingCount} {t.of} {totalItems}
@@ -663,7 +686,9 @@ export default function Collections() {
       </div>
 
       <FullWidthDivider />
-      <AboutStudioSection />
+      <Reveal>
+        <AboutStudioSection />
+      </Reveal>
     </>
   );
 }
