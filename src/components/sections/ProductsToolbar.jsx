@@ -185,57 +185,68 @@ export default function ProductsToolbar({
       <FullWidthDivider />
 
       {/* Filter + Sort row */}
-      <div className="flex items-center justify-between gap-4 px-6 py-4">
-        <button
-          type="button"
-          onClick={onOpenFilter}
-          className="flex h-10 items-center gap-3 border border-black px-4 font-ui text-[14px] transition-all duration-300 ease-out hover:-translate-y-[2px]"
-        >
-          <span>{t.filter}</span>
-          <img src={filterIcon} alt={t.filter} className="h-4 w-4 opacity-70" />
-        </button>
+      <div className="flex justify-center border-t border-black/10">
+        <div className="flex w-full max-w-[1200px] items-center justify-between px-6 py-4">
+          {/* FILTER BUTTON */}
+          <button
+            type="button"
+            onClick={onOpenFilter}
+            className="flex h-10 items-center gap-3 border border-black px-6 font-ui text-[14px] uppercase tracking-widest transition-all duration-300 ease-out hover:bg-black hover:text-white active:scale-95"
+          >
+            <span>{t.filter}</span>
+            <img
+              src={filterIcon}
+              alt={t.filter}
+              className="h-3.5 w-3.5 opacity-70 transition-all group-hover:invert"
+            />
+          </button>
 
-        <div className="flex items-center gap-3">
-          <span className="hidden font-ui text-[12px] text-black/70 md:inline">
-            {t.sortBy}
-          </span>
+          {/* SORT SECTION */}
+          <div className="flex items-center gap-4">
+            <span className="hidden font-ui text-[11px] font-medium text-black/50 md:inline uppercase tracking-[0.15em]">
+              {t.sortBy}
+            </span>
 
-          <div ref={sortWrapRef} className="relative w-[180px] md:w-[220px]">
-            <button
-              type="button"
-              onClick={toggleSort}
-              className="inline-flex h-10 w-full items-center justify-center border border-black px-4 font-ui text-[14px] transition-all duration-300 ease-out hover:-translate-y-[2px]"
-              aria-haspopup="listbox"
-              aria-expanded={isSortOpen}
-            >
-              <span className="truncate">{activeSortLabel}</span>
-            </button>
+            <div ref={sortWrapRef} className="relative w-[200px] md:w-[240px]">
+              <button
+                type="button"
+                onClick={toggleSort}
+                className="inline-flex h-10 w-full items-center justify-between border border-black px-4 font-ui text-[13px] transition-all duration-300 hover:border-black/40"
+                aria-haspopup="listbox"
+                aria-expanded={isSortOpen}
+              >
+                <span className="truncate">{activeSortLabel}</span>
+                <HiChevronDown
+                  className={`h-4 w-4 transition-transform duration-200 ${isSortOpen ? "rotate-180" : ""}`}
+                />
+              </button>
 
-            {/* desktop dropdown only */}
-            {isSortOpen && (
-              <div className="absolute left-0 top-full z-50 -mt-px hidden w-full border border-black bg-white shadow-sm lg:block">
-                <ul role="listbox" className="py-2">
-                  {SORT_OPTIONS.map((opt) => (
-                    <li key={opt.value}>
-                      <button
-                        type="button"
-                        className={`w-full px-4 py-2 text-left font-ui text-[13px] hover:bg-black/5 ${
-                          opt.value === sortValue
-                            ? "font-medium"
-                            : "font-normal"
-                        }`}
-                        onClick={() => {
-                          onSortChange?.(opt.value);
-                          setIsSortOpen(false);
-                        }}
-                      >
-                        {opt.label}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+              {/* desktop dropdown only */}
+              {isSortOpen && (
+                <div className="absolute left-0 top-full z-50 -mt-px hidden w-full border border-black bg-white shadow-lg lg:block">
+                  <ul role="listbox" className="py-2">
+                    {SORT_OPTIONS.map((opt) => (
+                      <li key={opt.value}>
+                        <button
+                          type="button"
+                          className={`w-full px-4 py-2 text-left font-ui text-[13px] transition-colors hover:bg-black/5 ${
+                            opt.value === sortValue
+                              ? "font-semibold"
+                              : "font-normal"
+                          }`}
+                          onClick={() => {
+                            onSortChange?.(opt.value);
+                            setIsSortOpen(false);
+                          }}
+                        >
+                          {opt.label}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

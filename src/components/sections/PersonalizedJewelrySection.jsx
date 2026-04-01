@@ -14,7 +14,8 @@ export default function PersonalizedJewelrySection() {
   const navigate = useNavigate();
   const { t } = useLanguage();
 
-  const handleShopNow = () => {
+  const handleNavigateToInfo = () => {
+    // Nukreipiame į informacinį "How it works" puslapį
     navigate("/personalized");
   };
 
@@ -51,6 +52,7 @@ export default function PersonalizedJewelrySection() {
               />
             </picture>
 
+            {/* Gradient Overlay */}
             <div
               className="
                 pointer-events-none absolute inset-0
@@ -75,8 +77,12 @@ export default function PersonalizedJewelrySection() {
 
                 <button
                   type="button"
-                  onClick={handleShopNow}
-                  aria-label={t.shopPersonalizedJewellery}
+                  onClick={handleNavigateToInfo}
+                  // Atnaujintas aria-label geresniam prieinamumui
+                  aria-label={
+                    t.personalized?.howItWorks ||
+                    "Learn how personalized jewelry is made"
+                  }
                   className="
                     ui-interact
                     group mt-5 md:mt-0
@@ -95,7 +101,7 @@ export default function PersonalizedJewelrySection() {
                       lg:group-hover:translate-x-1 lg:group-hover:-translate-y-1
                     "
                   >
-                    {t.shopNow}
+                    {t.personalized?.howItWorks || "How it works"}
                   </span>
 
                   <img

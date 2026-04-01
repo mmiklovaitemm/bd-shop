@@ -1,6 +1,5 @@
 import useLanguage from "@/context/useLanguage";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
-import HowItWorksHero from "./HowItWorksHero";
 import HowItWorksSteps from "./HowItWorksSteps";
 import BestSellersIntro from "../about/BestSellersIntro";
 
@@ -40,9 +39,6 @@ export default function PersonalizedProducts() {
       </section>
 
       <FullWidthDivider />
-
-      <HowItWorksHero />
-      <FullWidthDivider className="mt-6" />
 
       <HowItWorksSteps />
 

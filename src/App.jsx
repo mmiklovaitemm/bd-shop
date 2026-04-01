@@ -168,6 +168,14 @@ export default function App() {
             }
           />
           <Route
+            path="/personalized"
+            element={
+              <PageWrapper>
+                <PersonalizedProducts />
+              </PageWrapper>
+            }
+          />
+          <Route
             path="/contact"
             element={
               <PageWrapper>
