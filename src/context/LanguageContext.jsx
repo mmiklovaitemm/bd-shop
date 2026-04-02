@@ -3,6 +3,8 @@ import { LanguageContext } from "./languageContext";
 
 const translations = {
   en: {
+    thankYou: "Thank you!",
+    subscriptionSuccess: "You have successfully subscribed to our newsletter.",
     collections: "Collections",
     aboutUs: "About us",
     contacts: "Contacts",
@@ -419,6 +421,8 @@ const translations = {
   },
 
   lt: {
+    thankYou: "Ačiū!",
+    subscriptionSuccess: "Sėkmingai užsiprenumeravote mūsų naujienlaiškį.",
     collections: "Kolekcijos",
     aboutUs: "Apie mus",
     contacts: "Kontaktai",
