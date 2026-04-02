@@ -14,7 +14,7 @@ import orderRoutes from "./routes/orderRoutes.js";
 
 const app = express();
 
-// middleware
+// 1. Middleware
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
@@ -24,9 +24,10 @@ app.use(morgan("dev"));
 app.use(express.json());
 app.use(cookieParser());
 
-// CORS
+// 2. CORS
 const allowedOrigins = [
   process.env.FRONTEND_ORIGIN,
+  "https://bd-shop-gray.vercel.app",
   "http://localhost:5173",
   "http://localhost:5174",
   "http://127.0.0.1:5173",
@@ -35,45 +36,47 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        console.log("CORS atmestas adresui:", origin);
-        callback(null, true);
+        console.warn("CORS blokuojamas adresui:", origin);
+        callback(new Error("Not allowed by CORS"));
       }
     },
-    credentials: true,
+    credentials: true, // BŪTINA sausainėliams
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Requested-With",
+      "Accept",
+    ],
   }),
 );
 
-// test endpoint
+// 3. Test endpoints
 app.get("/health", (req, res) => {
   res.json({ ok: true, message: "API is running" });
 });
 
-// DB test
 app.get("/api/db-test", async (req, res) => {
   try {
     const [rows] = await db.query(`
-      SELECT
-        DATABASE() AS db_name,
-        USER() AS db_user,
-        @@hostname AS db_host
+      SELECT DATABASE() AS db_name, USER() AS db_user, @@hostname AS db_host
     `);
-
     res.json({ ok: true, rows });
   } catch (err) {
     res.status(500).json({ ok: false, message: err.message });
   }
 });
 
+// 4. API routes
 app.use("/api/uploads", uploadRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
 
 const PORT = process.env.PORT || 4000;
-
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
