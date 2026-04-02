@@ -68,7 +68,6 @@ export default create(
             quantity: clampQty(item?.quantity),
           };
 
-          // Sugeneruojame raktą, jei jo nėra
           const key = buildCartKey({
             productId,
             color: normalizedItem.color,

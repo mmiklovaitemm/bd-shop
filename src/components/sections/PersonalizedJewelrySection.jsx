@@ -15,7 +15,6 @@ export default function PersonalizedJewelrySection() {
   const { t } = useLanguage();
 
   const handleNavigateToInfo = () => {
-    // Nukreipiame į informacinį "How it works" puslapį
     navigate("/personalized");
   };
 
@@ -78,7 +77,6 @@ export default function PersonalizedJewelrySection() {
                 <button
                   type="button"
                   onClick={handleNavigateToInfo}
-                  // Atnaujintas aria-label geresniam prieinamumui
                   aria-label={
                     t.personalized?.howItWorks ||
                     "Learn how personalized jewelry is made"

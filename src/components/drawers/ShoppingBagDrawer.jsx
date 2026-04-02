@@ -10,7 +10,6 @@ import preventDragHandler from "@/utils/preventDrag";
 
 import arrowUpRightIcon from "@/assets/ui/arrow-up-right.svg";
 import trashIcon from "@/assets/ui/trash.svg";
-import { HiChevronDown } from "react-icons/hi";
 
 const fmtPrice = (n) =>
   new Intl.NumberFormat("lt-LT", {
@@ -19,6 +18,7 @@ const fmtPrice = (n) =>
     minimumFractionDigits: 2,
   }).format(Number(n || 0));
 
+// --- Logic Helpers ---
 function isVariantObject(value) {
   return (
     value &&
@@ -29,37 +29,38 @@ function isVariantObject(value) {
 }
 
 function usesVariantLevelStock(product) {
-  return Object.values(product?.variants || {}).some(
+  if (!product?.variants) return false;
+  return Object.values(product.variants).some(
     (value) =>
       Array.isArray(value) && value.length > 0 && isVariantObject(value[0]),
   );
 }
 
 function getAvailableColors(product) {
-  const colors = product?.colors || [];
+  if (!product) return [];
+  const colors = product.colors || [];
   if (!usesVariantLevelStock(product)) {
     return colors.filter(
-      (color) => (product?.variants?.[color] || []).length > 0,
+      (color) => (product.variants?.[color] || []).length > 0,
     );
   }
   const inStockColors = colors.filter((color) => {
-    const entries = product?.variants?.[color] || [];
+    const entries = product.variants?.[color] || [];
     return entries.some((variant) => Number(variant?.stock || 0) > 0);
   });
   return inStockColors.length ? inStockColors : colors;
 }
 
 function getColorEntries(product, color) {
-  if (!product) return [];
-  return Array.isArray(product?.variants?.[color])
+  if (!product || !color) return [];
+  return Array.isArray(product.variants?.[color])
     ? product.variants[color]
     : [];
 }
 
 function getAvailableSizesForColor(product, color) {
-  if (!product) return [];
-  if (!usesVariantLevelStock(product))
-    return (product?.sizes || []).map(String);
+  if (!product || !color) return [];
+  if (!usesVariantLevelStock(product)) return (product.sizes || []).map(String);
   const inStockSizes = getColorEntries(product, color)
     .filter((variant) => Number(variant?.stock || 0) > 0)
     .map((variant) => String(variant?.size))
@@ -85,31 +86,25 @@ function getFirstAvailableSize(product, color) {
       : null;
 }
 
-function getSelectedVariant(product, color, size) {
-  if (!product || !usesVariantLevelStock(product)) return null;
-  const entries = getColorEntries(product, color);
-  return (
-    entries.find((variant) => String(variant?.size) === String(size)) || null
-  );
-}
-
 function getVariantStock(product, color, size) {
   if (!product) return 0;
   if (!usesVariantLevelStock(product))
-    return Math.max(0, Number(product?.stockQuantity) || 0);
-  const selectedVariant = getSelectedVariant(product, color, size);
-  return Math.max(0, Number(selectedVariant?.stock) || 0);
+    return Math.max(0, Number(product.stockQuantity) || 0);
+  const entries = getColorEntries(product, color);
+  const variant = entries.find((v) => String(v?.size) === String(size));
+  return Math.max(0, Number(variant?.stock) || 0);
 }
 
 function pickVariantImage(product, color, size = null) {
   if (!product) return "";
   const fallbackColor = color || getFirstAvailableColor(product);
   if (!usesVariantLevelStock(product)) {
-    return product?.variants?.[fallbackColor]?.[0] || product?.thumbnail || "";
+    return product.variants?.[fallbackColor]?.[0] || product.thumbnail || "";
   }
-  const exactVariant = getSelectedVariant(product, fallbackColor, size);
-  if (exactVariant?.images?.length) return exactVariant.images[0];
-  return product?.thumbnail || "";
+  const entries = getColorEntries(product, fallbackColor);
+  const variant =
+    entries.find((v) => String(v?.size) === String(size)) || entries[0];
+  return variant?.images?.[0] || product.thumbnail || "";
 }
 
 function getEffectiveColor(product, item) {
@@ -152,9 +147,11 @@ export default function ShoppingBagDrawer() {
   const { t } = useLanguage();
   const [products, setProducts] = useState([]);
 
+  // Fetch products when drawer opens
   useEffect(() => {
     if (!isOpen) return;
     const controller = new AbortController();
+
     apiGet("/api/products", { signal: controller.signal })
       .then((data) => {
         const list = Array.isArray(data)
@@ -164,13 +161,18 @@ export default function ShoppingBagDrawer() {
             : [];
         setProducts(list);
       })
-      .catch(() => setProducts([]));
+      .catch((err) => {
+        if (err.name !== "AbortError") console.error("API Error:", err);
+      });
+
     return () => controller.abort();
   }, [isOpen]);
 
   const productsById = useMemo(() => {
     const m = new Map();
-    for (const p of products) m.set(String(p.id), p);
+    for (const p of products) {
+      if (p?.id) m.set(String(p.id), p);
+    }
     return m;
   }, [products]);
 
@@ -179,15 +181,14 @@ export default function ShoppingBagDrawer() {
     [productsById],
   );
 
+  // Sync cart items with fetched product data
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || products.length === 0) return;
+
     items.forEach((item) => {
       const pid =
-        item.productId ??
-        item.id ??
-        item.product?.id ??
-        String(item.key || "").split("|")[0];
-      const product = getProductById(pid) || item.product;
+        item.productId ?? item.id ?? String(item.key || "").split("|")[0];
+      const product = getProductById(pid);
       if (!product) return;
 
       const nextColor = getEffectiveColor(product, item);
@@ -202,7 +203,7 @@ export default function ShoppingBagDrawer() {
         });
       }
     });
-  }, [isOpen, items, getProductById, updateVariant]);
+  }, [isOpen, products, items, getProductById, updateVariant]);
 
   const SHIPPING_KIT_FEE = 15;
   const subtotal = useMemo(
@@ -271,9 +272,8 @@ export default function ShoppingBagDrawer() {
                       const pid =
                         item.productId ??
                         item.id ??
-                        item.product?.id ??
                         String(item.key || "").split("|")[0];
-                      const product = getProductById(pid) || item.product;
+                      const product = getProductById(pid);
                       const availableColors = getAvailableColors(product);
                       const availableSizes = getAvailableSizesForColor(
                         product,
@@ -288,15 +288,16 @@ export default function ShoppingBagDrawer() {
                       return (
                         <motion.div key={item.key} layout className="px-6 py-6">
                           <div className="grid grid-cols-[90px_1fr] gap-5">
-                            {/* Image */}
+                            {/* Product Image */}
                             <div className="h-[110px] w-[90px] overflow-hidden bg-black/5">
                               <img
                                 src={item.image}
+                                alt={item.name}
                                 className="h-full w-full object-cover"
                               />
                             </div>
 
-                            {/* Info */}
+                            {/* Product Details */}
                             <div className="min-w-0">
                               <div className="flex justify-between items-start">
                                 <p className="font-display text-[18px] leading-tight">
@@ -304,7 +305,7 @@ export default function ShoppingBagDrawer() {
                                 </p>
                                 <p className="font-ui text-[14px]">
                                   {fmtPrice(
-                                    item.price +
+                                    Number(item.price) +
                                       (String(item.serviceOption).includes(
                                         "shipping",
                                       )
@@ -314,9 +315,9 @@ export default function ShoppingBagDrawer() {
                                 </p>
                               </div>
 
-                              {/* SELECTORS GRID */}
+                              {/* Selector Grid */}
                               <div className="mt-3 grid grid-cols-2 gap-2">
-                                {/* Color */}
+                                {/* Color Selector */}
                                 {availableColors.length > 0 && (
                                   <div className="relative bg-black/5 px-2 py-1.5">
                                     <p className="text-[10px] uppercase text-black/40 font-ui leading-none mb-1">
@@ -344,7 +345,7 @@ export default function ShoppingBagDrawer() {
                                   </div>
                                 )}
 
-                                {/* Size */}
+                                {/* Size Selector */}
                                 {availableSizes.length > 0 && (
                                   <div className="relative bg-black/5 px-2 py-1.5">
                                     <p className="text-[10px] uppercase text-black/40 font-ui leading-none mb-1">
@@ -368,7 +369,7 @@ export default function ShoppingBagDrawer() {
                                   </div>
                                 )}
 
-                                {/* Service Option  */}
+                                {/* Service Option (Personalized Only) */}
                                 {product?.category === "personal" && (
                                   <div className="col-span-2 relative bg-black/5 px-2 py-1.5">
                                     <p className="text-[10px] uppercase text-black/40 font-ui leading-none mb-1">
@@ -395,7 +396,7 @@ export default function ShoppingBagDrawer() {
                                 )}
                               </div>
 
-                              {/* Footer: Qty & Trash */}
+                              {/* Quantity & Delete */}
                               <div className="mt-4 flex items-center justify-between">
                                 <div className="flex border border-black h-8 items-stretch">
                                   <button
@@ -411,7 +412,9 @@ export default function ShoppingBagDrawer() {
                                   <button
                                     onClick={() => inc(item.key)}
                                     className="w-8 bg-black/5 disabled:opacity-20"
-                                    disabled={item.quantity >= variantStock}
+                                    disabled={
+                                      product && item.quantity >= variantStock
+                                    }
                                   >
                                     +
                                   </button>
@@ -422,6 +425,7 @@ export default function ShoppingBagDrawer() {
                                 >
                                   <img
                                     src={trashIcon}
+                                    alt="Remove"
                                     className="h-4 w-4 opacity-60"
                                   />
                                 </button>
