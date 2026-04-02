@@ -258,6 +258,7 @@ function ProductView({ product }) {
 
       const fallbackColor = getFallbackColor(product);
 
+      // 1. Resolve product image based on variants or thumbnail
       const img = usesVariantLevelStock
         ? selectedVariant?.images?.[0] || product?.thumbnail || ""
         : product?.variants?.[effectiveSelectedColor]?.[0] ||
@@ -265,21 +266,32 @@ function ProductView({ product }) {
           product?.thumbnail ||
           "";
 
+      // 2. Validate service option for personalized items
       if (product.category === "personal" && !selectedService) {
-        alert(t.pleaseChooseServiceOption);
+        alert(t.pleaseChooseServiceOption || "Please choose a service option");
         return;
       }
 
+      // 3. Dispatch to cart with normalized data types
       addToCart({
         product,
+        productId: String(product.id),
+        name: product.name,
+        price: product.price,
         category: product.category,
-        color: effectiveSelectedColor || fallbackColor || null,
-        size: effectiveSelectedSize || null,
-        quantity: quantity || 1,
+        // Ensure color and size are strings to match Cart key logic
+        color: effectiveSelectedColor
+          ? String(effectiveSelectedColor)
+          : fallbackColor
+            ? String(fallbackColor)
+            : "silver",
+        size: effectiveSelectedSize ? String(effectiveSelectedSize) : null,
+        quantity: Number(quantity) || 1,
         image: img,
         serviceOption: selectedService || null,
       });
 
+      // 4. Trigger UI response
       openBag();
     },
     [
