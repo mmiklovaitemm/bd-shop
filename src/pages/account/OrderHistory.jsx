@@ -28,6 +28,7 @@ export default function OrderHistory() {
   const [error, setError] = useState("");
   const [productsById, setProductsById] = useState({});
 
+  // Fetch user orders
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -50,6 +51,7 @@ export default function OrderHistory() {
     };
   }, [getOrders, t.failedToLoadOrders]);
 
+  // Fetch products to map images correctly
   useEffect(() => {
     const ctrl = new AbortController();
     (async () => {
@@ -146,45 +148,51 @@ export default function OrderHistory() {
               {orders.map((order) => {
                 const isOpen = openOrderId === order.id;
 
+                // Group items to handle duplicates and format data safely
                 const groupedItems = (order.items || []).reduce((acc, it) => {
-                  const key = `${it.product_id}|${it.color || ""}|${it.size || ""}`;
-                  const existing = acc[key];
-                  if (existing) {
-                    existing.quantity += Number(it.quantity || 1);
+                  if (!it) return acc;
+                  const productId = it.product_id || "unknown";
+                  const key = `${productId}|${it.color || ""}|${it.size || ""}`;
+
+                  if (acc[key]) {
+                    acc[key].quantity += Number(it.quantity || 1);
                   } else {
                     acc[key] = {
-                      product_id: it.product_id,
-                      name: it.product_name || t.product.label,
+                      product_id: productId,
+                      name: it.product_name || t.product?.label || "Product",
                       quantity: Number(it.quantity || 1),
-                      color: it.color || t.notAvailable,
+                      color: it.color || "",
+                      size: it.size || "",
                     };
                   }
                   return acc;
                 }, {});
 
                 const productLines = Object.values(groupedItems);
+
+                // Calculate total based on cents provided by items
                 const totalCentsFromItems = (order.items || []).reduce(
                   (sum, it) =>
                     sum +
-                    Number(it.price_cents || 0) * Number(it.quantity || 1),
+                    Number(it?.price_cents || 0) * Number(it?.quantity || 1),
                   0,
                 );
                 const priceText = `€${(totalCentsFromItems / 100).toFixed(2)}`;
 
+                // Generate images for the card preview safely
                 const images = productLines
                   .slice(0, 2)
                   .map((line) => {
-                    const product = productsById[line.product_id];
+                    const product = productsById?.[line.product_id];
                     if (product && line.color) {
                       const colorKey = String(line.color).toLowerCase().trim();
                       const variantImages =
                         product.variants?.[colorKey]?.[0]?.images;
-                      if (Array.isArray(variantImages) && variantImages[0]) {
+                      if (Array.isArray(variantImages) && variantImages[0])
                         return variantImages[0];
-                      }
                     }
                     const originalItem = (order.items || []).find(
-                      (it) => it.product_id === line.product_id,
+                      (it) => it?.product_id === line.product_id,
                     );
                     return originalItem?.image_url;
                   })
@@ -199,9 +207,11 @@ export default function OrderHistory() {
                       isOpen={isOpen}
                       order={{
                         id: order.id,
-                        date: new Date(order.created_at)
-                          .toISOString()
-                          .slice(0, 10),
+                        date: order.created_at
+                          ? new Date(order.created_at)
+                              .toISOString()
+                              .slice(0, 10)
+                          : "",
                         status: order.status || "Pending",
                         productLines,
                         price: priceText,
@@ -211,24 +221,28 @@ export default function OrderHistory() {
                       onOpen={() => setOpenOrderId(isOpen ? null : order.id)}
                     />
 
+                    {/* Expandable info panel - Safely calculated fields */}
                     {isOpen && (
                       <div className="bg-neutral-50 px-2 pb-6">
                         <OrderInfoPanel
                           info={(() => {
-                            const itemsTotalCents = totalCentsFromItems;
                             const totalCents = Number(order?.total_cents || 0);
                             const money = (c) =>
                               `€${(Number(c || 0) / 100).toFixed(2)}`;
 
                             return {
-                              orderDate: new Date(order.created_at)
-                                .toISOString()
-                                .slice(0, 10),
+                              orderDate: order.created_at
+                                ? new Date(order.created_at)
+                                    .toISOString()
+                                    .slice(0, 10)
+                                : "",
                               orderNo: String(order.id),
                               pickup:
                                 order?.delivery_type === "pickup"
-                                  ? order?.delivery_method || t.pickup
-                                  : t.notAvailable,
+                                  ? order?.delivery_method ||
+                                    t.pickup ||
+                                    "Pickup"
+                                  : t.notAvailable || "N/A",
                               deliveryTo: {
                                 name:
                                   [
@@ -236,24 +250,23 @@ export default function OrderHistory() {
                                     order?.ship_last_name,
                                   ]
                                     .filter(Boolean)
-                                    .join(" ") || t.notAvailable,
+                                    .join(" ") || "N/A",
                                 street:
                                   [order?.ship_address, order?.ship_apartment]
                                     .filter(Boolean)
-                                    .join(", ") || t.notAvailable,
+                                    .join(", ") || "N/A",
                                 zipCity:
                                   [order?.ship_postal_code, order?.ship_city]
                                     .filter(Boolean)
-                                    .join(" ") || t.notAvailable,
+                                    .join(" ") || "N/A",
                               },
-                              deliveryMethod:
-                                order?.delivery_method || t.notAvailable,
+                              deliveryMethod: order?.delivery_method || "N/A",
                               deliveryPrice: money(
-                                totalCents - itemsTotalCents,
+                                totalCents - totalCentsFromItems,
                               ),
-                              orderValue: money(itemsTotalCents),
+                              orderValue: money(totalCentsFromItems),
                               total: money(totalCents),
-                              productLines,
+                              productLines, // Pass the safe array
                             };
                           })()}
                         />
