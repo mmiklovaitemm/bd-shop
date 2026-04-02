@@ -1,12 +1,11 @@
+// src/routes/authRoutes.js
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-
 import db from "../db.js";
 import { requireAuth } from "../middleware/auth.js";
 
 const router = express.Router();
-
 const COOKIE_NAME = "access_token";
 
 const COOKIE_OPTIONS = {
@@ -42,6 +41,7 @@ router.post("/register", async (req, res) => {
     }
 
     const passwordHash = await bcrypt.hash(String(password), 10);
+    // Naudojame first_name ir last_name kaip DB
     const [result] = await db.query(
       "INSERT INTO users (email, password_hash, first_name, last_name) VALUES (?, ?, ?, ?)",
       [cleanEmail, passwordHash, firstName || null, lastName || null],
@@ -49,7 +49,6 @@ router.post("/register", async (req, res) => {
 
     const userPayload = { userId: result.insertId, role: "user" };
     const token = generateToken(userPayload);
-
     res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
 
     return res.status(201).json({
@@ -60,9 +59,10 @@ router.post("/register", async (req, res) => {
         lastName,
         role: "user",
       },
-      token: token,
+      token,
     });
   } catch (err) {
+    console.error("Register error:", err);
     return res.status(500).json({ message: err.message });
   }
 });
@@ -79,7 +79,7 @@ router.post("/login", async (req, res) => {
       "SELECT * FROM users WHERE email = ? LIMIT 1",
       [cleanEmail],
     );
-    if (!rows.length) {
+    if (!rows || rows.length === 0) {
       return res.status(401).json({ message: "Invalid credentials." });
     }
 
@@ -91,7 +91,6 @@ router.post("/login", async (req, res) => {
 
     const userPayload = { userId: user.id, role: user.role || "user" };
     const token = generateToken(userPayload);
-
     res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
 
     return res.json({
@@ -102,10 +101,11 @@ router.post("/login", async (req, res) => {
         lastName: user.last_name,
         role: user.role || "user",
       },
-      token: token,
+      token,
     });
   } catch (err) {
-    return res.status(500).json({ message: err.message });
+    console.error("Login error:", err);
+    return res.status(500).json({ message: "Server error during login" });
   }
 });
 
@@ -119,43 +119,45 @@ router.post("/logout", (req, res) => {
 router.get("/me", requireAuth, async (req, res) => {
   try {
     const [rows] = await db.query(
-      "SELECT id, email, first_name AS firstName, last_name AS lastName, role FROM users WHERE id = ? LIMIT 1",
+      "SELECT id, email, first_name, last_name, role FROM users WHERE id = ? LIMIT 1",
       [req.user.userId],
     );
-    if (!rows.length) return res.status(401).json({ user: null });
-    return res.json({ user: rows[0] });
-  } catch {
+
+    if (!rows || rows.length === 0) return res.status(401).json({ user: null });
+
+    const user = rows[0];
+    return res.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.first_name, // Mapinam rankiniu būdu, kad būtų saugu
+        lastName: user.last_name,
+        role: user.role || "user",
+      },
+    });
+  } catch (err) {
+    console.error("Me error:", err);
     return res.status(401).json({ user: null });
   }
 });
 
-/**
- * 5. UPDATE PROFILE
- */
+// 5. UPDATE PROFILE
 router.patch("/profile", requireAuth, async (req, res) => {
   try {
     const { firstName, lastName } = req.body;
     const userId = req.user.userId;
-
-    if (!firstName || !lastName) {
-      return res
-        .status(400)
-        .json({ message: "First name and last name are required." });
-    }
 
     await db.query(
       "UPDATE users SET first_name = ?, last_name = ? WHERE id = ?",
       [firstName, lastName, userId],
     );
 
-    const [rows] = await db.query(
-      "SELECT id, email, first_name AS firstName, last_name AS lastName, role FROM users WHERE id = ? LIMIT 1",
-      [userId],
-    );
-
     return res.json({
-      message: "Profile updated successfully",
-      user: rows[0],
+      message: "Profile updated",
+      user: {
+        firstName,
+        lastName,
+      },
     });
   } catch (err) {
     console.error("Update profile error:", err);
