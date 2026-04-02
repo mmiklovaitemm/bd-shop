@@ -8,16 +8,18 @@ import { requireAuth } from "../middleware/auth.js";
 const router = express.Router();
 
 const COOKIE_NAME = "access_token";
-const IS_PRODUCTION = process.env.NODE_ENV === "production";
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  sameSite: IS_PRODUCTION ? "none" : "lax",
-  secure: IS_PRODUCTION,
+  sameSite: "none",
   maxAge: 7 * 24 * 60 * 60 * 1000,
+  path: "/",
 };
 
 function setAuthCookie(res, payload) {
+  if (!process.env.JWT_SECRET) {
+    console.error("JWT_SECRET is not set in environment variables!");
+  }
   const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "7d" });
   res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
 }
@@ -30,10 +32,6 @@ router.post("/register", async (req, res) => {
       return res
         .status(400)
         .json({ message: "Email and password are required." });
-    }
-
-    if (!process.env.JWT_SECRET) {
-      return res.status(500).json({ message: "JWT_SECRET is not set." });
     }
 
     const cleanEmail = String(email).trim().toLowerCase();
@@ -92,7 +90,6 @@ router.post("/login", async (req, res) => {
     }
 
     const user = rows[0];
-
     const isMatch = await bcrypt.compare(password, user.password_hash);
 
     if (!isMatch) {
@@ -151,8 +148,9 @@ router.get("/me", requireAuth, async (req, res) => {
 router.post("/logout", (req, res) => {
   res.clearCookie(COOKIE_NAME, {
     httpOnly: true,
-    sameSite: COOKIE_OPTIONS.sameSite,
-    secure: COOKIE_OPTIONS.secure,
+    sameSite: "none",
+    secure: true,
+    path: "/",
   });
 
   res.json({ ok: true });
@@ -179,7 +177,6 @@ router.post("/change-password", requireAuth, async (req, res) => {
     }
 
     const user = rows[0];
-
     const ok = await bcrypt.compare(
       String(currentPassword),
       user.password_hash,
