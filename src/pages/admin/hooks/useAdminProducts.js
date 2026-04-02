@@ -21,8 +21,15 @@ export default function useAdminProducts() {
         ? `${cleanBase}/products`
         : `${cleanBase}/api/products`;
 
+      const token = localStorage.getItem("access_token");
+
       const res = await fetch(endpoint, {
+        method: "GET",
         credentials: "include",
+        headers: {
+          Accept: "application/json",
+          Authorization: token ? `Bearer ${token}` : "",
+        },
       });
 
       const data = await res.json();
