@@ -8,7 +8,8 @@ const getUrl = (path) => {
   const cleanPath = path.startsWith("/") ? path : `/${path}`;
 
   let finalPath = cleanPath;
-  if (base.endsWith("/api") && cleanPath.startsWith("/api")) {
+  // Prevent double "/api/api" if API_BASE already includes "/api"
+  if (base.endsWith("/api") && cleanPath.startsWith("/api/")) {
     finalPath = cleanPath.replace("/api", "");
   }
 
@@ -36,13 +37,14 @@ async function api(path, options = {}) {
     },
   });
 
+  // Try to parse JSON, if it fails return empty object
   const data = await res.json().catch(() => ({}));
 
   if (!res.ok) {
     if (res.status === 401) {
       localStorage.removeItem("access_token");
     }
-    throw new Error(data.message || `API klaida ${res.status}`);
+    throw new Error(data.message || `API error ${res.status}`);
   }
 
   return data;
@@ -67,6 +69,8 @@ const useAuth = create((set) => ({
       method: "POST",
       body: JSON.stringify({ email, password }),
     });
+    // If server returns a token in body, save it
+    if (data.token) localStorage.setItem("access_token", data.token);
     set({ user: data.user });
     return data;
   },
@@ -76,6 +80,7 @@ const useAuth = create((set) => ({
       method: "POST",
       body: JSON.stringify({ email, password, firstName, lastName }),
     });
+    if (data.token) localStorage.setItem("access_token", data.token);
     set({ user: data.user });
     return data;
   },
@@ -99,7 +104,7 @@ const useAuth = create((set) => ({
 
   updateProfile: async ({ firstName, lastName }) => {
     const data = await api("/api/auth/profile", {
-      method: "PATCH",
+      method: "POST",
       body: JSON.stringify({ firstName, lastName }),
     });
 
@@ -107,6 +112,7 @@ const useAuth = create((set) => ({
       user: {
         ...state.user,
         ...data.user,
+        // Preserve role if not returned in profile update
         role: data.user?.role || state.user?.role || "user",
       },
     }));
@@ -116,7 +122,7 @@ const useAuth = create((set) => ({
 
   getOrders: async () => {
     const data = await api("/api/orders");
-    return data.orders;
+    return data.orders || [];
   },
 }));
 
