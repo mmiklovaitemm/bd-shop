@@ -15,9 +15,7 @@ import PickupSection from "./components/PickupSection";
 
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 
-// Use API origin but ensure we don't double the /api path later
-const API_ORIGIN =
-  import.meta.env.VITE_API_URL || "https://bd-shop-gfva.onrender.com";
+const API_ORIGIN = "https://bd-shop-gfva.onrender.com";
 
 function isVariantObject(value) {
   return (
@@ -113,7 +111,8 @@ export default function Checkout() {
       const base = Number(item.price) || 0;
       const qty = Number(item.quantity || 1);
       const service = String(item.serviceOption || "").toLowerCase();
-      const fee = service.includes("shipping") ? SHIPPING_KIT_FEE : 0;
+      const isShippingKit = service.includes("shipping");
+      const fee = isShippingKit ? SHIPPING_KIT_FEE : 0;
       return sum + (base + fee) * qty;
     }, 0);
   }, [items]);
@@ -173,12 +172,9 @@ export default function Checkout() {
 
   const validateCartStock = async () => {
     try {
-      // FIX: Corrected endpoint path to avoid /api/api/products
-      const endpoint = API_ORIGIN.endsWith("/api")
-        ? `${API_ORIGIN}/products`
-        : `${API_ORIGIN}/api/products`;
-
-      const res = await fetch(endpoint, { credentials: "include" });
+      const res = await fetch(`${API_ORIGIN}/api/products`, {
+        credentials: "include",
+      });
       const data = await res.json();
       const list = Array.isArray(data) ? data : data?.products || [];
 
@@ -189,18 +185,13 @@ export default function Checkout() {
       });
 
       const stockErrors = [];
-
       for (const item of items) {
-        const productId = String(item.productId || item.id || "");
-        const product = productsById.get(productId);
-
-        if (!product) continue; // Skip if product info not found to avoid blocking
+        const pid = String(item.productId || item.id || "");
+        const product = productsById.get(pid);
+        if (!product) continue;
 
         const qty = Number(item.quantity || 1);
-        const color = String(item.color || "").trim();
-        const size = String(item.size || "").trim();
-
-        const stockAvailable = getVariantStock(product, color, size);
+        const stockAvailable = getVariantStock(product, item.color, item.size);
 
         if (stockAvailable <= 0) {
           stockErrors.push(
@@ -220,8 +211,8 @@ export default function Checkout() {
       }
       return stockErrors;
     } catch (err) {
-      console.error("Stock validation failed:", err);
-      return []; // Return empty errors to allow checkout if API is down
+      console.error("Stock validation error:", err);
+      return [];
     }
   };
 
@@ -277,11 +268,7 @@ export default function Checkout() {
             : null,
       };
 
-      const endpoint = API_ORIGIN.endsWith("/api")
-        ? `${API_ORIGIN}/orders`
-        : `${API_ORIGIN}/api/orders`;
-
-      const res = await fetch(endpoint, {
+      const res = await fetch(`${API_ORIGIN}/api/orders`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -296,13 +283,16 @@ export default function Checkout() {
 
       clearCart();
       setIsSubmitting(false);
+      setPayStatus("success");
+
       navigate("/thank-you", {
         state: {
-          orderId: data?.orderId ?? null,
+          orderId: data?.orderId || data?.id || "XYZ",
           deliveryType,
           pickupLocation: deliveryType === "pickup" ? pickupLocation : null,
           email,
         },
+        replace: true,
       });
     } catch (err) {
       setIsSubmitting(false);
@@ -317,7 +307,7 @@ export default function Checkout() {
     <>
       <main className="px-0 py-6 md:px-2 lg:px-4">
         <div className="mx-auto grid w-full max-w-[980px] grid-cols-1 gap-6 md:grid-cols-[1fr_360px]">
-          <section className="mx-auto w-full max-w-[420px] bg-white md:mx-0 md:w-full md:max-w-none md:border md:border-black lg:border lg:border-black">
+          <section className="mx-auto w-full max-w-[420px] bg-white md:mx-0 md:w-full md:max-w-none md:border md:border-black">
             <div className="md:hidden">
               <OrderSummary
                 variant="mobile"
@@ -334,10 +324,8 @@ export default function Checkout() {
 
             <form onSubmit={handlePay} className="space-y-8 px-4 py-6">
               {errors.submit && (
-                <div className="border border-black bg-black/5 px-4 py-4">
-                  <p className="font-ui text-sm text-red-600">
-                    {errors.submit}
-                  </p>
+                <div className="border border-black bg-black/5 px-4 py-4 text-red-600 font-ui text-sm">
+                  {errors.submit}
                 </div>
               )}
 
@@ -418,10 +406,8 @@ export default function Checkout() {
 
               <button
                 type="submit"
-                className="flex h-14 w-full items-center justify-center bg-black font-ui text-[14px] text-white disabled:opacity-50 active:scale-[0.98] transition-transform"
-                disabled={
-                  items.length === 0 || isSubmitting || payStatus === "success"
-                }
+                disabled={items.length === 0 || isSubmitting}
+                className="flex h-14 w-full items-center justify-center bg-black font-ui text-[14px] text-white transition-all active:scale-[0.98] disabled:opacity-50"
               >
                 {isSubmitting
                   ? t.checkoutPage.processing
