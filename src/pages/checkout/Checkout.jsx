@@ -111,8 +111,7 @@ export default function Checkout() {
       const base = Number(item.price) || 0;
       const qty = Number(item.quantity || 1);
       const service = String(item.serviceOption || "").toLowerCase();
-      const isShippingKit = service.includes("shipping");
-      const fee = isShippingKit ? SHIPPING_KIT_FEE : 0;
+      const fee = service.includes("shipping") ? SHIPPING_KIT_FEE : 0;
       return sum + (base + fee) * qty;
     }, 0);
   }, [items]);
@@ -140,30 +139,36 @@ export default function Checkout() {
 
   const validate = () => {
     const next = {};
+    const errText = t?.checkout?.errors || {};
+    const pageErrText = t?.checkoutPage?.errors || {};
+
     if (!email || !/^\S+@\S+\.\S+$/.test(email))
-      next.email = t.checkoutPage.errors.enterValidEmail;
+      next.email = pageErrText.enterValidEmail || "Enter valid email";
 
     if (deliveryType === "ship") {
       if (!firstName.trim())
-        next.firstName = t.checkout.errors.firstNameRequired;
-      if (!lastName.trim()) next.lastName = t.checkout.errors.lastNameRequired;
-      if (!address.trim()) next.address = t.checkout.errors.addressRequired;
-      if (!city.trim()) next.city = t.checkout.errors.cityRequired;
+        next.firstName = errText.firstNameRequired || "First name required";
+      if (!lastName.trim())
+        next.lastName = errText.lastNameRequired || "Last name required";
+      if (!address.trim())
+        next.address = errText.addressRequired || "Address required";
+      if (!city.trim()) next.city = errText.cityRequired || "City required";
       if (!postalCode.trim())
-        next.postalCode = t.checkout.errors.postalCodeRequired;
-      if (!phone.trim()) next.phone = t.checkout.errors.phoneRequired;
+        next.postalCode = errText.postalCodeRequired || "Postal code required";
+      if (!phone.trim()) next.phone = errText.phoneRequired || "Phone required";
     }
 
     if (paymentType === "card") {
       const digits = (s) => String(s || "").replace(/\D/g, "");
       if (digits(cardNumber).length < 12)
-        next.cardNumber = t.checkout.errors.invalidCardNumber;
+        next.cardNumber = errText.invalidCardNumber || "Invalid card number";
       if (!/^\d{2}\/\d{2}$/.test(cardDate))
-        next.cardDate = t.checkout.errors.useCardDateFormat;
+        next.cardDate = errText.useCardDateFormat || "Use MM/YY format";
       if (digits(cardCvc).length < 3)
-        next.cardCvc = t.checkout.errors.invalidCvc;
+        next.cardCvc = errText.invalidCvc || "Invalid CVC";
       if (!cardName.trim())
-        next.cardName = t.checkout.errors.cardOwnerNameRequired;
+        next.cardName =
+          errText.cardOwnerNameRequired || "Card owner name required";
     }
 
     setErrors(next);
@@ -185,6 +190,8 @@ export default function Checkout() {
       });
 
       const stockErrors = [];
+      const errText = t?.checkout?.errors || {};
+
       for (const item of items) {
         const pid = String(item.productId || item.id || "");
         const product = productsById.get(pid);
@@ -194,15 +201,14 @@ export default function Checkout() {
         const stockAvailable = getVariantStock(product, item.color, item.size);
 
         if (stockAvailable <= 0) {
-          stockErrors.push(
-            t.checkout.errors.productSoldOut.replace(
-              "{productName}",
-              item.name,
-            ),
-          );
+          const msg = errText.productSoldOut || "{productName} is sold out";
+          stockErrors.push(msg.replace("{productName}", item.name));
         } else if (qty > stockAvailable) {
+          const msg =
+            errText.notEnoughStock ||
+            "Only {stockQuantity} left for {productName}";
           stockErrors.push(
-            t.checkout.errors.notEnoughStock
+            msg
               .replace("{stockQuantity}", stockAvailable)
               .replace("{productName}", item.name)
               .replace("{qty}", qty),
@@ -278,7 +284,9 @@ export default function Checkout() {
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        throw new Error(data?.message || t.somethingWentWrong);
+        throw new Error(
+          data?.message || t?.somethingWentWrong || "Something went wrong",
+        );
       }
 
       clearCart();
@@ -287,7 +295,7 @@ export default function Checkout() {
 
       navigate("/thank-you", {
         state: {
-          orderId: data?.orderId || data?.id || "XYZ",
+          orderId: data?.orderId || data?.id || "ORDER-" + Date.now(),
           deliveryType,
           pickupLocation: deliveryType === "pickup" ? pickupLocation : null,
           email,
@@ -295,10 +303,11 @@ export default function Checkout() {
         replace: true,
       });
     } catch (err) {
+      console.error("Pay error:", err);
       setIsSubmitting(false);
       setErrors((prev) => ({
         ...prev,
-        submit: err?.message || t.somethingWentWrong,
+        submit: err?.message || "Checkout failed",
       }));
     }
   };
@@ -410,8 +419,8 @@ export default function Checkout() {
                 className="flex h-14 w-full items-center justify-center bg-black font-ui text-[14px] text-white transition-all active:scale-[0.98] disabled:opacity-50"
               >
                 {isSubmitting
-                  ? t.checkoutPage.processing
-                  : t.checkoutPage.payNow}
+                  ? t?.checkoutPage?.processing || "Processing..."
+                  : t?.checkoutPage?.payNow || "Pay now"}
               </button>
             </form>
           </section>
