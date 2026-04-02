@@ -248,16 +248,23 @@ export default function Login() {
     setSubmitting(true);
 
     try {
+      let response;
+
       if (isRegister) {
-        await register({
+        response = await register({
           email,
           password: registerPassword,
           firstName,
           lastName,
         });
       } else {
-        await login({ email, password: loginPassword });
+        response = await login({ email, password: loginPassword });
       }
+
+      if (response?.token) {
+        localStorage.setItem("access_token", response.token);
+      }
+
       navigate(from, { replace: true });
     } catch (err) {
       setServerError(err.message || t.somethingWentWrong);

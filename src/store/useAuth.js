@@ -15,6 +15,15 @@ const getUrl = (path) => {
   return `${base}${finalPath}`;
 };
 
+const getAuthHeaders = () => {
+  const token = localStorage.getItem("access_token");
+  const headers = { "Content-Type": "application/json" };
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  return headers;
+};
+
 async function api(path, options = {}) {
   const url = getUrl(path);
 
@@ -22,7 +31,7 @@ async function api(path, options = {}) {
     credentials: "include",
     ...options,
     headers: {
-      "Content-Type": "application/json",
+      ...getAuthHeaders(),
       ...(options.headers || {}),
     },
   });
@@ -30,6 +39,9 @@ async function api(path, options = {}) {
   const data = await res.json().catch(() => ({}));
 
   if (!res.ok) {
+    if (res.status === 401) {
+      localStorage.removeItem("access_token");
+    }
     throw new Error(data.message || `API klaida ${res.status}`);
   }
 
@@ -45,8 +57,7 @@ const useAuth = create((set) => ({
     try {
       const data = await api("/api/auth/me");
       set({ user: data.user, loading: false });
-    } catch (err) {
-      console.error("Auth klaida:", err);
+    } catch {
       set({ user: null, loading: false });
     }
   },
@@ -57,7 +68,7 @@ const useAuth = create((set) => ({
       body: JSON.stringify({ email, password }),
     });
     set({ user: data.user });
-    return data.user;
+    return data;
   },
 
   register: async ({ email, password, firstName, lastName }) => {
@@ -66,12 +77,16 @@ const useAuth = create((set) => ({
       body: JSON.stringify({ email, password, firstName, lastName }),
     });
     set({ user: data.user });
-    return data.user;
+    return data;
   },
 
   logout: async () => {
-    await api("/api/auth/logout", { method: "POST" });
-    set({ user: null });
+    try {
+      await api("/api/auth/logout", { method: "POST" });
+    } finally {
+      localStorage.removeItem("access_token");
+      set({ user: null });
+    }
   },
 
   changePassword: async ({ currentPassword, newPassword }) => {

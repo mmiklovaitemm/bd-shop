@@ -12,22 +12,18 @@ const COOKIE_NAME = "access_token";
 const COOKIE_OPTIONS = {
   httpOnly: true,
   sameSite: "none",
+  secure: true,
   maxAge: 7 * 24 * 60 * 60 * 1000,
   path: "/",
 };
 
-function setAuthCookie(res, payload) {
-  if (!process.env.JWT_SECRET) {
-    console.error("JWT_SECRET is not set in environment variables!");
-  }
-  const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "7d" });
-  res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
+function generateToken(payload) {
+  return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "7d" });
 }
 
 router.post("/register", async (req, res) => {
   try {
     const { email, password, firstName, lastName } = req.body || {};
-
     if (!email || !password) {
       return res
         .status(400)
@@ -35,7 +31,6 @@ router.post("/register", async (req, res) => {
     }
 
     const cleanEmail = String(email).trim().toLowerCase();
-
     const [existing] = await db.query(
       "SELECT id FROM users WHERE email = ? LIMIT 1",
       [cleanEmail],
@@ -46,23 +41,26 @@ router.post("/register", async (req, res) => {
     }
 
     const passwordHash = await bcrypt.hash(String(password), 10);
-
     const [result] = await db.query(
       "INSERT INTO users (email, password_hash, first_name, last_name) VALUES (?, ?, ?, ?)",
       [cleanEmail, passwordHash, firstName || null, lastName || null],
     );
 
-    const user = {
-      id: result.insertId,
-      email: cleanEmail,
-      firstName: firstName || null,
-      lastName: lastName || null,
-      role: "user",
-    };
+    const userPayload = { userId: result.insertId, role: "user" };
+    const token = generateToken(userPayload);
 
-    setAuthCookie(res, { userId: user.id, role: "user" });
+    res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
 
-    return res.status(201).json({ user });
+    return res.status(201).json({
+      user: {
+        id: result.insertId,
+        email: cleanEmail,
+        firstName,
+        lastName,
+        role: "user",
+      },
+      token: token,
+    });
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
@@ -71,7 +69,6 @@ router.post("/register", async (req, res) => {
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body || {};
-
     if (!email || !password) {
       return res
         .status(400)
@@ -79,7 +76,6 @@ router.post("/login", async (req, res) => {
     }
 
     const cleanEmail = String(email).trim().toLowerCase();
-
     const [rows] = await db.query(
       "SELECT * FROM users WHERE email = ? LIMIT 1",
       [cleanEmail],
@@ -96,10 +92,10 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials." });
     }
 
-    setAuthCookie(res, {
-      userId: user.id,
-      role: user.role || "user",
-    });
+    const userPayload = { userId: user.id, role: user.role || "user" };
+    const token = generateToken(userPayload);
+
+    res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
 
     return res.json({
       user: {
@@ -109,27 +105,27 @@ router.post("/login", async (req, res) => {
         lastName: user.last_name,
         role: user.role || "user",
       },
+      token: token,
     });
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
+});
+
+router.post("/logout", (req, res) => {
+  res.clearCookie(COOKIE_NAME, COOKIE_OPTIONS);
+  res.json({ ok: true });
 });
 
 router.get("/me", requireAuth, async (req, res) => {
   try {
     const userId = req.user.userId;
-
     const [rows] = await db.query(
       "SELECT id, email, first_name, last_name, role FROM users WHERE id = ? LIMIT 1",
       [userId],
     );
-
-    if (!rows.length) {
-      return res.status(401).json({ user: null });
-    }
-
+    if (!rows.length) return res.status(401).json({ user: null });
     const user = rows[0];
-
     return res.json({
       user: {
         id: user.id,
@@ -139,63 +135,8 @@ router.get("/me", requireAuth, async (req, res) => {
         role: user.role || "user",
       },
     });
-  } catch (err) {
-    console.log("Auth error:", err);
+  } catch {
     return res.status(401).json({ user: null });
-  }
-});
-
-router.post("/logout", (req, res) => {
-  res.clearCookie(COOKIE_NAME, {
-    httpOnly: true,
-    sameSite: "none",
-    secure: true,
-    path: "/",
-  });
-
-  res.json({ ok: true });
-});
-
-router.post("/change-password", requireAuth, async (req, res) => {
-  try {
-    const userId = req.user.userId;
-    const { currentPassword, newPassword } = req.body || {};
-
-    if (!currentPassword || !newPassword) {
-      return res
-        .status(400)
-        .json({ message: "Current and new password are required." });
-    }
-
-    const [rows] = await db.query(
-      "SELECT id, password_hash FROM users WHERE id = ? LIMIT 1",
-      [userId],
-    );
-
-    if (!rows.length) {
-      return res.status(401).json({ message: "Unauthorized." });
-    }
-
-    const user = rows[0];
-    const ok = await bcrypt.compare(
-      String(currentPassword),
-      user.password_hash,
-    );
-
-    if (!ok) {
-      return res.status(401).json({ message: "Wrong current password." });
-    }
-
-    const newHash = await bcrypt.hash(String(newPassword), 10);
-
-    await db.query("UPDATE users SET password_hash = ? WHERE id = ?", [
-      newHash,
-      userId,
-    ]);
-
-    return res.json({ ok: true });
-  } catch (err) {
-    return res.status(500).json({ message: err.message });
   }
 });
 
