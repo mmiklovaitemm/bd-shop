@@ -13,11 +13,19 @@ export default function useAdminOrders() {
       setError("");
       setLoading(true);
 
-      const res = await fetch(`${API_ORIGIN}/api/orders/admin/all`, {
+      const cleanBase = API_ORIGIN.endsWith("/")
+        ? API_ORIGIN.slice(0, -1)
+        : API_ORIGIN;
+
+      const endpoint = cleanBase.endsWith("/api")
+        ? `${cleanBase}/orders/admin/all`
+        : `${cleanBase}/api/orders/admin/all`;
+
+      const res = await fetch(endpoint, {
         credentials: "include",
       });
 
-      const data = await res.json().catch(() => ({}));
+      const data = await res.json();
 
       if (!res.ok) {
         throw new Error(data?.message || "Failed to load orders.");
@@ -25,6 +33,7 @@ export default function useAdminOrders() {
 
       setOrders(Array.isArray(data.orders) ? data.orders : []);
     } catch (err) {
+      console.error("useAdminOrders fetch error:", err);
       setError(err?.message || "Failed to load orders.");
       setOrders([]);
     } finally {

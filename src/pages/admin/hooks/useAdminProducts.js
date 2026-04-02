@@ -11,8 +11,17 @@ export default function useAdminProducts() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
+      setError("");
 
-      const res = await fetch(`${API_ORIGIN}/api/products`, {
+      const cleanBase = API_ORIGIN.endsWith("/")
+        ? API_ORIGIN.slice(0, -1)
+        : API_ORIGIN;
+
+      const endpoint = cleanBase.endsWith("/api")
+        ? `${cleanBase}/products`
+        : `${cleanBase}/api/products`;
+
+      const res = await fetch(endpoint, {
         credentials: "include",
       });
 
@@ -25,7 +34,8 @@ export default function useAdminProducts() {
       setProducts(data || []);
       setError("");
     } catch (err) {
-      setError(err.message);
+      console.error("useAdminProducts fetch error:", err);
+      setError(err.message || "Failed to load products.");
     } finally {
       setLoading(false);
     }

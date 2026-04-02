@@ -38,43 +38,35 @@ export default function AdminProducts() {
     return window.matchMedia("(max-width: 1023px)").matches ? 6 : 10;
   });
 
+  const getAdminApiUrl = (path) => {
+    const cleanBase = API_ORIGIN.endsWith("/")
+      ? API_ORIGIN.slice(0, -1)
+      : API_ORIGIN;
+    let cleanPath = path.startsWith("/") ? path : `/${path}`;
+
+    if (cleanBase.endsWith("/api") && cleanPath.startsWith("/api/")) {
+      cleanPath = cleanPath.replace("/api", "");
+    }
+    return `${cleanBase}${cleanPath}`;
+  };
+
   useEffect(() => {
     if (!successMessage) return;
-
-    const timer = setTimeout(() => {
-      setSuccessMessage("");
-    }, 8000);
-
+    const timer = setTimeout(() => setSuccessMessage(""), 8000);
     return () => clearTimeout(timer);
   }, [successMessage]);
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 1023px)");
-
-    const handleChange = (event) => {
-      setPageSize(event.matches ? 6 : 10);
-    };
-
-    if (media.addEventListener) {
-      media.addEventListener("change", handleChange);
-    } else {
-      media.addListener(handleChange);
-    }
-
-    return () => {
-      if (media.removeEventListener) {
-        media.removeEventListener("change", handleChange);
-      } else {
-        media.removeListener(handleChange);
-      }
-    };
+    const handleChange = (event) => setPageSize(event.matches ? 6 : 10);
+    media.addEventListener("change", handleChange);
+    return () => media.removeEventListener("change", handleChange);
   }, []);
 
   const filteredProducts = useMemo(() => {
     return [...products]
       .filter((product) => {
         const query = searchValue.trim().toLowerCase();
-
         const matchesSearch =
           !query ||
           String(product.name || "")
@@ -83,27 +75,19 @@ export default function AdminProducts() {
           String(product.id || "")
             .toLowerCase()
             .includes(query);
-
         const matchesCategory =
           categoryFilter === "all" || product.category === categoryFilter;
-
         return matchesSearch && matchesCategory;
       })
       .sort((a, b) => {
-        if (sortValue === "price-low") {
+        if (sortValue === "price-low")
           return Number(a.priceValue || 0) - Number(b.priceValue || 0);
-        }
-
-        if (sortValue === "price-high") {
+        if (sortValue === "price-high")
           return Number(b.priceValue || 0) - Number(a.priceValue || 0);
-        }
-
-        if (sortValue === "oldest") {
+        if (sortValue === "oldest")
           return String(a.createdAt || "").localeCompare(
             String(b.createdAt || ""),
           );
-        }
-
         return String(b.createdAt || "").localeCompare(
           String(a.createdAt || ""),
         );
@@ -120,15 +104,7 @@ export default function AdminProducts() {
     return filteredProducts.slice(start, start + pageSize);
   }, [filteredProducts, safePage, pageSize]);
 
-  useEffect(() => {
-    setPage(1);
-  }, [searchValue, categoryFilter, sortValue]);
-
-  useEffect(() => {
-    if (page > totalPages) {
-      setPage(totalPages);
-    }
-  }, [page, totalPages]);
+  useEffect(() => setPage(1), [searchValue, categoryFilter, sortValue]);
 
   const toggleSelectProduct = (productId) => {
     setSelectedProductIds((prev) =>
@@ -139,53 +115,36 @@ export default function AdminProducts() {
   };
 
   const visibleProductIds = paginatedProducts.map((product) => product.id);
-
   const allVisibleSelected =
     visibleProductIds.length > 0 &&
     visibleProductIds.every((id) => selectedProductIds.includes(id));
 
   const toggleSelectAllProducts = () => {
     if (visibleProductIds.length === 0) return;
-
-    setSelectedProductIds((prev) => {
-      if (allVisibleSelected) {
-        return prev.filter((id) => !visibleProductIds.includes(id));
-      }
-
-      return [...new Set([...prev, ...visibleProductIds])];
-    });
+    setSelectedProductIds((prev) =>
+      allVisibleSelected
+        ? prev.filter((id) => !visibleProductIds.includes(id))
+        : [...new Set([...prev, ...visibleProductIds])],
+    );
   };
 
   const handleCreateProduct = async (newProduct) => {
     try {
       setIsSaving(true);
-      setErrorMessage("");
-      setSuccessMessage("");
-
-      const res = await fetch(`${API_ORIGIN}/api/products`, {
+      const res = await fetch(getAdminApiUrl("/api/products"), {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify(newProduct),
       });
-
       const data = await res.json();
-
-      if (!res.ok) {
+      if (!res.ok)
         throw new Error(data?.message || "Failed to create product.");
-      }
-
-      setSuccessMessage(
-        `Product created: ${newProduct.name} (${newProduct.id})`,
-      );
-
+      setSuccessMessage(`Product created: ${newProduct.name}`);
       setIsCreateOpen(false);
       await fetchProducts();
     } catch (err) {
-      console.error("Create product error:", err);
-      setErrorMessage(err.message || "Failed to create product.");
+      setErrorMessage(err.message);
     } finally {
       setIsSaving(false);
     }
@@ -194,35 +153,23 @@ export default function AdminProducts() {
   const handleUpdateProduct = async (updatedProduct) => {
     try {
       setIsSaving(true);
-
       const res = await fetch(
-        `${API_ORIGIN}/api/products/${updatedProduct.id}`,
+        getAdminApiUrl(`/api/products/${updatedProduct.id}`),
         {
           method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify(updatedProduct),
         },
       );
-
       const data = await res.json();
-
-      if (!res.ok) {
+      if (!res.ok)
         throw new Error(data?.message || "Failed to update product.");
-      }
-
-      setErrorMessage("");
-      setSuccessMessage(
-        `Product updated: ${updatedProduct.name} (${updatedProduct.id})`,
-      );
-
+      setSuccessMessage(`Product updated: ${updatedProduct.name}`);
       setEditProduct(null);
       await fetchProducts();
     } catch (err) {
-      console.error(err);
-      setErrorMessage(err.message || "Update failed.");
+      setErrorMessage(err.message);
     } finally {
       setIsSaving(false);
     }
@@ -243,27 +190,17 @@ export default function AdminProducts() {
   const confirmDeleteProduct = async (product) => {
     try {
       setIsDeleting(true);
-
-      const res = await fetch(`${API_ORIGIN}/api/products/${product.id}`, {
+      const res = await fetch(getAdminApiUrl(`/api/products/${product.id}`), {
         method: "DELETE",
         credentials: "include",
       });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data?.message || "Failed to delete product.");
-      }
-
-      setErrorMessage("");
-      setSuccessMessage(`Product deleted: ${product.name} (${product.id})`);
-
+      if (!res.ok) throw new Error("Failed to delete product.");
+      setSuccessMessage(`Product deleted: ${product.name}`);
       setDeleteProduct(null);
       setSelectedProductIds((prev) => prev.filter((id) => id !== product.id));
       await fetchProducts();
     } catch (err) {
-      console.error(err);
-      setErrorMessage(err.message || "Delete failed.");
+      setErrorMessage(err.message);
     } finally {
       setIsDeleting(false);
     }
@@ -271,38 +208,26 @@ export default function AdminProducts() {
 
   const handleDeleteSelectedProducts = async () => {
     if (selectedProductIds.length === 0) return;
-
     try {
       setIsDeleting(true);
-
       await Promise.all(
         selectedProductIds.map(async (productId) => {
-          const res = await fetch(`${API_ORIGIN}/api/products/${productId}`, {
-            method: "DELETE",
-            credentials: "include",
-          });
-
-          const data = await res.json();
-
-          if (!res.ok) {
-            throw new Error(data?.message || `Failed to delete ${productId}`);
-          }
-
-          return data;
+          const res = await fetch(
+            getAdminApiUrl(`/api/products/${productId}`),
+            {
+              method: "DELETE",
+              credentials: "include",
+            },
+          );
+          if (!res.ok) throw new Error(`Failed to delete ${productId}`);
         }),
       );
-
-      setErrorMessage("");
-      setSuccessMessage(
-        `${selectedProductIds.length} product(s) deleted successfully.`,
-      );
-
+      setSuccessMessage(`${selectedProductIds.length} product(s) deleted.`);
       setSelectedProductIds([]);
       setIsBulkDeleteOpen(false);
       await fetchProducts();
     } catch (err) {
-      console.error(err);
-      setErrorMessage(err.message || "Bulk delete failed.");
+      setErrorMessage(err.message);
     } finally {
       setIsDeleting(false);
     }
@@ -313,7 +238,6 @@ export default function AdminProducts() {
       <main className="mx-auto w-full max-w-6xl px-4 py-8">
         <div className="flex items-center justify-between gap-4">
           <h1 className="font-display text-4xl leading-none">Admin products</h1>
-
           <button
             type="button"
             className="border border-black bg-black px-4 py-3 font-ui text-sm text-white"
@@ -327,22 +251,21 @@ export default function AdminProducts() {
           </button>
         </div>
 
-        {selectedProductIds.length > 0 ? (
+        {selectedProductIds.length > 0 && (
           <div className="mt-4 flex items-center justify-between gap-3 border border-red-200 bg-red-50 px-4 py-3">
             <p className="font-ui text-sm text-red-700">
               Selected: {selectedProductIds.length} product(s)
             </p>
-
             <button
               type="button"
-              className="border border-red-600 bg-red-600 px-4 py-2 font-ui text-sm text-white disabled:opacity-60"
+              className="border border-red-600 bg-red-600 px-4 py-2 font-ui text-sm text-white"
               onClick={() => setIsBulkDeleteOpen(true)}
               disabled={isDeleting}
             >
               {isDeleting ? "Deleting..." : "Delete selected"}
             </button>
           </div>
-        ) : null}
+        )}
 
         <div className="mt-6 grid gap-3 md:grid-cols-3">
           <input
@@ -352,7 +275,6 @@ export default function AdminProducts() {
             placeholder="Search by name or id"
             className="h-12 w-full border border-black px-4 outline-none"
           />
-
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
@@ -365,7 +287,6 @@ export default function AdminProducts() {
             <option value="bracelets">Bracelets</option>
             <option value="personal">Personal</option>
           </select>
-
           <select
             value={sortValue}
             onChange={(e) => setSortValue(e.target.value)}
@@ -382,7 +303,6 @@ export default function AdminProducts() {
           <p className="font-ui text-sm text-black/60">
             Showing {showingCount} of {totalItems} filtered products
           </p>
-
           <button
             type="button"
             className="border border-black bg-white px-4 py-2 font-ui text-sm"
@@ -398,10 +318,9 @@ export default function AdminProducts() {
           </button>
         </div>
 
-        {successMessage ? (
+        {successMessage && (
           <div className="mt-6 flex items-center justify-between border border-green-700 bg-green-50 px-4 py-3 font-ui text-sm text-green-800">
             <span>{successMessage}</span>
-
             <button
               type="button"
               className="ml-4 border border-green-700 px-3 py-1 text-xs"
@@ -410,12 +329,11 @@ export default function AdminProducts() {
               Close
             </button>
           </div>
-        ) : null}
+        )}
 
-        {errorMessage ? (
+        {errorMessage && (
           <div className="mt-6 flex items-center justify-between border border-red-600 bg-red-50 px-4 py-3 font-ui text-sm text-red-700">
             <span>{errorMessage}</span>
-
             <button
               type="button"
               className="ml-4 border border-red-600 px-3 py-1 text-xs"
@@ -424,7 +342,7 @@ export default function AdminProducts() {
               Close
             </button>
           </div>
-        ) : null}
+        )}
 
         {loading ? (
           <p className="mt-6 font-ui text-sm text-black/60">Loading...</p>
@@ -448,7 +366,6 @@ export default function AdminProducts() {
                 />
                 <span>Select all visible</span>
               </label>
-
               <span className="font-ui text-xs text-black/50">
                 {selectedProductIds.length} selected
               </span>
@@ -458,11 +375,7 @@ export default function AdminProducts() {
               {paginatedProducts.map((product) => (
                 <div
                   key={product.id}
-                  className={`border bg-white p-4 ${
-                    selectedProductIds.includes(product.id)
-                      ? "border-black"
-                      : "border-black/30"
-                  }`}
+                  className={`border bg-white p-4 ${selectedProductIds.includes(product.id) ? "border-black" : "border-black/30"}`}
                 >
                   <div className="mb-4 flex items-center justify-between gap-3">
                     <label className="flex items-center gap-3 font-ui text-sm">
@@ -474,14 +387,12 @@ export default function AdminProducts() {
                       />
                       <span>Select</span>
                     </label>
-
-                    {selectedProductIds.includes(product.id) ? (
+                    {selectedProductIds.includes(product.id) && (
                       <span className="border border-black bg-black px-2 py-1 text-[10px] text-white">
                         Selected
                       </span>
-                    ) : null}
+                    )}
                   </div>
-
                   <div className="flex items-start gap-4">
                     {product.thumbnail ? (
                       <img
@@ -494,21 +405,17 @@ export default function AdminProducts() {
                         No img
                       </div>
                     )}
-
                     <div className="min-w-0 flex-1">
                       <p className="font-ui text-sm">{product.name}</p>
                       <p className="mt-1 text-xs text-black/50">{product.id}</p>
-
                       <div className="mt-2 flex flex-wrap items-center gap-2">
-                        {product.isBestSeller ? (
+                        {product.isBestSeller && (
                           <span className="border border-black bg-black px-2 py-1 text-[10px] text-white">
                             Best seller
                           </span>
-                        ) : null}
-
+                        )}
                         {(() => {
                           const stock = getStockBadge(product);
-
                           return (
                             <span
                               className={`border px-2 py-1 text-[10px] ${stock.className}`}
@@ -519,18 +426,15 @@ export default function AdminProducts() {
                         })()}
                       </div>
                     </div>
-
                     <div className="shrink-0 text-right">
                       <p className="font-ui text-sm">€{product.priceValue}</p>
                     </div>
                   </div>
-
                   <div className="mt-4 grid grid-cols-2 gap-4 font-ui text-sm">
                     <div>
                       <p className="text-black/50">Category</p>
                       <p className="mt-1">{product.category || "-"}</p>
                     </div>
-
                     <div>
                       <p className="text-black/50">Created</p>
                       <p className="mt-1">
@@ -539,7 +443,6 @@ export default function AdminProducts() {
                           : "-"}
                       </p>
                     </div>
-
                     <div>
                       <p className="text-black/50">Stock</p>
                       <p className="mt-1">
@@ -547,7 +450,6 @@ export default function AdminProducts() {
                       </p>
                     </div>
                   </div>
-
                   <div className="mt-4 flex gap-2">
                     <button
                       type="button"
@@ -556,7 +458,6 @@ export default function AdminProducts() {
                     >
                       Edit
                     </button>
-
                     <button
                       type="button"
                       className="flex-1 border border-red-600 bg-white px-3 py-3 font-ui text-sm text-red-600"
@@ -582,7 +483,6 @@ export default function AdminProducts() {
               <p className="font-ui text-sm text-black/60">
                 Showing {showingCount} of {totalItems} products
               </p>
-
               <Pagination
                 totalItems={totalItems}
                 page={safePage}
@@ -594,42 +494,38 @@ export default function AdminProducts() {
           </>
         )}
 
-        {isCreateOpen ? (
+        {isCreateOpen && (
           <AdminProductCreateModal
             onClose={() => setIsCreateOpen(false)}
             onCreate={handleCreateProduct}
             isSaving={isSaving}
           />
-        ) : null}
-
-        {deleteProduct ? (
+        )}
+        {deleteProduct && (
           <AdminProductDeleteModal
             product={deleteProduct}
             onClose={() => setDeleteProduct(null)}
-            onConfirm={confirmDeleteProduct}
+            onConfirm={() => confirmDeleteProduct(deleteProduct)}
             deleting={isDeleting}
           />
-        ) : null}
-
-        {isBulkDeleteOpen ? (
+        )}
+        {isBulkDeleteOpen && (
           <AdminProductBulkDeleteModal
             count={selectedProductIds.length}
             onClose={() => setIsBulkDeleteOpen(false)}
             onConfirm={handleDeleteSelectedProducts}
             deleting={isDeleting}
           />
-        ) : null}
-
-        {editProduct ? (
+        )}
+        {editProduct && (
           <AdminProductEditModal
             onClose={() => setEditProduct(null)}
             onUpdate={handleUpdateProduct}
             initialData={editProduct}
             isSaving={isSaving}
           />
-        ) : null}
+        )}
       </main>
-
       <FullWidthDivider />
     </>
   );
