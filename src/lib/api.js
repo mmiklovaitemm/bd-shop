@@ -2,7 +2,13 @@ const BASE_URL = "https://bd-shop-gfva.onrender.com/api";
 
 const getFullUrl = (path) => {
   const cleanBase = BASE_URL.endsWith("/") ? BASE_URL.slice(0, -1) : BASE_URL;
-  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+
+  let cleanPath = path.startsWith("/") ? path : `/${path}`;
+
+  if (cleanPath.startsWith("/api/")) {
+    cleanPath = cleanPath.replace("/api", "");
+  }
+
   return `${cleanBase}${cleanPath}`;
 };
 

@@ -18,19 +18,31 @@ const fmtPrice = (n) =>
     minimumFractionDigits: 2,
   }).format(Number(n || 0));
 
-// --- Logic Helpers (Simplified & Robust) ---
+// --- Logic Helpers ---
 function getAvailableColors(product, item) {
-  const colors = product?.colors || product?.available_colors || [];
-  if (colors.length > 0) return colors;
-  // Fallback to item's current color if product data is missing
+  // Priority 1: SQL colors
+  if (product?.colors?.length > 0) return product.colors;
+  // Priority 2: SQL variants keys
+  if (product?.variants) {
+    const variantColors = Object.keys(product.variants);
+    if (variantColors.length > 0) return variantColors;
+  }
+  // Fallback: Current item color
   return item?.color ? [item.color] : ["silver"];
 }
 
-function getAvailableSizesForColor(product, color, item) {
-  // Try different possible SQL field names
-  const sizes = product?.sizes || product?.product_sizes || [];
-  if (sizes.length > 0) return sizes.map(String);
-  // Fallback to item's current size
+function getAvailableSizes(product, color, item) {
+  // Priority 1: SQL sizes for specific variant
+  if (product?.variants?.[color]) {
+    const sizes = product.variants[color]
+      .map((v) => (v.size ? String(v.size) : null))
+      .filter(Boolean);
+    if (sizes.length > 0) return sizes;
+  }
+  // Priority 2: Generic SQL sizes
+  if (product?.sizes?.length > 0) return product.sizes.map(String);
+
+  // Fallback: Current item size
   return item?.size ? [String(item.size)] : [];
 }
 
@@ -57,7 +69,7 @@ export default function ShoppingBagDrawer() {
   const { t } = useLanguage();
   const [products, setProducts] = useState([]);
 
-  // Fetch real products
+  // Fetch products from API
   useEffect(() => {
     if (!isOpen) return;
     apiGet("/api/products")
@@ -65,21 +77,26 @@ export default function ShoppingBagDrawer() {
         const list = Array.isArray(data) ? data : data?.products || [];
         setProducts(list);
       })
-      .catch((err) => console.error("API Error:", err));
+      .catch((err) => console.error("Drawer API Error:", err));
   }, [isOpen]);
 
-  const productsById = useMemo(() => {
-    const m = new Map();
-    products.forEach((p) => {
-      if (p?.id) m.set(String(p.id), p);
-      if (p?.slug) m.set(String(p.slug), p); // Also map by slug if exists
-    });
-    return m;
-  }, [products]);
+  // Robust product matcher
+  const findProduct = useCallback(
+    (item) => {
+      const itemId = String(item.productId || item.id || "");
+      const itemKeyId = String(item.key || "").split("|")[0];
 
-  const getProductById = useCallback(
-    (id) => productsById.get(String(id)) || null,
-    [productsById],
+      return (
+        products.find(
+          (p) =>
+            String(p.id) === itemId ||
+            String(p.id) === itemKeyId ||
+            String(p.slug) === itemId ||
+            String(p.slug) === itemKeyId,
+        ) || null
+      );
+    },
+    [products],
   );
 
   const subtotal = useMemo(
@@ -124,6 +141,7 @@ export default function ShoppingBagDrawer() {
                 {t.close}{" "}
                 <img
                   src={arrowUpRightIcon}
+                  alt=""
                   className="h-3 w-3 group-hover:rotate-45 transition-transform"
                 />
               </button>
@@ -137,15 +155,9 @@ export default function ShoppingBagDrawer() {
               ) : (
                 <div className="divide-y divide-black/5">
                   {items.map((item) => {
-                    const product = getProductById(item.productId || item.id);
-
-                    // Logic: Use API data if found, otherwise use item's own data
-                    const availableColors = getAvailableColors(product, item);
-                    const availableSizes = getAvailableSizesForColor(
-                      product,
-                      item.color,
-                      item,
-                    );
+                    const product = findProduct(item);
+                    const colors = getAvailableColors(product, item);
+                    const sizes = getAvailableSizes(product, item.color, item);
 
                     return (
                       <motion.div key={item.key} layout className="px-6 py-6">
@@ -157,7 +169,7 @@ export default function ShoppingBagDrawer() {
                           />
 
                           <div className="min-w-0">
-                            <div className="flex justify-between items-start mb-2">
+                            <div className="flex justify-between items-start">
                               <p className="font-display text-[18px] leading-tight">
                                 {item.name}
                               </p>
@@ -166,22 +178,22 @@ export default function ShoppingBagDrawer() {
                               </p>
                             </div>
 
-                            {/* SELECTORS - These will now always show because of the fallback logic */}
+                            {/* Selectors with full data from API */}
                             <div className="mt-3 grid grid-cols-2 gap-2">
-                              <div className="bg-black/5 px-2 py-1.5 rounded-sm">
+                              <div className="bg-black/5 px-2 py-1.5 rounded-sm relative">
                                 <p className="text-[10px] uppercase text-black/40 font-ui mb-1">
                                   Color
                                 </p>
                                 <select
                                   value={item.color}
-                                  className="w-full bg-transparent font-ui text-[12px] outline-none capitalize cursor-pointer"
+                                  className="w-full bg-transparent font-ui text-[12px] outline-none capitalize cursor-pointer pr-4"
                                   onChange={(e) =>
                                     updateVariant(item.key, {
                                       color: e.target.value,
                                     })
                                   }
                                 >
-                                  {availableColors.map((c) => (
+                                  {colors.map((c) => (
                                     <option key={c} value={c}>
                                       {c}
                                     </option>
@@ -189,21 +201,21 @@ export default function ShoppingBagDrawer() {
                                 </select>
                               </div>
 
-                              {availableSizes.length > 0 && (
-                                <div className="bg-black/5 px-2 py-1.5 rounded-sm">
+                              {sizes.length > 0 && (
+                                <div className="bg-black/5 px-2 py-1.5 rounded-sm relative">
                                   <p className="text-[10px] uppercase text-black/40 font-ui mb-1">
                                     Size
                                   </p>
                                   <select
                                     value={item.size}
-                                    className="w-full bg-transparent font-ui text-[12px] outline-none cursor-pointer"
+                                    className="w-full bg-transparent font-ui text-[12px] outline-none cursor-pointer pr-4"
                                     onChange={(e) =>
                                       updateVariant(item.key, {
                                         size: e.target.value,
                                       })
                                     }
                                   >
-                                    {availableSizes.map((s) => (
+                                    {sizes.map((s) => (
                                       <option key={s} value={s}>
                                         {s}
                                       </option>
@@ -259,7 +271,7 @@ export default function ShoppingBagDrawer() {
                   navigate("/checkout");
                 }}
                 disabled={items.length === 0}
-                className="flex h-12 w-full items-center justify-center gap-4 bg-black font-ui text-[14px] text-white active:scale-[0.98] transition-all disabled:opacity-40"
+                className="flex h-12 w-full items-center justify-center gap-4 bg-black font-ui text-[14px] text-white active:scale-[0.98] transition-all"
               >
                 Check out — {fmtPrice(subtotal)}
               </button>
