@@ -28,7 +28,6 @@ export default function OrderHistory() {
   const [error, setError] = useState("");
   const [productsById, setProductsById] = useState({});
 
-  // Fetch user orders
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -51,7 +50,6 @@ export default function OrderHistory() {
     };
   }, [getOrders, t.failedToLoadOrders]);
 
-  // Fetch products to map images correctly
   useEffect(() => {
     const ctrl = new AbortController();
     (async () => {
@@ -84,51 +82,35 @@ export default function OrderHistory() {
             <h1 className="font-display text-4xl leading-none">
               {t.orderHistory}
             </h1>
-
             <div className="hidden items-center gap-4 font-ui text-sm md:flex">
               <button
-                type="button"
                 onClick={() => navigate("/account/orders")}
-                className={`border border-black px-6 py-3 transition-colors ${
-                  isOrders
-                    ? "bg-black text-white"
-                    : "bg-white text-black hover:bg-neutral-50"
-                }`}
+                className={`border border-black px-6 py-3 ${isOrders ? "bg-black text-white" : "bg-white text-black"}`}
               >
                 {t.orderHistory}
               </button>
               <button
-                type="button"
                 onClick={() => navigate("/account/profile")}
-                className={`border border-black px-6 py-3 transition-colors ${
-                  isProfile
-                    ? "bg-black text-white"
-                    : "bg-white text-black hover:bg-neutral-50"
-                }`}
+                className={`border border-black px-6 py-3 ${isProfile ? "bg-black text-white" : "bg-white text-black"}`}
               >
                 {t.profile}
               </button>
               <button
-                type="button"
                 onClick={handleLogout}
-                className="border border-black bg-white px-6 py-3 text-black hover:bg-neutral-50 transition-colors"
+                className="border border-black bg-white px-6 py-3 text-black"
               >
                 {t.logOut}
               </button>
             </div>
           </div>
-
           <FullWidthDivider className="my-4" />
-
           <button
-            type="button"
             onClick={() => navigate("/account")}
-            className="inline-flex items-center gap-2 text-sm font-ui hover:opacity-70 transition-opacity"
+            className="inline-flex items-center gap-2 text-sm font-ui"
           >
             <img src={backArrowIcon} alt="" className="h-3 w-3" />
             <span>{t.back}</span>
           </button>
-
           <FullWidthDivider className="mt-4" />
 
           {loadingOrders ? (
@@ -139,38 +121,30 @@ export default function OrderHistory() {
             <div className="my-6 border border-red-600 bg-red-50 px-4 py-3 font-ui text-sm text-red-700">
               {error}
             </div>
-          ) : orders.length === 0 ? (
-            <div className="py-10 font-ui text-sm text-black/60">
-              {t.noOrdersYet}
-            </div>
           ) : (
             <div>
               {orders.map((order) => {
                 const isOpen = openOrderId === order.id;
 
-                // Group items to handle duplicates and format data safely
+                // Group items for display logic
                 const groupedItems = (order.items || []).reduce((acc, it) => {
                   if (!it) return acc;
-                  const productId = it.product_id || "unknown";
-                  const key = `${productId}|${it.color || ""}|${it.size || ""}`;
-
+                  const key = `${it.product_id}|${it.color || ""}|${it.size || ""}`;
                   if (acc[key]) {
                     acc[key].quantity += Number(it.quantity || 1);
                   } else {
                     acc[key] = {
-                      product_id: productId,
+                      product_id: it.product_id,
                       name: it.product_name || t.product?.label || "Product",
                       quantity: Number(it.quantity || 1),
                       color: it.color || "",
-                      size: it.size || "",
+                      image_url: it.image_url,
                     };
                   }
                   return acc;
                 }, {});
 
                 const productLines = Object.values(groupedItems);
-
-                // Calculate total based on cents provided by items
                 const totalCentsFromItems = (order.items || []).reduce(
                   (sum, it) =>
                     sum +
@@ -179,24 +153,45 @@ export default function OrderHistory() {
                 );
                 const priceText = `€${(totalCentsFromItems / 100).toFixed(2)}`;
 
-                // Generate images for the card preview safely
-                const images = productLines
-                  .slice(0, 2)
-                  .map((line) => {
-                    const product = productsById?.[line.product_id];
-                    if (product && line.color) {
-                      const colorKey = String(line.color).toLowerCase().trim();
-                      const variantImages =
-                        product.variants?.[colorKey]?.[0]?.images;
-                      if (Array.isArray(variantImages) && variantImages[0])
-                        return variantImages[0];
-                    }
-                    const originalItem = (order.items || []).find(
-                      (it) => it?.product_id === line.product_id,
-                    );
-                    return originalItem?.image_url;
-                  })
-                  .filter(Boolean);
+                // --- IMAGE LOGIC START ---
+                let images = [];
+                if (productLines.length === 1) {
+                  // Case 1: Only one type of product in the order
+                  const line = productLines[0];
+                  const product = productsById?.[line.product_id];
+                  let foundImg = null;
+
+                  if (product && line.color) {
+                    const colorKey = String(line.color).toLowerCase().trim();
+                    const variantImages =
+                      product.variants?.[colorKey]?.[0]?.images;
+                    if (Array.isArray(variantImages) && variantImages[0])
+                      foundImg = variantImages[0];
+                  }
+
+                  const finalImg = foundImg || line.image_url;
+                  // Push the same image twice to fill the two slots
+                  images = [finalImg, finalImg].filter(Boolean);
+                } else {
+                  // Case 2: Multiple different products
+                  images = productLines
+                    .slice(0, 2)
+                    .map((line) => {
+                      const product = productsById?.[line.product_id];
+                      if (product && line.color) {
+                        const colorKey = String(line.color)
+                          .toLowerCase()
+                          .trim();
+                        const variantImages =
+                          product.variants?.[colorKey]?.[0]?.images;
+                        if (Array.isArray(variantImages) && variantImages[0])
+                          return variantImages[0];
+                      }
+                      return line.image_url;
+                    })
+                    .filter(Boolean);
+                }
+                // --- IMAGE LOGIC END ---
 
                 return (
                   <div
@@ -221,7 +216,6 @@ export default function OrderHistory() {
                       onOpen={() => setOpenOrderId(isOpen ? null : order.id)}
                     />
 
-                    {/* Expandable info panel - Safely calculated fields */}
                     {isOpen && (
                       <div className="bg-neutral-50 px-2 pb-6">
                         <OrderInfoPanel
@@ -229,7 +223,6 @@ export default function OrderHistory() {
                             const totalCents = Number(order?.total_cents || 0);
                             const money = (c) =>
                               `€${(Number(c || 0) / 100).toFixed(2)}`;
-
                             return {
                               orderDate: order.created_at
                                 ? new Date(order.created_at)
@@ -239,11 +232,26 @@ export default function OrderHistory() {
                               orderNo: String(order.id),
                               pickup:
                                 order?.delivery_type === "pickup"
-                                  ? order?.delivery_method ||
-                                    t.pickup ||
-                                    "Pickup"
-                                  : t.notAvailable || "N/A",
+                                  ? order?.delivery_method || t.pickup
+                                  : t.notAvailable,
                               deliveryTo: {
+                                name:
+                                  [
+                                    order?.ship_first_name,
+                                    order?.ship_last_name,
+                                  ]
+                                    .filter(Boolean)
+                                    .join(" ") || "N/A",
+                                street:
+                                  [order?.ship_address, order?.ship_apartment]
+                                    .filter(Boolean)
+                                    .join(", ") || "N/A",
+                                zipCity:
+                                  [order?.ship_postal_code, order?.ship_city]
+                                    .filter(Boolean)
+                                    .join(" ") || "N/A",
+                              },
+                              billingAddress: {
                                 name:
                                   [
                                     order?.ship_first_name,
@@ -266,7 +274,7 @@ export default function OrderHistory() {
                               ),
                               orderValue: money(totalCentsFromItems),
                               total: money(totalCents),
-                              productLines, // Pass the safe array
+                              productLines,
                             };
                           })()}
                         />
