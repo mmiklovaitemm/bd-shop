@@ -23,24 +23,19 @@ export default function OrderHistory() {
   const logout = useAuth((s) => s.logout);
 
   const [openOrderId, setOpenOrderId] = useState(null);
-
   const [orders, setOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [error, setError] = useState("");
-
   const [productsById, setProductsById] = useState({});
 
   useEffect(() => {
     let alive = true;
-
     (async () => {
       try {
         setError("");
         setLoadingOrders(true);
-
         const data = await getOrders();
         if (!alive) return;
-
         setOrders(Array.isArray(data) ? data : []);
       } catch (err) {
         if (!alive) return;
@@ -50,7 +45,6 @@ export default function OrderHistory() {
         if (alive) setLoadingOrders(false);
       }
     })();
-
     return () => {
       alive = false;
     };
@@ -58,20 +52,17 @@ export default function OrderHistory() {
 
   useEffect(() => {
     const ctrl = new AbortController();
-
     (async () => {
       try {
         const data = await apiGet("/api/products", { signal: ctrl.signal });
         const list = Array.isArray(data) ? data : data?.products;
         const map = Object.fromEntries((list || []).map((p) => [p.id, p]));
-
         setProductsById(map);
       } catch (err) {
         console.error("Failed to fetch products:", err);
         setProductsById({});
       }
     })();
-
     return () => ctrl.abort();
   }, []);
 
@@ -96,27 +87,29 @@ export default function OrderHistory() {
               <button
                 type="button"
                 onClick={() => navigate("/account/orders")}
-                className={`border border-black px-6 py-3 ${
-                  isOrders ? "bg-black text-white" : "bg-white text-black"
+                className={`border border-black px-6 py-3 transition-colors ${
+                  isOrders
+                    ? "bg-black text-white"
+                    : "bg-white text-black hover:bg-neutral-50"
                 }`}
               >
                 {t.orderHistory}
               </button>
-
               <button
                 type="button"
                 onClick={() => navigate("/account/profile")}
-                className={`border border-black px-6 py-3 ${
-                  isProfile ? "bg-black text-white" : "bg-white text-black"
+                className={`border border-black px-6 py-3 transition-colors ${
+                  isProfile
+                    ? "bg-black text-white"
+                    : "bg-white text-black hover:bg-neutral-50"
                 }`}
               >
                 {t.profile}
               </button>
-
               <button
                 type="button"
                 onClick={handleLogout}
-                className="border border-black bg-white px-6 py-3 text-black"
+                className="border border-black bg-white px-6 py-3 text-black hover:bg-neutral-50 transition-colors"
               >
                 {t.logOut}
               </button>
@@ -128,15 +121,9 @@ export default function OrderHistory() {
           <button
             type="button"
             onClick={() => navigate("/account")}
-            className="inline-flex items-center gap-2 text-sm font-ui"
+            className="inline-flex items-center gap-2 text-sm font-ui hover:opacity-70 transition-opacity"
           >
-            <img
-              src={backArrowIcon}
-              alt=""
-              width={12}
-              height={12}
-              className="h-3 w-3"
-            />
+            <img src={backArrowIcon} alt="" className="h-3 w-3" />
             <span>{t.back}</span>
           </button>
 
@@ -162,203 +149,54 @@ export default function OrderHistory() {
                 const groupedItems = (order.items || []).reduce((acc, it) => {
                   const key = `${it.product_id}|${it.color || ""}|${it.size || ""}`;
                   const existing = acc[key];
-
                   if (existing) {
                     existing.quantity += Number(it.quantity || 1);
-                    existing.price = `€${(
-                      (Number(existing.price.replace("€", "")) * 100 +
-                        Number(it.price_cents || 0) *
-                          Number(it.quantity || 1)) /
-                      100
-                    ).toFixed(2)}`;
                   } else {
                     acc[key] = {
+                      product_id: it.product_id,
                       name: it.product_name || t.product.label,
                       quantity: Number(it.quantity || 1),
                       color: it.color || t.notAvailable,
-                      service:
-                        it.service_option === "shipping"
-                          ? t.shippingKit
-                          : it.service_option === "in_store"
-                            ? t.inStore
-                            : null,
-                      price: `€${(
-                        (Number(it.price_cents || 0) *
-                          Number(it.quantity || 1)) /
-                        100
-                      ).toFixed(2)}`,
                     };
                   }
-
                   return acc;
                 }, {});
 
                 const productLines = Object.values(groupedItems);
-
                 const totalCentsFromItems = (order.items || []).reduce(
-                  (sum, it) => {
-                    const pc = Number(it.price_cents || 0);
-                    const q = Number(it.quantity || 1);
-                    return sum + pc * q;
-                  },
+                  (sum, it) =>
+                    sum +
+                    Number(it.price_cents || 0) * Number(it.quantity || 1),
                   0,
                 );
-
                 const priceText = `€${(totalCentsFromItems / 100).toFixed(2)}`;
 
-                const uniqueItems = (order.items || []).filter(
-                  (it, index, arr) =>
-                    arr.findIndex(
-                      (x) =>
-                        String(x.product_id) === String(it.product_id) &&
-                        String(x.color || "") === String(it.color || ""),
-                    ) === index,
-                );
-
-                let images = [];
-
-                if (uniqueItems.length === 1) {
-                  const onlyItem = uniqueItems[0];
-                  const productId = String(onlyItem?.product_id || "");
-                  const product = productId ? productsById[productId] : null;
-
-                  const pickedColor = String(onlyItem?.color || "")
-                    .trim()
-                    .toLowerCase();
-
-                  const colorVariants =
-                    product?.variants?.[pickedColor] ||
-                    product?.variants?.silver ||
-                    product?.variants?.gold ||
-                    [];
-
-                  const flattenedImages = (colorVariants || [])
-                    .flatMap((variant) =>
-                      Array.isArray(variant?.images) ? variant.images : [],
-                    )
-                    .filter(Boolean);
-
-                  images = [...new Set(flattenedImages)].slice(0, 2);
-                } else {
-                  images = uniqueItems
-                    .slice(0, 2)
-                    .map((it) => it.image_url)
-                    .filter(Boolean);
-                }
+                const images = productLines
+                  .slice(0, 2)
+                  .map((line) => {
+                    const product = productsById[line.product_id];
+                    if (product && line.color) {
+                      const colorKey = String(line.color).toLowerCase().trim();
+                      const variantImages =
+                        product.variants?.[colorKey]?.[0]?.images;
+                      if (Array.isArray(variantImages) && variantImages[0]) {
+                        return variantImages[0];
+                      }
+                    }
+                    const originalItem = (order.items || []).find(
+                      (it) => it.product_id === line.product_id,
+                    );
+                    return originalItem?.image_url;
+                  })
+                  .filter(Boolean);
 
                 return (
-                  <div key={order.id}>
-                    {isOpen ? (
-                      <>
-                        <OrderInfoPanel
-                          info={(() => {
-                            const orderDate = new Date(order.created_at)
-                              .toISOString()
-                              .slice(0, 10);
-                            const orderNo = String(order.id);
-
-                            const itemsTotalCents = (order.items || []).reduce(
-                              (sum, it) => {
-                                const pc = Number(it?.price_cents || 0);
-                                const q = Number(it?.quantity || 1);
-                                return sum + pc * q;
-                              },
-                              0,
-                            );
-
-                            const totalCents = Number(order?.total_cents || 0);
-
-                            const deliveryCentsFallback = Math.max(
-                              0,
-                              totalCents - itemsTotalCents,
-                            );
-
-                            const money = (cents) =>
-                              `€${(Number(cents || 0) / 100).toFixed(2)}`;
-
-                            const deliveryType = String(
-                              order?.delivery_type || "",
-                            ).trim();
-
-                            const deliveryFeeCentsReal = Number.isFinite(
-                              Number(order?.delivery_fee_cents),
-                            )
-                              ? Number(order.delivery_fee_cents)
-                              : deliveryCentsFallback;
-
-                            const pickupValue =
-                              deliveryType === "pickup"
-                                ? order?.delivery_method === "vilnius"
-                                  ? "Vilnius salon"
-                                  : order?.delivery_method === "kaunas"
-                                    ? "Kaunas salon"
-                                    : t.pickup
-                                : t.notAvailable;
-
-                            const fullName =
-                              [order?.ship_first_name, order?.ship_last_name]
-                                .filter(Boolean)
-                                .join(" ") || t.notAvailable;
-
-                            const streetLine =
-                              [order?.ship_address, order?.ship_apartment]
-                                .filter(Boolean)
-                                .join(", ") || t.notAvailable;
-
-                            const zipCityLine =
-                              [order?.ship_postal_code, order?.ship_city]
-                                .filter(Boolean)
-                                .join(" ") || t.notAvailable;
-
-                            const deliveryTo =
-                              deliveryType === "ship"
-                                ? {
-                                    name: fullName,
-                                    street: streetLine,
-                                    zipCity: zipCityLine,
-                                  }
-                                : {
-                                    name: t.notAvailable,
-                                    street: t.notAvailable,
-                                    zipCity: t.notAvailable,
-                                  };
-
-                            const billingAddress = deliveryTo;
-
-                            return {
-                              orderDate,
-                              orderNo,
-                              pickup: pickupValue,
-                              deliveryTo,
-                              billingAddress,
-                              deliveryMethod:
-                                order?.delivery_type === "ship"
-                                  ? order?.delivery_method === "omniva"
-                                    ? t.omniva
-                                    : order?.delivery_method === "lp"
-                                      ? t.lpExpress
-                                      : t.notAvailable
-                                  : order?.delivery_method === "vilnius"
-                                    ? "Vilnius salon"
-                                    : order?.delivery_method === "kaunas"
-                                      ? "Kaunas salon"
-                                      : t.pickup,
-                              deliveryPrice:
-                                deliveryType === "ship"
-                                  ? money(deliveryFeeCentsReal)
-                                  : money(0),
-                              orderValue: money(itemsTotalCents),
-                              total: money(totalCents),
-                              productLines,
-                            };
-                          })()}
-                        />
-
-                        <FullWidthDivider className="hidden md:block" />
-                      </>
-                    ) : null}
-
+                  <div
+                    key={order.id}
+                    className="border-b border-black/10 last:border-none"
+                  >
                     <OrderCard
+                      isOpen={isOpen}
                       order={{
                         id: order.id,
                         date: new Date(order.created_at)
@@ -369,14 +207,58 @@ export default function OrderHistory() {
                         price: priceText,
                         images,
                         orderNo: String(order.id),
-                        info: null,
                       }}
-                      onOpen={() =>
-                        setOpenOrderId((prev) =>
-                          prev === order.id ? null : order.id,
-                        )
-                      }
+                      onOpen={() => setOpenOrderId(isOpen ? null : order.id)}
                     />
+
+                    {isOpen && (
+                      <div className="bg-neutral-50 px-2 pb-6">
+                        <OrderInfoPanel
+                          info={(() => {
+                            const itemsTotalCents = totalCentsFromItems;
+                            const totalCents = Number(order?.total_cents || 0);
+                            const money = (c) =>
+                              `€${(Number(c || 0) / 100).toFixed(2)}`;
+
+                            return {
+                              orderDate: new Date(order.created_at)
+                                .toISOString()
+                                .slice(0, 10),
+                              orderNo: String(order.id),
+                              pickup:
+                                order?.delivery_type === "pickup"
+                                  ? order?.delivery_method || t.pickup
+                                  : t.notAvailable,
+                              deliveryTo: {
+                                name:
+                                  [
+                                    order?.ship_first_name,
+                                    order?.ship_last_name,
+                                  ]
+                                    .filter(Boolean)
+                                    .join(" ") || t.notAvailable,
+                                street:
+                                  [order?.ship_address, order?.ship_apartment]
+                                    .filter(Boolean)
+                                    .join(", ") || t.notAvailable,
+                                zipCity:
+                                  [order?.ship_postal_code, order?.ship_city]
+                                    .filter(Boolean)
+                                    .join(" ") || t.notAvailable,
+                              },
+                              deliveryMethod:
+                                order?.delivery_method || t.notAvailable,
+                              deliveryPrice: money(
+                                totalCents - itemsTotalCents,
+                              ),
+                              orderValue: money(itemsTotalCents),
+                              total: money(totalCents),
+                              productLines,
+                            };
+                          })()}
+                        />
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -384,7 +266,6 @@ export default function OrderHistory() {
           )}
         </section>
       </main>
-
       <AboutStudioSection />
     </>
   );
