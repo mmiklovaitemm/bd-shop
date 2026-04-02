@@ -78,6 +78,7 @@ export default function OrderHistory() {
     <>
       <main className="px-2 pt-3">
         <section className="mx-auto w-full max-w-6xl">
+          {/* ... Navigation and Header remains the same ... */}
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <h1 className="font-display text-4xl leading-none">
               {t.orderHistory}
@@ -85,13 +86,13 @@ export default function OrderHistory() {
             <div className="hidden items-center gap-4 font-ui text-sm md:flex">
               <button
                 onClick={() => navigate("/account/orders")}
-                className={`border border-black px-6 py-3 ${isOrders ? "bg-black text-white" : "bg-white text-black"}`}
+                className={`border border-black px-6 py-3 transition-colors ${isOrders ? "bg-black text-white" : "bg-white text-black"}`}
               >
                 {t.orderHistory}
               </button>
               <button
                 onClick={() => navigate("/account/profile")}
-                className={`border border-black px-6 py-3 ${isProfile ? "bg-black text-white" : "bg-white text-black"}`}
+                className={`border border-black px-6 py-3 transition-colors ${isProfile ? "bg-black text-white" : "bg-white text-black"}`}
               >
                 {t.profile}
               </button>
@@ -126,15 +127,15 @@ export default function OrderHistory() {
               {orders.map((order) => {
                 const isOpen = openOrderId === order.id;
 
-                // Group items for display logic
                 const groupedItems = (order.items || []).reduce((acc, it) => {
                   if (!it) return acc;
-                  const key = `${it.product_id}|${it.color || ""}|${it.size || ""}`;
+                  const productId = it.product_id || "unknown";
+                  const key = `${productId}|${it.color || ""}|${it.size || ""}`;
                   if (acc[key]) {
                     acc[key].quantity += Number(it.quantity || 1);
                   } else {
                     acc[key] = {
-                      product_id: it.product_id,
+                      product_id: productId,
                       name: it.product_name || t.product?.label || "Product",
                       quantity: Number(it.quantity || 1),
                       color: it.color || "",
@@ -153,27 +154,33 @@ export default function OrderHistory() {
                 );
                 const priceText = `€${(totalCentsFromItems / 100).toFixed(2)}`;
 
-                // --- IMAGE LOGIC START ---
+                // --- IMPROVED IMAGE LOGIC ---
                 let images = [];
                 if (productLines.length === 1) {
-                  // Case 1: Only one type of product in the order
+                  // Single product type case: Show 1st and 2nd gallery images
                   const line = productLines[0];
                   const product = productsById?.[line.product_id];
-                  let foundImg = null;
 
+                  let galleryImages = [];
                   if (product && line.color) {
                     const colorKey = String(line.color).toLowerCase().trim();
-                    const variantImages =
-                      product.variants?.[colorKey]?.[0]?.images;
-                    if (Array.isArray(variantImages) && variantImages[0])
-                      foundImg = variantImages[0];
+                    galleryImages =
+                      product.variants?.[colorKey]?.[0]?.images || [];
                   }
 
-                  const finalImg = foundImg || line.image_url;
-                  // Push the same image twice to fill the two slots
-                  images = [finalImg, finalImg].filter(Boolean);
+                  // If we found gallery images, take up to 2.
+                  // If only 1 exists, use it twice.
+                  // If none exist, fallback to line.image_url
+                  if (galleryImages.length >= 2) {
+                    images = [galleryImages[0], galleryImages[1]];
+                  } else if (galleryImages.length === 1) {
+                    images = [galleryImages[0], galleryImages[0]];
+                  } else {
+                    const fallback = line.image_url;
+                    images = [fallback, fallback].filter(Boolean);
+                  }
                 } else {
-                  // Case 2: Multiple different products
+                  // Multiple different products case: Show 1st image of each
                   images = productLines
                     .slice(0, 2)
                     .map((line) => {
@@ -191,7 +198,6 @@ export default function OrderHistory() {
                     })
                     .filter(Boolean);
                 }
-                // --- IMAGE LOGIC END ---
 
                 return (
                   <div
