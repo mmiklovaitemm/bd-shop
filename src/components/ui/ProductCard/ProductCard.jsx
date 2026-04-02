@@ -81,14 +81,26 @@ export default function ProductCard({
       e?.preventDefault?.();
       e?.stopPropagation?.();
       if (!safeProduct?.id || safeProduct?.isSoldOut) return;
+
+      const selectedColor =
+        baseColor || (safeProduct.colors ? safeProduct.colors[0] : "silver");
+
+      const selectedSize =
+        safeProduct.sizes && safeProduct.sizes.length > 0
+          ? String(safeProduct.sizes[0])
+          : null;
+
       addToCart({
-        product: safeProduct,
-        color: baseColor || "silver",
-        size: null,
+        productId: String(safeProduct.id),
+        name: safeProduct.name,
+        price: safeProduct.price,
+        color: selectedColor,
+        size: selectedSize,
         quantity: 1,
         image: mainSrc || safeProduct.thumbnail || "",
         serviceOption: safeProduct.category === "personal" ? "shipping" : null,
       });
+
       onAddToCart?.(e);
     },
     [addToCart, safeProduct, baseColor, mainSrc, onAddToCart],

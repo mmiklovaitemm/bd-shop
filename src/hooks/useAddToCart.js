@@ -8,30 +8,54 @@ export default function useAddToCart() {
   const openBag = useBagDrawer((s) => s.open);
 
   const addToCart = useCallback(
-    ({ product, color, size, quantity = 1, image, serviceOption = null }) => {
-      if (!product?.id) return;
+    ({
+      product,
+      productId,
+      name,
+      price,
+      color,
+      size,
+      quantity = 1,
+      image,
+      serviceOption = null,
+    }) => {
+      const id = product?.id || productId;
+      if (!id) return;
 
-      const priceNumber = parsePriceToNumber(product.price);
+      const finalName = product?.name || name || "";
+      const finalPrice =
+        product?.price != null
+          ? parsePriceToNumber(product.price)
+          : parsePriceToNumber(price);
+      const finalCategory = product?.category || "";
+
       const safeQuantity = Math.max(1, Number(quantity) || 1);
+      const safeColor = color || product?.colors?.[0] || "silver";
 
-      const safeColor = color || "silver";
-      const safeSize = size == null ? "nosize" : String(size);
-      const safeServiceOption = serviceOption || "no-service";
-      const safeImage = image || product.thumbnail || "";
+      let safeSize = size;
+      if (safeSize == null && product?.sizes?.length > 0) {
+        safeSize = String(product.sizes[0]);
+      } else if (safeSize != null) {
+        safeSize = String(safeSize);
+      }
 
-      const key = `${product.id}|${safeColor}|${safeSize}|${safeServiceOption}`;
+      const safeImage = image || product?.thumbnail || "";
+
+      let finalServiceOption = serviceOption;
+      if (!finalServiceOption && finalCategory === "personal") {
+        finalServiceOption = "shipping";
+      }
 
       addItem({
-        key,
-        productId: product.id,
-        name: product.name,
-        price: priceNumber,
+        productId: String(id),
+        name: finalName,
+        price: finalPrice,
         image: safeImage,
         color: safeColor,
-        size: size == null ? null : String(size),
+        size: safeSize,
         quantity: safeQuantity,
-        category: product.category,
-        serviceOption: serviceOption || null,
+        category: finalCategory,
+        serviceOption: finalServiceOption,
       });
 
       openBag();
