@@ -165,4 +165,43 @@ router.patch("/profile", requireAuth, async (req, res) => {
   }
 });
 
+// 6. CHANGE PASSWORD
+router.post("/change-password", requireAuth, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user.userId;
+
+    const [rows] = await db.query(
+      "SELECT password_hash FROM users WHERE id = ? LIMIT 1",
+      [userId],
+    );
+    if (!rows.length)
+      return res.status(404).json({ message: "User not found." });
+
+    const user = rows[0];
+
+    const isMatch = await bcrypt.compare(
+      String(currentPassword),
+      user.password_hash,
+    );
+    if (!isMatch) {
+      return res
+        .status(400)
+        .json({ message: "Current password is incorrect." });
+    }
+
+    const newPasswordHash = await bcrypt.hash(String(newPassword), 10);
+
+    await db.query("UPDATE users SET password_hash = ? WHERE id = ?", [
+      newPasswordHash,
+      userId,
+    ]);
+
+    return res.json({ message: "Password updated successfully." });
+  } catch (err) {
+    console.error("Change password error:", err);
+    return res.status(500).json({ message: "Failed to update password." });
+  }
+});
+
 export default router;
