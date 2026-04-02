@@ -21,6 +21,7 @@ function generateToken(payload) {
   return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "7d" });
 }
 
+// 1. REGISTER
 router.post("/register", async (req, res) => {
   try {
     const { email, password, firstName, lastName } = req.body || {};
@@ -66,28 +67,24 @@ router.post("/register", async (req, res) => {
   }
 });
 
+// 2. LOGIN
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body || {};
-    if (!email || !password) {
-      return res
-        .status(400)
-        .json({ message: "Email and password are required." });
-    }
+    const cleanEmail = String(email || "")
+      .trim()
+      .toLowerCase();
 
-    const cleanEmail = String(email).trim().toLowerCase();
     const [rows] = await db.query(
       "SELECT * FROM users WHERE email = ? LIMIT 1",
       [cleanEmail],
     );
-
     if (!rows.length) {
       return res.status(401).json({ message: "Invalid credentials." });
     }
 
     const user = rows[0];
-    const isMatch = await bcrypt.compare(password, user.password_hash);
-
+    const isMatch = await bcrypt.compare(String(password), user.password_hash);
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid credentials." });
     }
@@ -112,31 +109,57 @@ router.post("/login", async (req, res) => {
   }
 });
 
+// 3. LOGOUT
 router.post("/logout", (req, res) => {
   res.clearCookie(COOKIE_NAME, COOKIE_OPTIONS);
   res.json({ ok: true });
 });
 
+// 4. ME (Get current user)
 router.get("/me", requireAuth, async (req, res) => {
   try {
-    const userId = req.user.userId;
     const [rows] = await db.query(
-      "SELECT id, email, first_name, last_name, role FROM users WHERE id = ? LIMIT 1",
-      [userId],
+      "SELECT id, email, first_name AS firstName, last_name AS lastName, role FROM users WHERE id = ? LIMIT 1",
+      [req.user.userId],
     );
     if (!rows.length) return res.status(401).json({ user: null });
-    const user = rows[0];
-    return res.json({
-      user: {
-        id: user.id,
-        email: user.email,
-        firstName: user.first_name,
-        lastName: user.last_name,
-        role: user.role || "user",
-      },
-    });
+    return res.json({ user: rows[0] });
   } catch {
     return res.status(401).json({ user: null });
+  }
+});
+
+/**
+ * 5. UPDATE PROFILE
+ */
+router.patch("/profile", requireAuth, async (req, res) => {
+  try {
+    const { firstName, lastName } = req.body;
+    const userId = req.user.userId;
+
+    if (!firstName || !lastName) {
+      return res
+        .status(400)
+        .json({ message: "First name and last name are required." });
+    }
+
+    await db.query(
+      "UPDATE users SET first_name = ?, last_name = ? WHERE id = ?",
+      [firstName, lastName, userId],
+    );
+
+    const [rows] = await db.query(
+      "SELECT id, email, first_name AS firstName, last_name AS lastName, role FROM users WHERE id = ? LIMIT 1",
+      [userId],
+    );
+
+    return res.json({
+      message: "Profile updated successfully",
+      user: rows[0],
+    });
+  } catch (err) {
+    console.error("Update profile error:", err);
+    return res.status(500).json({ message: "Failed to update profile" });
   }
 });
 

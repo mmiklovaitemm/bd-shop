@@ -104,7 +104,7 @@ const useAuth = create((set) => ({
 
   updateProfile: async ({ firstName, lastName }) => {
     const data = await api("/api/auth/profile", {
-      method: "POST",
+      method: "PATCH",
       body: JSON.stringify({ firstName, lastName }),
     });
 
@@ -112,7 +112,6 @@ const useAuth = create((set) => ({
       user: {
         ...state.user,
         ...data.user,
-        // Preserve role if not returned in profile update
         role: data.user?.role || state.user?.role || "user",
       },
     }));

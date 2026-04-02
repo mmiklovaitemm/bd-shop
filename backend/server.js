@@ -39,12 +39,11 @@ app.use(
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        console.warn("CORS blokuojamas adresui:", origin);
         callback(new Error("Not allowed by CORS"));
       }
     },
-    credentials: true, // BŪTINA sausainėliams
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: [
       "Content-Type",
       "Authorization",
