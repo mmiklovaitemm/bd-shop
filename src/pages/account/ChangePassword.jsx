@@ -1,3 +1,4 @@
+// src/pages/account/ChangePassword.jsx
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -26,8 +27,8 @@ function PasswordInput({
   const type = show ? "text" : "password";
 
   return (
-    <div>
-      <label className="block text-sm">
+    <div className="animate-in fade-in duration-500">
+      <label className="block text-sm font-ui">
         {label} {required && <RequiredStar />}
       </label>
 
@@ -53,17 +54,11 @@ function PasswordInput({
         <button
           type="button"
           onClick={() => setShow((s) => !s)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 p-2"
+          className="absolute right-3 top-1/2 -translate-y-1/2 p-2 transition-opacity hover:opacity-100 opacity-50"
           aria-label={show ? t.hidePassword : t.showPassword}
         >
           {show ? (
-            <svg
-              width="22"
-              height="22"
-              viewBox="0 0 24 24"
-              fill="none"
-              className="opacity-70"
-            >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
               <path
                 d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"
                 stroke="currentColor"
@@ -78,13 +73,7 @@ function PasswordInput({
               />
             </svg>
           ) : (
-            <svg
-              width="22"
-              height="22"
-              viewBox="0 0 24 24"
-              fill="none"
-              className="opacity-70"
-            >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
               <path
                 d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"
                 stroke="currentColor"
@@ -97,7 +86,9 @@ function PasswordInput({
       </div>
 
       {error && !isFocused ? (
-        <p className="mt-2 text-sm text-red-600">{error}</p>
+        <p className="mt-2 text-sm text-red-600 animate-in slide-in-from-top-1">
+          {error}
+        </p>
       ) : null}
     </div>
   );
@@ -107,6 +98,7 @@ export default function ChangePassword() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const changePassword = useAuth((s) => s.changePassword);
+  const logout = useAuth((s) => s.logout);
 
   const currentRef = useRef(null);
   const newRef = useRef(null);
@@ -141,18 +133,13 @@ export default function ChangePassword() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     const nextErrors = {};
 
-    if (!currentPassword.trim()) {
+    if (!currentPassword.trim())
       nextErrors.currentPassword = t.thisFieldIsRequired;
-    }
-    if (!newPassword.trim()) {
-      nextErrors.newPassword = t.thisFieldIsRequired;
-    }
-    if (!repeatNewPassword.trim()) {
+    if (!newPassword.trim()) nextErrors.newPassword = t.thisFieldIsRequired;
+    if (!repeatNewPassword.trim())
       nextErrors.repeatNewPassword = t.thisFieldIsRequired;
-    }
 
     if (newPassword.trim()) {
       const minErr = validatePasswordMin(newPassword);
@@ -175,10 +162,8 @@ export default function ChangePassword() {
         ["newPassword", newRef],
         ["repeatNewPassword", repeatRef],
       ];
-
       const first = order.find(([key]) => nextErrors[key]);
       const ref = first?.[1]?.current;
-
       if (ref) {
         ref.focus();
         ref.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -191,22 +176,20 @@ export default function ChangePassword() {
     setSubmitting(true);
 
     try {
-      await changePassword({
-        currentPassword,
-        newPassword,
-      });
-
-      await useAuth.getState().logout();
-
-      navigate("/login", { replace: true });
+      await changePassword({ currentPassword, newPassword });
 
       setSuccess(t.passwordUpdatedSuccessfully);
+
       setCurrentPassword("");
       setNewPassword("");
       setRepeatNewPassword("");
+
+      setTimeout(async () => {
+        await logout();
+        navigate("/login", { replace: true });
+      }, 2500);
     } catch (err) {
       setServerError(err.message || t.somethingWentWrong);
-    } finally {
       setSubmitting(false);
     }
   };
@@ -224,7 +207,8 @@ export default function ChangePassword() {
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="inline-flex items-center gap-2 text-sm font-ui"
+            className="inline-flex items-center gap-2 text-sm font-ui transition-transform active:scale-95"
+            disabled={submitting}
           >
             <img src={backArrowIcon} alt="" className="h-3 w-3" />
             <span>{t.back}</span>
@@ -232,20 +216,22 @@ export default function ChangePassword() {
 
           <FullWidthDivider className="my-4" />
 
-          <div className="md:mx-auto md:max-w-[560px] md:border md:border-black/40 md:bg-white lg:max-w-[680px]">
+          <div className="md:mx-auto md:max-w-[560px] md:border md:border-black/40 md:bg-white lg:max-w-[680px] shadow-sm">
             <div className="md:px-8 md:py-8">
               <form onSubmit={handleSubmit} className="space-y-5">
-                {serverError ? (
-                  <div className="border border-red-600 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {/* Server Error Message */}
+                {serverError && (
+                  <div className="border border-red-600 bg-red-50 px-4 py-3 text-sm text-red-700 animate-in fade-in slide-in-from-left-2">
                     {serverError}
                   </div>
-                ) : null}
+                )}
 
-                {success ? (
-                  <div className="border border-black/30 bg-black/5 px-4 py-3 text-sm text-black/80">
+                {/* Success Message */}
+                {success && (
+                  <div className="border border-green-600 bg-green-50 px-4 py-3 text-sm text-green-700 animate-in fade-in slide-in-from-left-2">
                     {success}
                   </div>
-                ) : null}
+                )}
 
                 <PasswordInput
                   label={t.currentPassword}
@@ -253,8 +239,6 @@ export default function ChangePassword() {
                   onChange={(e) => {
                     setCurrentPassword(e.target.value);
                     clearError("currentPassword");
-                    setServerError("");
-                    setSuccess("");
                   }}
                   autoComplete="current-password"
                   required
@@ -268,8 +252,6 @@ export default function ChangePassword() {
                   onChange={(e) => {
                     setNewPassword(e.target.value);
                     clearError("newPassword");
-                    setServerError("");
-                    setSuccess("");
                   }}
                   autoComplete="new-password"
                   required
@@ -283,8 +265,6 @@ export default function ChangePassword() {
                   onChange={(e) => {
                     setRepeatNewPassword(e.target.value);
                     clearError("repeatNewPassword");
-                    setServerError("");
-                    setSuccess("");
                   }}
                   autoComplete="new-password"
                   required
@@ -296,11 +276,13 @@ export default function ChangePassword() {
                   type="submit"
                   disabled={submitting}
                   className={[
-                    "mt-4 w-full bg-black py-5 text-center text-base tracking-wide text-white",
-                    submitting ? "cursor-not-allowed opacity-60" : "",
+                    "mt-4 w-full bg-black py-5 text-center text-base tracking-wide text-white transition-all",
+                    submitting
+                      ? "cursor-not-allowed opacity-60"
+                      : "hover:bg-neutral-800 active:scale-[0.99]",
                   ].join(" ")}
                 >
-                  {submitting ? t.saving : t.save}
+                  {submitting ? t.pleaseWait : t.save}
                 </button>
               </form>
             </div>
