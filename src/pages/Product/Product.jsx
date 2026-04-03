@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import useLanguage from "@/context/useLanguage";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
