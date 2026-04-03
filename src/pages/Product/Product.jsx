@@ -24,9 +24,9 @@ import { useProduct } from "@/hooks/useProducts";
 import preventDragHandler from "@/utils/preventDrag";
 
 function ProductView({ product }) {
-  // DEBUG - Helps verify if data arrives correctly
+  // DEBUG - verify data in console on load
   useEffect(() => {
-    console.log("DEBUG - Product data in page:", product);
+    console.log("DEBUG - Product data loaded:", product);
   }, [product]);
 
   const { t } = useLanguage();
@@ -49,7 +49,7 @@ function ProductView({ product }) {
     availableColors[0] || "silver",
   );
 
-  // 2. Sizes Setup for selected color
+  // 2. Sizes Setup for the selected color
   const effectiveAvailableSizes = useMemo(() => {
     const v = product?.variants?.[selectedColor];
     if (Array.isArray(v)) {
@@ -62,10 +62,11 @@ function ProductView({ product }) {
     effectiveAvailableSizes[0] || null,
   );
 
-  // 3. Variant and Stock determination
+  // 3. Variant Logic to determine stock and specific images
   const selectedVariant = useMemo(() => {
     const v = product?.variants?.[selectedColor];
     if (!Array.isArray(v)) return null;
+    // Find exact size match or fallback to the first available variant
     return v.find((item) => String(item.size) === String(selectedSize)) || v[0];
   }, [product, selectedColor, selectedSize]);
 
@@ -78,66 +79,66 @@ function ProductView({ product }) {
 
   const isCurrentSelectionSoldOut = currentStock <= 0;
 
-  // 4. Image Gallery Logic
+  // 4. Image Filtering Logic
   const images = useMemo(() => {
-    // A. Priority: Images from the specifically selected variant (color + size)
-    if (selectedVariant?.images?.length > 0) {
-      return selectedVariant.images;
-    }
+    // Priority 1: Images from the specific selected variant
+    if (selectedVariant?.images?.length > 0) return selectedVariant.images;
 
-    // B. Secondary: Images from any variant of the same color
+    // Priority 2: Any images from the selected color group
     const colorEntries = product?.variants?.[selectedColor];
     if (Array.isArray(colorEntries) && colorEntries.length > 0) {
-      // Find first entry in that color that has images
       const entryWithImages = colorEntries.find((e) => e.images?.length > 0);
       if (entryWithImages) return entryWithImages.images;
-
-      // If the array is just strings (fallback for different DB structures)
-      if (typeof colorEntries[0] === "string") return colorEntries;
     }
 
-    // C. Third: General product images array (from DB images column)
-    if (Array.isArray(product?.images) && product.images.length > 0) {
-      // If we are in 'gold' mode, try to find images containing 'gold' in filename
-      if (selectedColor === "gold") {
-        const goldImages = product.images.filter((img) =>
-          img.toLowerCase().includes("gold"),
-        );
-        if (goldImages.length > 0) return goldImages;
-      }
-      // Otherwise return first two (usually the default color)
-      return product.images.slice(0, 2);
-    }
-
-    // D. Final Fallback: Thumbnail
+    // Fallback: Thumbnail or general images
     return [product?.thumbnail].filter(Boolean);
   }, [product, selectedColor, selectedVariant]);
 
-  const handleAddToBag = useCallback(() => {
-    if (isCurrentSelectionSoldOut) return;
+  // 5. Add to Bag Action
+  const handleAddToBag = useCallback(
+    (e) => {
+      if (e && e.preventDefault) e.preventDefault();
 
-    addToCart({
+      console.log("DEBUG - handleAddToBag triggered");
+
+      if (isCurrentSelectionSoldOut) {
+        console.warn("DEBUG - Item sold out, cannot add to bag");
+        return;
+      }
+
+      try {
+        const cartItem = {
+          product,
+          productId: String(product.id),
+          name: product.name,
+          price: product.price,
+          color: String(selectedColor),
+          size: selectedSize ? String(selectedSize) : null,
+          quantity: Number(quantity),
+          image: images[0] || product?.thumbnail || "",
+        };
+
+        console.log("DEBUG - Executing addToCart with:", cartItem);
+        addToCart(cartItem);
+
+        console.log("DEBUG - Opening Bag Drawer");
+        openBag();
+      } catch (err) {
+        console.error("DEBUG - Cart error:", err);
+      }
+    },
+    [
       product,
-      productId: String(product.id),
-      name: product.name,
-      price: product.price,
-      color: selectedColor,
-      size: selectedSize,
+      isCurrentSelectionSoldOut,
+      selectedColor,
+      selectedSize,
       quantity,
-      image: images[0] || product?.thumbnail,
-    });
-
-    openBag();
-  }, [
-    product,
-    isCurrentSelectionSoldOut,
-    selectedColor,
-    selectedSize,
-    quantity,
-    images,
-    addToCart,
-    openBag,
-  ]);
+      images,
+      addToCart,
+      openBag,
+    ],
+  );
 
   return (
     <main
@@ -176,9 +177,13 @@ function ProductView({ product }) {
           setSelectedColor={(color) => {
             setSelectedColor(color);
             const variantEntries = product?.variants?.[color];
-            if (Array.isArray(variantEntries)) {
-              const firstSize = variantEntries[0]?.size;
-              if (firstSize) setSelectedSize(String(firstSize));
+            if (Array.isArray(variantEntries) && variantEntries.length > 0) {
+              // Automatically pick the first available size for the new color
+              const firstAvailable =
+                variantEntries.find((v) => Number(v.stock) > 0) ||
+                variantEntries[0];
+              if (firstAvailable?.size)
+                setSelectedSize(String(firstAvailable.size));
             }
           }}
           quantity={quantity}
@@ -225,5 +230,5 @@ export default function Product() {
   if (!product)
     return <div className="p-20 text-center font-ui">Product not found.</div>;
 
-  return <ProductView product={product} />;
+  return <ProductView key={product.id} product={product} />;
 }
