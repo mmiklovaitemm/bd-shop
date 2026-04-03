@@ -71,8 +71,11 @@ const SizeSelector = memo(function SizeSelector({
       {sizes.map((size) => {
         const normalizedSize = String(size);
         const isActive = String(selectedSize) === normalizedSize;
-        // Check if size exists in the availableSizes array provided by parent logic
-        const isAvailable = availableSizes.includes(normalizedSize);
+        // Logic: if availableSizes is empty, we assume global stock rules
+        const isAvailable =
+          availableSizes.length > 0
+            ? availableSizes.includes(normalizedSize)
+            : true;
 
         return (
           <button
@@ -109,7 +112,7 @@ const ColorSelector = memo(function ColorSelector({
     <div className="mt-2 flex flex-wrap gap-2">
       {colors.map((color) => {
         const isActive = selectedColor === color;
-        // Verify if color is in stock based on availableColors list
+        // If availableColors is empty, don't block selection (rely on global stock)
         const isAvailable =
           availableColors.length === 0 || availableColors.includes(color);
 
@@ -244,7 +247,7 @@ const ProductInfo = memo(function ProductInfo({
                 console.log("DEBUG - Add to bag button clicked");
                 onAddToBag(e);
               }}
-              className="flex h-12 w-full items-center justify-center gap-3 bg-black text-white uppercase text-[13px] tracking-widest transition-transform hover:scale-[1.01]"
+              className="flex h-12 w-full items-center justify-center gap-3 bg-black text-white uppercase text-[13px] tracking-widest transition-transform hover:scale-[1.01] active:scale-[0.99]"
             >
               <img src={bagIcon} alt="" className="h-4 w-4 invert" />
               {t.addToBag}
@@ -258,7 +261,7 @@ const ProductInfo = memo(function ProductInfo({
         >
           <FiHeart
             className={cn(
-              "h-5 w-5",
+              "h-5 w-5 transition-colors",
               isWishlisted ? "fill-red-600 text-red-600" : "text-black/30",
             )}
           />
