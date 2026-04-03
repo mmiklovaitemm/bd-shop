@@ -1,33 +1,38 @@
 import mysql from "mysql2/promise";
 import PRODUCTS from "../data/products.js";
+import dotenv from "dotenv";
 
-const db = await mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "",
-  database: "bd_shop",
-});
+dotenv.config();
+
+const connectionUrl =
+  process.env.DATABASE_URL || "mysql://root:@localhost:3306/bd_shop";
+
+const db = await mysql.createConnection(connectionUrl);
+
+console.log("Cleaning old products...");
+await db.execute("DELETE FROM products");
 
 for (const p of PRODUCTS) {
   await db.execute(
     `
     INSERT INTO products (
-      id,
-      name,
-      category,
-      price_value,
-      created_at,
-      is_best_seller,
-      has_gem,
-      surface,
-      thumbnail,
-      colors,
-      variants,
-      gemstones,
-      sizes,
+      id, 
+      name, 
+      category, 
+      price_value, 
+      created_at, 
+      is_best_seller, 
+      has_gem, 
+      surface, 
+      thumbnail, 
+      images,      -- PRIDĖTA: naujas stulpelis
+      colors, 
+      variants, 
+      gemstones, 
+      sizes, 
       details
-    )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) -- PRIDĖTAS vienas papildomas ?
     `,
     [
       p.id,
@@ -39,6 +44,7 @@ for (const p of PRODUCTS) {
       p.hasGem ? 1 : 0,
       p.surface,
       p.thumbnail,
+      JSON.stringify(p.images),
       JSON.stringify(p.colors),
       JSON.stringify(p.variants),
       JSON.stringify(p.gemstones),
@@ -51,5 +57,4 @@ for (const p of PRODUCTS) {
 }
 
 await db.end();
-
-console.log("DONE");
+console.log("DONE: All products imported with images!");

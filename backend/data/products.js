@@ -149,6 +149,7 @@ const makeProduct = ({
     isBestSeller,
     colors,
     variants,
+    images: Object.values(variants).flat(),
     thumbnail:
       Object.values(variants).find((arr) => (arr?.length ?? 0) > 0)?.[0] ?? "",
     hasGem,
