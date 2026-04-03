@@ -2,7 +2,20 @@ import { useMemo, useState } from "react";
 import cn from "@/utils/cn";
 import useLanguage from "@/context/useLanguage";
 
-const withBase = (path) =>
+const getImageUrl = (path) => {
+  if (!path) return "";
+  if (path.startsWith("http")) return path;
+
+  const BASE =
+    import.meta.env.VITE_API_URL || "https://bd-shop-gfva.onrender.com";
+
+  const cleanBase = BASE.replace(/\/+$/, "");
+  const cleanPath = String(path).replace(/^\/+/, "");
+
+  return `${cleanBase}/${cleanPath}`;
+};
+
+const withLocalBase = (path) =>
   `${import.meta.env.BASE_URL}${String(path || "").replace(/^\/+/, "")}`;
 
 export default function ProductImage({
@@ -26,14 +39,15 @@ export default function ProductImage({
   ...rest
 }) {
   const { t } = useLanguage();
+  const [errored, setErrored] = useState(false);
 
   const imgKey = src || "no-src";
 
-  const [errored, setErrored] = useState(false);
+  const finalSrc = useMemo(() => {
+    if (errored || !src) return withLocalBase("products/fallback.png");
+    return getImageUrl(src);
+  }, [src, errored]);
 
-  const fallbackSrc = useMemo(() => withBase("products/fallback.png"), []);
-
-  const finalSrc = errored ? fallbackSrc : src;
   const showLoader = !loaded && !errored;
 
   return (
@@ -61,7 +75,7 @@ export default function ProductImage({
 
       <img
         key={imgKey}
-        src={finalSrc || ""}
+        src={finalSrc}
         srcSet={errored ? undefined : srcSet}
         sizes={errored ? undefined : sizes}
         width={340}
@@ -84,8 +98,7 @@ export default function ProductImage({
           onLoad?.(e);
         }}
         onError={(e) => {
-          const current = e?.currentTarget?.src || "";
-          if (!current.includes("products/fallback.png")) {
+          if (!errored && src) {
             setErrored(true);
           }
           onError?.(e);
