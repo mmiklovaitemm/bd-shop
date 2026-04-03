@@ -71,7 +71,15 @@ export default function ShoppingBagDrawer() {
   const [products, setProducts] = useState([]);
   const [isValidating, setIsValidating] = useState(false);
 
-  // FIXED: Fetch products with isMounted check to avoid cascading renders warning
+  // Saugi URL funkcija
+  const getCleanApiUrl = () => {
+    let url =
+      import.meta.env.VITE_API_URL || "https://bd-shop-gfva.onrender.com";
+    return url.replace(/\/api\/?$/, "").replace(/\/+$/, "");
+  };
+
+  const API_URL = getCleanApiUrl();
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -80,7 +88,8 @@ export default function ShoppingBagDrawer() {
     const fetchLatestStock = async () => {
       try {
         setIsValidating(true);
-        const data = await apiGet("/api/products");
+        // Naudojame išvalytą API_URL
+        const data = await apiGet(`${API_URL}/api/products`);
         if (isMounted) {
           const list = Array.isArray(data) ? data : data?.products || [];
           setProducts(list);
@@ -99,9 +108,8 @@ export default function ShoppingBagDrawer() {
     return () => {
       isMounted = false;
     };
-  }, [isOpen]);
+  }, [isOpen, API_URL]);
 
-  // FIXED: findProduct now has proper dependency
   const findProduct = useCallback(
     (item) => {
       const itemId = String(item.productId || item.id || "");
@@ -133,7 +141,7 @@ export default function ShoppingBagDrawer() {
     <AnimatePresence>
       {isOpen && (
         <div
-          className="fixed inset-0 z-[90] select-none overflow-hidden"
+          className="fixed inset-0 z-[150] select-none overflow-hidden"
           onDragStart={preventDragHandler}
         >
           <motion.div

@@ -89,7 +89,7 @@ function Row({ label, value }) {
 
   return (
     <p className="font-ui text-[14px] leading-relaxed text-black">
-      <span className="text-black/70">{label}</span>
+      <span className="text-black/70">{label} </span>
       <span>{value}</span>
     </p>
   );
@@ -484,7 +484,7 @@ const DetailsPanel = memo(function DetailsPanel({
 
   return (
     <div
-      className="fixed inset-0 z-[70] select-none"
+      className="fixed inset-0 z-[120] select-none"
       onDragStart={preventDragHandler}
     >
       <button
@@ -494,7 +494,7 @@ const DetailsPanel = memo(function DetailsPanel({
         className="absolute inset-0 bg-black/40"
       />
 
-      <aside className="absolute right-0 top-0 flex h-full w-[92%] max-w-[520px] flex-col border-l border-black bg-white">
+      <aside className="absolute right-0 top-0 flex h-full w-[92%] max-w-[520px] flex-col border-l border-black bg-white shadow-2xl">
         <div className="shrink-0 border-b border-black px-6 pt-7 pb-5">
           <div className="flex items-start justify-between gap-4">
             <h2 className="font-display text-[24px] leading-[0.95]">
