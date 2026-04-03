@@ -529,7 +529,7 @@ export default function Collections() {
                     {pageItems.map((product, idx) => (
                       <motion.div key={product.id} variants={itemVariants}>
                         <ProductCard
-                          product={{ ...product, image: product.thumbnail }}
+                          product={product}
                           priority={idx < 4}
                           onAddToCart={() => {}}
                           onAddToFavorites={() => {}}

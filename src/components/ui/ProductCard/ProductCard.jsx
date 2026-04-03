@@ -111,6 +111,8 @@ export default function ProductCard({
   const hasHoverImage = Boolean(hoverSrc) && hoverSrc !== mainSrc;
   const href = `/collections/${safeProduct.id}`;
 
+  console.log(`Product: ${safeProduct.name}, HoverSrc: ${hoverSrc}`);
+
   return (
     <article
       ref={cardRef}
