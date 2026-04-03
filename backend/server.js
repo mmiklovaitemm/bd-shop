@@ -24,7 +24,7 @@ app.use(morgan("dev"));
 app.use(express.json());
 app.use(cookieParser());
 
-// 2. CORS
+// 2. CORS - Užtikriname, kad visi metodai ir antraštės būtų leidžiami
 const allowedOrigins = [
   process.env.FRONTEND_ORIGIN,
   "https://bd-shop-gray.vercel.app",
@@ -74,6 +74,13 @@ app.use("/api/uploads", uploadRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
+
+// 5. Error handling middleware
+app.use((req, res) => {
+  res
+    .status(404)
+    .json({ message: `Route ${req.originalUrl} not found on this server.` });
+});
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {

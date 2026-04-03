@@ -1,25 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
-const API_ORIGIN =
-  import.meta.env.VITE_API_URL || "https://bd-shop-gfva.onrender.com";
+const API_URL = (
+  import.meta.env.VITE_API_URL || "https://bd-shop-gfva.onrender.com"
+).replace(/\/+$/, "");
 
 export default function useAdminOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     try {
       setError("");
       setLoading(true);
 
-      const cleanBase = API_ORIGIN.endsWith("/")
-        ? API_ORIGIN.slice(0, -1)
-        : API_ORIGIN;
-
-      const endpoint = cleanBase.endsWith("/api")
-        ? `${cleanBase}/orders/admin/all`
-        : `${cleanBase}/api/orders/admin/all`;
+      const endpoint = `${API_URL}/api/orders/all`;
 
       const token = localStorage.getItem("access_token");
 
@@ -32,13 +27,16 @@ export default function useAdminOrders() {
         },
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        throw new Error(data?.message || "Failed to load orders.");
+        throw new Error(
+          data?.message || `Failed to load orders (${res.status})`,
+        );
       }
 
-      setOrders(Array.isArray(data.orders) ? data.orders : []);
+      const ordersList = Array.isArray(data.orders) ? data.orders : [];
+      setOrders(ordersList);
     } catch (err) {
       console.error("useAdminOrders fetch error:", err);
       setError(err?.message || "Failed to load orders.");
@@ -46,11 +44,11 @@ export default function useAdminOrders() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchOrders();
-  }, []);
+  }, [fetchOrders]);
 
   return {
     orders,

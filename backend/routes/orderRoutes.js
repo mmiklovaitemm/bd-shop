@@ -96,12 +96,11 @@ function decreaseVariantStock(variants, color, size, qty) {
 
 // --- ROUTES ---
 
-/** GET USER ORDERS */
-router.get("/", requireAuth, async (req, res) => {
+/** GET ALL ORDERS (ADMIN) */
+router.get("/all", requireAdmin, async (req, res) => {
   try {
     const [orders] = await db.query(
-      `SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC`,
-      [req.user.userId],
+      `SELECT * FROM orders ORDER BY created_at DESC`,
     );
     if (!orders.length) return res.json({ orders: [] });
 
@@ -122,11 +121,12 @@ router.get("/", requireAuth, async (req, res) => {
   }
 });
 
-/** GET ALL ORDERS (ADMIN) */
-router.get("/admin/all", requireAdmin, async (req, res) => {
+/** GET USER ORDERS */
+router.get("/", requireAuth, async (req, res) => {
   try {
     const [orders] = await db.query(
-      `SELECT * FROM orders ORDER BY created_at DESC`,
+      `SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC`,
+      [req.user.userId],
     );
     if (!orders.length) return res.json({ orders: [] });
 
@@ -186,7 +186,7 @@ router.patch("/:id/status", requireAdmin, async (req, res) => {
       );
       for (const item of items) {
         const [productRows] = await connection.query(
-          "SELECT id, variants FROM products WHERE id = ? FOR UPDATE",
+          "SELECT id, variants, stock_quantity FROM products WHERE id = ? FOR UPDATE",
           [item.product_id],
         );
         if (!productRows.length) continue;
@@ -248,20 +248,19 @@ router.post("/", requireAuth, async (req, res) => {
       .toLowerCase();
 
     if (!email) throw new Error("Email is required.");
+    if (!Array.isArray(items) || items.length === 0)
+      throw new Error("Cart is empty.");
 
     const deliveryType = delivery?.type || "ship";
     const deliveryMethod = delivery?.method || "";
     const paymentType = payment?.type || "card";
     const paymentBank = payment?.bank || null;
 
-    if (!Array.isArray(items) || items.length === 0)
-      throw new Error("Cart is empty.");
-
     const normalized = [];
     for (const it of items) {
       const productId = it.productId || it.id;
       const [pRows] = await connection.query(
-        "SELECT * FROM products WHERE id = ? FOR UPDATE",
+        "SELECT id, name, price_value, stock_quantity, variants FROM products WHERE id = ? FOR UPDATE",
         [productId],
       );
       if (!pRows.length) throw new Error(`Product ${productId} not found.`);
@@ -291,7 +290,7 @@ router.post("/", requireAuth, async (req, res) => {
       normalized.push({
         productId: p.id,
         productName: p.name,
-        priceCents: Math.round(p.price_value * 100),
+        priceCents: Math.round(Number(p.price_value) * 100),
         qty,
         color: color || null,
         size: size || null,
@@ -316,12 +315,12 @@ router.post("/", requireAuth, async (req, res) => {
         deliveryType,
         deliveryMethod,
         deliveryFee,
-        shipping?.firstName,
-        shipping?.lastName,
-        shipping?.address,
-        shipping?.city,
-        shipping?.postalCode,
-        shipping?.phone,
+        shipping?.firstName || null,
+        shipping?.lastName || null,
+        shipping?.address || null,
+        shipping?.city || null,
+        shipping?.postalCode || null,
+        shipping?.phone || null,
         paymentType,
         paymentBank,
       ],
@@ -338,6 +337,7 @@ router.post("/", requireAuth, async (req, res) => {
       i.size,
       i.imageUrl,
     ]);
+
     await connection.query(
       "INSERT INTO order_items (order_id, product_id, product_name, price_cents, quantity, color, size, image_url) VALUES ?",
       [itemValues],
