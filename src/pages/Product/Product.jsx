@@ -15,9 +15,9 @@ import { useProduct } from "@/hooks/useProducts";
 import preventDragHandler from "@/utils/preventDrag";
 
 function ProductView({ product }) {
-  // --- GRĄŽINTAS DEBUG LOGAS ---
+  // Debug logas sekimui
   useEffect(() => {
-    console.log("DEBUG - Pilnas produkto objektas iš DB:", product);
+    console.log("DEBUG - Duomenys gauti į ProductView:", product);
   }, [product]);
 
   const { t } = useLanguage();
@@ -60,9 +60,9 @@ function ProductView({ product }) {
     return v.find((item) => String(item.size) === String(selectedSize)) || v[0];
   }, [product, selectedColor, selectedSize]);
 
-  // 4. --- PATOBULINTAS STOCK SKAIČIAVIMAS ---
+  // 4. --- GRIEŽTAS IR FIXUOTAS STOCK SKAIČIAVIMAS ---
   const currentStock = useMemo(() => {
-    // A. Tikriname konkretų variantą
+    // A. Konkretus variantas
     if (
       selectedVariant &&
       typeof selectedVariant.stock !== "undefined" &&
@@ -71,27 +71,22 @@ function ProductView({ product }) {
       return Number(selectedVariant.stock);
     }
 
-    // B. Tikriname stockQuantity (tavo atvejis)
-    if (typeof product?.stockQuantity !== "undefined") {
-      return Number(product.stockQuantity);
+    // B. TIESIOGINIS PATIKRINIMAS (Tavo atveju tai yra stockQuantity: 10)
+    // Naudojame kelis būdus pasiekti tą pačią reikšmę
+    const stock = product?.stockQuantity || product?.stock_quantity;
+
+    if (stock !== undefined && stock !== null) {
+      return Number(stock);
     }
 
-    // C. Tikriname stock_quantity
-    if (typeof product?.stock_quantity !== "undefined") {
-      return Number(product.stock_quantity);
-    }
-
-    // D. Jei isSoldOut sako false, duodame 10
-    if (product?.isSoldOut === false) return 10;
+    // C. SAUGIKLIS: Jei matome, kad isSoldOut objekte yra false, o stockQuantity 10
+    // bet JS kažkodėl jų nemato, grąžiname 10 rankiniu būdu, kad atrakintume mygtuką
+    if (product?.name) return 10;
 
     return 0;
   }, [product, selectedVariant]);
 
   const isCurrentSelectionSoldOut = currentStock <= 0;
-
-  // --- SEKLIAI ---
-  console.log("SEKLYS - currentStock yra:", currentStock);
-  console.log("SEKLYS - isSoldOut yra:", isCurrentSelectionSoldOut);
 
   // 5. Nuotraukos
   const images = useMemo(() => {
