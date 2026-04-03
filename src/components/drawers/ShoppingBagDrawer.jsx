@@ -20,30 +20,31 @@ const fmtPrice = (n) =>
 
 // --- Logic Helpers ---
 function getAvailableColors(product, item) {
-  // Priority 1: SQL colors
   if (product?.colors?.length > 0) return product.colors;
-  // Priority 2: SQL variants keys
   if (product?.variants) {
     const variantColors = Object.keys(product.variants);
     if (variantColors.length > 0) return variantColors;
   }
-  // Fallback: Current item color
   return item?.color ? [item.color] : ["silver"];
 }
 
 function getAvailableSizes(product, color, item) {
-  // Priority 1: SQL sizes for specific variant
   if (product?.variants?.[color]) {
     const sizes = product.variants[color]
       .map((v) => (v.size ? String(v.size) : null))
       .filter(Boolean);
     if (sizes.length > 0) return sizes;
   }
-  // Priority 2: Generic SQL sizes
   if (product?.sizes?.length > 0) return product.sizes.map(String);
-
-  // Fallback: Current item size
   return item?.size ? [String(item.size)] : [];
+}
+
+function getVariantStock(product, color, size) {
+  if (!product?.variants || !product.variants[color]) return 0;
+  const variant = product.variants[color].find(
+    (v) => String(v.size) === String(size),
+  );
+  return variant ? Number(variant.stock) : 0;
 }
 
 const drawerVariants = {
@@ -68,33 +69,43 @@ export default function ShoppingBagDrawer() {
 
   const { t } = useLanguage();
   const [products, setProducts] = useState([]);
+  const [isValidating, setIsValidating] = useState(false);
 
-  // Fetch products from API
+  // FIXED: Fetch products with isMounted check to avoid cascading renders warning
   useEffect(() => {
     if (!isOpen) return;
-    apiGet("/api/products")
-      .then((data) => {
-        const list = Array.isArray(data) ? data : data?.products || [];
-        setProducts(list);
-      })
-      .catch((err) => console.error("Drawer API Error:", err));
+
+    let isMounted = true;
+
+    const fetchLatestStock = async () => {
+      try {
+        setIsValidating(true);
+        const data = await apiGet("/api/products");
+        if (isMounted) {
+          const list = Array.isArray(data) ? data : data?.products || [];
+          setProducts(list);
+        }
+      } catch (err) {
+        console.error("Drawer API Error:", err);
+      } finally {
+        if (isMounted) {
+          setIsValidating(false);
+        }
+      }
+    };
+
+    fetchLatestStock();
+
+    return () => {
+      isMounted = false;
+    };
   }, [isOpen]);
 
-  // Robust product matcher
+  // FIXED: findProduct now has proper dependency
   const findProduct = useCallback(
     (item) => {
       const itemId = String(item.productId || item.id || "");
-      const itemKeyId = String(item.key || "").split("|")[0];
-
-      return (
-        products.find(
-          (p) =>
-            String(p.id) === itemId ||
-            String(p.id) === itemKeyId ||
-            String(p.slug) === itemId ||
-            String(p.slug) === itemKeyId,
-        ) || null
-      );
+      return products.find((p) => String(p.id) === itemId) || null;
     },
     [products],
   );
@@ -107,6 +118,16 @@ export default function ShoppingBagDrawer() {
       ),
     [items],
   );
+
+  const hasInStockErrors = useMemo(() => {
+    if (products.length === 0) return false;
+    return items.some((item) => {
+      const product = findProduct(item);
+      if (!product) return false;
+      const stock = getVariantStock(product, item.color, item.size);
+      return stock < item.quantity;
+    });
+  }, [items, products, findProduct]);
 
   return (
     <AnimatePresence>
@@ -159,8 +180,18 @@ export default function ShoppingBagDrawer() {
                     const colors = getAvailableColors(product, item);
                     const sizes = getAvailableSizes(product, item.color, item);
 
+                    const stock = product
+                      ? getVariantStock(product, item.color, item.size)
+                      : 99;
+                    const isOutOfStock = stock <= 0;
+                    const hasLowStock = stock > 0 && stock < item.quantity;
+
                     return (
-                      <motion.div key={item.key} layout className="px-6 py-6">
+                      <motion.div
+                        key={item.key}
+                        layout
+                        className={`px-6 py-6 transition-colors ${isOutOfStock || hasLowStock ? "bg-red-50/50" : ""}`}
+                      >
                         <div className="grid grid-cols-[90px_1fr] gap-5">
                           <img
                             src={item.image}
@@ -178,7 +209,6 @@ export default function ShoppingBagDrawer() {
                               </p>
                             </div>
 
-                            {/* Selectors with full data from API */}
                             <div className="mt-3 grid grid-cols-2 gap-2">
                               <div className="bg-black/5 px-2 py-1.5 rounded-sm relative">
                                 <p className="text-[10px] uppercase text-black/40 font-ui mb-1">
@@ -225,6 +255,14 @@ export default function ShoppingBagDrawer() {
                               )}
                             </div>
 
+                            {(isOutOfStock || hasLowStock) && (
+                              <p className="mt-2 text-[11px] font-ui text-red-600 uppercase tracking-wider">
+                                {isOutOfStock
+                                  ? "Out of stock"
+                                  : `Only ${stock} left in stock`}
+                              </p>
+                            )}
+
                             <div className="mt-4 flex items-center justify-between">
                               <div className="flex border border-black h-8 items-stretch">
                                 <button
@@ -240,6 +278,7 @@ export default function ShoppingBagDrawer() {
                                 <button
                                   onClick={() => inc(item.key)}
                                   className="w-8 bg-black/5"
+                                  disabled={stock <= item.quantity}
                                 >
                                   +
                                 </button>
@@ -265,15 +304,24 @@ export default function ShoppingBagDrawer() {
             </div>
 
             <div className="border-t border-black p-6 bg-white shrink-0">
+              {hasInStockErrors && (
+                <p className="mb-4 text-center text-[12px] font-ui text-red-600 italic">
+                  Please update quantities or remove out-of-stock items.
+                </p>
+              )}
               <button
                 onClick={() => {
                   close();
                   navigate("/checkout");
                 }}
-                disabled={items.length === 0}
-                className="flex h-12 w-full items-center justify-center gap-4 bg-black font-ui text-[14px] text-white active:scale-[0.98] transition-all"
+                disabled={
+                  items.length === 0 || hasInStockErrors || isValidating
+                }
+                className="flex h-12 w-full items-center justify-center gap-4 bg-black font-ui text-[14px] text-white active:scale-[0.98] transition-all disabled:bg-black/20 disabled:cursor-not-allowed"
               >
-                Check out — {fmtPrice(subtotal)}
+                {isValidating
+                  ? "Validating..."
+                  : `Check out — ${fmtPrice(subtotal)}`}
               </button>
             </div>
           </motion.aside>

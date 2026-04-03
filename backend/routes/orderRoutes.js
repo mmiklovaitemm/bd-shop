@@ -7,10 +7,8 @@ const router = express.Router();
 function safeJsonParse(value, fallback) {
   if (value === null || value === undefined) return fallback;
   if (typeof value !== "string") return value;
-
   const trimmed = value.trim();
   if (!trimmed) return fallback;
-
   try {
     return JSON.parse(trimmed);
   } catch {
@@ -18,26 +16,16 @@ function safeJsonParse(value, fallback) {
   }
 }
 
-function isVariantObject(value) {
-  return (
-    value &&
-    typeof value === "object" &&
-    !Array.isArray(value) &&
-    Array.isArray(value.images)
-  );
-}
-
 function hasVariantLevelStockStructure(variants) {
   return Object.values(variants || {}).some(
     (value) =>
-      Array.isArray(value) && value.length > 0 && isVariantObject(value[0]),
+      Array.isArray(value) && value.length > 0 && typeof value[0] === "object",
   );
 }
 
 function getTotalStockFromVariantStructure(variants = {}) {
   return Object.values(variants).reduce((total, colorVariants) => {
     if (!Array.isArray(colorVariants)) return total;
-
     return (
       total +
       colorVariants.reduce((sum, variant) => {
@@ -47,166 +35,124 @@ function getTotalStockFromVariantStructure(variants = {}) {
   }, 0);
 }
 
-function decreaseVariantStock(variants, color, size, qty) {
-  const nextVariants = structuredClone(variants || {});
-  const colorKey = String(color || "").trim();
-  const sizeKey = String(size || "").trim();
-  const quantity = Math.max(0, Number(qty) || 0);
-
-  if (!colorKey || !sizeKey || quantity <= 0) {
-    throw new Error("Invalid variant selection.");
-  }
-
-  const colorVariants = nextVariants[colorKey];
-
-  if (!Array.isArray(colorVariants) || !colorVariants.length) {
-    throw new Error("Variant color not found.");
-  }
-
-  const target = colorVariants.find(
-    (variant) => String(variant?.size || "").trim() === sizeKey,
-  );
-
-  if (!target) {
-    throw new Error("Variant size not found.");
-  }
-
-  const currentStock = Math.max(0, Number(target.stock) || 0);
-
-  if (currentStock < quantity) {
-    throw new Error("Not enough stock for selected variant.");
-  }
-
-  target.stock = currentStock - quantity;
-
-  return nextVariants;
-}
-
 function increaseVariantStock(variants, color, size, qty) {
   const nextVariants = structuredClone(variants || {});
-  const colorKey = String(color || "").trim();
+  const colorKey = String(color || "")
+    .trim()
+    .toLowerCase();
   const sizeKey = String(size || "").trim();
   const quantity = Math.max(0, Number(qty) || 0);
 
-  if (!colorKey || !sizeKey || quantity <= 0) {
-    return nextVariants;
-  }
+  if (!colorKey || !sizeKey || quantity <= 0) return nextVariants;
 
-  const colorVariants = nextVariants[colorKey];
+  const actualColorKey = Object.keys(nextVariants).find(
+    (k) => k.toLowerCase() === colorKey,
+  );
+  if (!actualColorKey) return nextVariants;
 
-  if (!Array.isArray(colorVariants) || !colorVariants.length) {
-    return nextVariants;
-  }
+  const colorVariants = nextVariants[actualColorKey];
+  if (!Array.isArray(colorVariants)) return nextVariants;
 
   const target = colorVariants.find(
     (variant) => String(variant?.size || "").trim() === sizeKey,
   );
 
-  if (!target) {
-    return nextVariants;
-  }
+  if (!target) return nextVariants;
 
   target.stock = Math.max(0, Number(target.stock) || 0) + quantity;
-
   return nextVariants;
 }
 
+function decreaseVariantStock(variants, color, size, qty) {
+  const nextVariants = structuredClone(variants || {});
+  const colorKey = String(color || "")
+    .trim()
+    .toLowerCase();
+  const sizeKey = String(size || "").trim();
+  const quantity = Math.max(0, Number(qty) || 0);
+
+  if (!colorKey || !sizeKey || quantity <= 0)
+    throw new Error("Invalid variant selection.");
+
+  const actualColorKey = Object.keys(nextVariants).find(
+    (k) => k.toLowerCase() === colorKey,
+  );
+  if (!actualColorKey) throw new Error("Variant color not found.");
+
+  const colorVariants = nextVariants[actualColorKey];
+  if (!Array.isArray(colorVariants)) throw new Error("Invalid variants data.");
+
+  const target = colorVariants.find(
+    (variant) => String(variant?.size || "").trim() === sizeKey,
+  );
+
+  if (!target) throw new Error("Variant size not found.");
+  const currentStock = Math.max(0, Number(target.stock) || 0);
+  if (currentStock < quantity) throw new Error("Not enough stock.");
+
+  target.stock = currentStock - quantity;
+  return nextVariants;
+}
+
+// --- ROUTES ---
+
+/** GET USER ORDERS */
 router.get("/", requireAuth, async (req, res) => {
   try {
     const [orders] = await db.query(
-      `SELECT
-      id, user_id, created_at, status, total_cents, currency,
-      contact_email, delivery_type, delivery_method, delivery_fee_cents,
-      ship_country, ship_first_name, ship_last_name, ship_address, ship_apartment,
-      ship_city, ship_postal_code, ship_phone,
-      payment_type, payment_bank
-      FROM orders
-      WHERE user_id = ?
-      ORDER BY created_at DESC`,
+      `SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC`,
       [req.user.userId],
     );
-
-    if (!orders.length) {
-      return res.json({ orders: [] });
-    }
-
-    const orderIds = orders.map((o) => o.id);
+    if (!orders.length) return res.json({ orders: [] });
 
     const [items] = await db.query(
-      `SELECT id, order_id, product_id, product_name, price_cents, quantity, color, size, service_option, image_url
-       FROM order_items
-       WHERE order_id IN (?)`,
-      [orderIds],
+      `SELECT * FROM order_items WHERE order_id IN (?)`,
+      [orders.map((o) => o.id)],
     );
-
     const itemsByOrderId = items.reduce((acc, it) => {
       (acc[it.order_id] ||= []).push(it);
       return acc;
     }, {});
 
-    const ordersWithItems = orders.map((o) => ({
-      ...o,
-      items: itemsByOrderId[o.id] || [],
-    }));
-
-    return res.json({ orders: ordersWithItems });
+    res.json({
+      orders: orders.map((o) => ({ ...o, items: itemsByOrderId[o.id] || [] })),
+    });
   } catch (err) {
-    console.log("Orders error:", err);
-    return res.status(500).json({ message: err.message });
+    res.status(500).json({ message: err.message });
   }
 });
 
+/** GET ALL ORDERS (ADMIN) */
 router.get("/admin/all", requireAdmin, async (req, res) => {
   try {
     const [orders] = await db.query(
-      `SELECT
-        id, user_id, created_at, status, total_cents, currency,
-        contact_email, delivery_type, delivery_method, delivery_fee_cents,
-        ship_country, ship_first_name, ship_last_name, ship_address, ship_apartment,
-        ship_city, ship_postal_code, ship_phone, payment_type, payment_bank
-       FROM orders
-       ORDER BY created_at DESC`,
+      `SELECT * FROM orders ORDER BY created_at DESC`,
     );
-
-    if (!orders.length) {
-      return res.json({ orders: [] });
-    }
-
-    const orderIds = orders.map((o) => o.id);
+    if (!orders.length) return res.json({ orders: [] });
 
     const [items] = await db.query(
-      `SELECT
-        id, order_id, product_id, product_name, price_cents, quantity,
-        color, size, service_option, image_url
-       FROM order_items
-       WHERE order_id IN (?)`,
-      [orderIds],
+      `SELECT * FROM order_items WHERE order_id IN (?)`,
+      [orders.map((o) => o.id)],
     );
-
     const itemsByOrderId = items.reduce((acc, it) => {
       (acc[it.order_id] ||= []).push(it);
       return acc;
     }, {});
 
-    const ordersWithItems = orders.map((o) => ({
-      ...o,
-      items: itemsByOrderId[o.id] || [],
-    }));
-
-    return res.json({ orders: ordersWithItems });
+    res.json({
+      orders: orders.map((o) => ({ ...o, items: itemsByOrderId[o.id] || [] })),
+    });
   } catch (err) {
-    console.log("Admin orders error:", err);
-    return res.status(500).json({ message: err.message });
+    res.status(500).json({ message: err.message });
   }
 });
 
+/** UPDATE STATUS (ADMIN) */
 router.patch("/:id/status", requireAdmin, async (req, res) => {
   let connection;
-
   try {
     const orderId = Number(req.params.id);
     const nextStatus = String(req.body?.status || "").trim();
-
     const allowedStatuses = [
       "Pending",
       "Confirmed",
@@ -215,89 +161,59 @@ router.patch("/:id/status", requireAdmin, async (req, res) => {
       "Canceled",
     ];
 
-    if (!Number.isFinite(orderId) || orderId <= 0) {
-      return res.status(400).json({ message: "Invalid order id." });
-    }
-
-    if (!allowedStatuses.includes(nextStatus)) {
+    if (!allowedStatuses.includes(nextStatus))
       return res.status(400).json({ message: "Invalid status." });
-    }
 
     connection = await db.getConnection();
     await connection.beginTransaction();
 
     const [orderRows] = await connection.query(
-      "SELECT id, status FROM orders WHERE id = ? LIMIT 1",
+      "SELECT id, status FROM orders WHERE id = ? FOR UPDATE",
       [orderId],
     );
-
     if (!orderRows.length) {
       await connection.rollback();
       return res.status(404).json({ message: "Order not found." });
     }
 
-    const currentOrder = orderRows[0];
-    const previousStatus = String(currentOrder.status || "").trim();
+    const previousStatus = orderRows[0].status;
 
-    const shouldRestoreStock =
-      previousStatus !== "Canceled" && nextStatus === "Canceled";
-
-    if (shouldRestoreStock) {
+    // Jei atšaukiame užsakymą, grąžiname prekes į likutį
+    if (previousStatus !== "Canceled" && nextStatus === "Canceled") {
       const [items] = await connection.query(
-        `SELECT product_id, quantity, color, size
-        FROM order_items
-        WHERE order_id = ?`,
+        "SELECT * FROM order_items WHERE order_id = ?",
         [orderId],
       );
-
       for (const item of items) {
-        const qty = Math.max(0, Number(item.quantity) || 0);
-        const productId = String(item.product_id || "").trim();
-        const color = String(item.color || "").trim();
-        const size = String(item.size || "").trim();
-
-        if (!productId || qty <= 0) continue;
-
         const [productRows] = await connection.query(
-          `SELECT id, stock_quantity, variants
-          FROM products
-          WHERE id = ?
-          LIMIT 1
-          FOR UPDATE`,
-          [productId],
+          "SELECT id, variants FROM products WHERE id = ? FOR UPDATE",
+          [item.product_id],
         );
+        if (!productRows.length) continue;
 
-        const productRow = productRows[0];
+        const product = productRows[0];
+        const variants = safeJsonParse(product.variants, {});
 
-        if (!productRow) continue;
-
-        const parsedVariants = safeJsonParse(productRow.variants, {});
-        const usesVariantLevelStock =
-          hasVariantLevelStockStructure(parsedVariants);
-
-        if (usesVariantLevelStock && color && size) {
+        if (
+          hasVariantLevelStockStructure(variants) &&
+          item.color &&
+          item.size
+        ) {
           const nextVariants = increaseVariantStock(
-            parsedVariants,
-            color,
-            size,
-            qty,
+            variants,
+            item.color,
+            item.size,
+            item.quantity,
           );
-
-          const nextTotalStock =
-            getTotalStockFromVariantStructure(nextVariants);
-
+          const nextTotal = getTotalStockFromVariantStructure(nextVariants);
           await connection.query(
-            `UPDATE products
-            SET variants = ?, stock_quantity = ?
-            WHERE id = ?`,
-            [JSON.stringify(nextVariants), nextTotalStock, productId],
+            "UPDATE products SET variants = ?, stock_quantity = ? WHERE id = ?",
+            [JSON.stringify(nextVariants), nextTotal, product.id],
           );
         } else {
           await connection.query(
-            `UPDATE products
-            SET stock_quantity = stock_quantity + ?
-            WHERE id = ?`,
-            [qty, productId],
+            "UPDATE products SET stock_quantity = stock_quantity + ? WHERE id = ?",
+            [item.quantity, product.id],
           );
         }
       }
@@ -307,401 +223,133 @@ router.patch("/:id/status", requireAdmin, async (req, res) => {
       nextStatus,
       orderId,
     ]);
-
-    const [rows] = await connection.query(
-      "SELECT id, status FROM orders WHERE id = ? LIMIT 1",
-      [orderId],
-    );
-
     await connection.commit();
 
-    return res.json({
-      ok: true,
-      order: rows[0],
-    });
+    res.json({ ok: true, status: nextStatus });
   } catch (err) {
-    if (connection) {
-      await connection.rollback();
-    }
-
-    console.log("Update order status error:", err);
-    return res.status(500).json({ message: err.message });
+    if (connection) await connection.rollback();
+    res.status(500).json({ message: err.message });
   } finally {
-    if (connection) {
-      connection.release();
-    }
+    if (connection) connection.release();
   }
 });
 
+/** CREATE ORDER */
 router.post("/", requireAuth, async (req, res) => {
   let connection;
-
   try {
     connection = await db.getConnection();
     await connection.beginTransaction();
 
     const userId = req.user.userId;
     const { items, contact, delivery, shipping, payment } = req.body || {};
-
     const email = String(contact?.email || "")
       .trim()
       .toLowerCase();
 
-    if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
-      await connection.rollback();
-      return res.status(400).json({ message: "Valid email is required." });
-    }
+    if (!email) throw new Error("Email is required.");
 
-    const deliveryType = String(delivery?.type || "").trim();
-    const deliveryMethodRaw = String(delivery?.method || "")
-      .trim()
-      .toLowerCase();
+    const deliveryType = delivery?.type || "ship";
+    const deliveryMethod = delivery?.method || "";
+    const paymentType = payment?.type || "card";
+    const paymentBank = payment?.bank || null;
 
-    if (!["ship", "pickup"].includes(deliveryType)) {
-      await connection.rollback();
-      return res.status(400).json({ message: "Invalid delivery type." });
-    }
+    if (!Array.isArray(items) || items.length === 0)
+      throw new Error("Cart is empty.");
 
-    let deliveryMethod = null;
-
-    if (deliveryType === "ship") {
-      if (!["lp", "omniva"].includes(deliveryMethodRaw)) {
-        await connection.rollback();
-        return res.status(400).json({ message: "Invalid shipping method." });
-      }
-
-      deliveryMethod = deliveryMethodRaw;
-
-      if (!shipping) {
-        await connection.rollback();
-        return res
-          .status(400)
-          .json({ message: "Shipping information is required." });
-      }
-
-      if (!String(shipping.firstName || "").trim()) {
-        await connection.rollback();
-        return res.status(400).json({ message: "First name is required." });
-      }
-
-      if (!String(shipping.lastName || "").trim()) {
-        await connection.rollback();
-        return res.status(400).json({ message: "Last name is required." });
-      }
-
-      if (!String(shipping.address || "").trim()) {
-        await connection.rollback();
-        return res.status(400).json({ message: "Address is required." });
-      }
-
-      if (!String(shipping.city || "").trim()) {
-        await connection.rollback();
-        return res.status(400).json({ message: "City is required." });
-      }
-
-      if (!String(shipping.postalCode || "").trim()) {
-        await connection.rollback();
-        return res.status(400).json({ message: "Postal code is required." });
-      }
-
-      if (!String(shipping.phone || "").trim()) {
-        await connection.rollback();
-        return res.status(400).json({ message: "Phone is required." });
-      }
-    }
-
-    if (deliveryType === "pickup") {
-      if (!["vilnius", "kaunas"].includes(deliveryMethodRaw)) {
-        await connection.rollback();
-        return res.status(400).json({ message: "Invalid pickup location." });
-      }
-
-      deliveryMethod = deliveryMethodRaw;
-    }
-
-    const paymentType = String(payment?.type || "")
-      .trim()
-      .toLowerCase();
-    const paymentBankRaw = String(payment?.bank || "")
-      .trim()
-      .toLowerCase();
-
-    if (!["card", "bank"].includes(paymentType)) {
-      await connection.rollback();
-      return res.status(400).json({ message: "Invalid payment type." });
-    }
-
-    let paymentBank = null;
-
-    if (paymentType === "bank") {
-      if (!["swedbank", "seb", "luminor", "revolut"].includes(paymentBankRaw)) {
-        await connection.rollback();
-        return res.status(400).json({ message: "Invalid bank selection." });
-      }
-
-      paymentBank = paymentBankRaw;
-    }
-
-    if (!Array.isArray(items) || items.length === 0) {
-      await connection.rollback();
-      return res.status(400).json({ message: "Cart is empty." });
-    }
-
-    const getQty = (it) => {
-      const q = Number(it?.quantity ?? it?.qty ?? 1);
-      return Number.isFinite(q) && q > 0 ? Math.floor(q) : 1;
-    };
-
-    const getProductId = (it) => {
-      const direct = it?.productId ?? it?.product_id ?? it?.id;
-      if (direct) return String(direct).trim();
-
-      const key = String(it?.key || "").trim();
-      return key ? key.split("|")[0] : "";
-    };
-
-    const SHIPPING_KIT_FEE_CENTS = 1500;
     const normalized = [];
-
     for (const it of items) {
-      const productId = getProductId(it);
-      const qty = getQty(it);
-
-      if (!productId) {
-        throw new Error("Product not found.");
-      }
-
-      const [rows] = await connection.query(
-        `SELECT id, name, price_value, thumbnail, stock_quantity, variants
-         FROM products
-         WHERE id = ?
-         LIMIT 1
-         FOR UPDATE`,
+      const productId = it.productId || it.id;
+      const [pRows] = await connection.query(
+        "SELECT * FROM products WHERE id = ? FOR UPDATE",
         [productId],
       );
+      if (!pRows.length) throw new Error(`Product ${productId} not found.`);
 
-      const productRow = rows[0];
+      const p = pRows[0];
+      const qty = Math.max(1, Number(it.quantity || it.qty || 1));
+      const color = String(it.color || "").trim();
+      const size = String(it.size || "").trim();
+      const variants = safeJsonParse(p.variants, {});
 
-      if (!productRow) {
-        throw new Error("Product not found.");
-      }
-
-      const color = String(it?.color || "").trim();
-      const size = String(it?.size || "").trim();
-
-      const parsedVariants = safeJsonParse(productRow.variants, {});
-      const usesVariantLevelStock =
-        hasVariantLevelStockStructure(parsedVariants);
-
-      if (usesVariantLevelStock && (!color || !size)) {
-        throw new Error(`Missing color or size for "${productRow.name}"`);
-      }
-
-      if (usesVariantLevelStock) {
-        const colorVariants = parsedVariants[color];
-
-        if (!Array.isArray(colorVariants) || !colorVariants.length) {
-          throw new Error(`Variant color not found for "${productRow.name}"`);
-        }
-
-        const targetVariant = colorVariants.find(
-          (variant) => String(variant?.size || "").trim() === size,
+      if (hasVariantLevelStockStructure(variants)) {
+        const nextVariants = decreaseVariantStock(variants, color, size, qty);
+        const nextTotal = getTotalStockFromVariantStructure(nextVariants);
+        await connection.query(
+          "UPDATE products SET variants = ?, stock_quantity = ? WHERE id = ?",
+          [JSON.stringify(nextVariants), nextTotal, p.id],
         );
-
-        if (!targetVariant) {
-          throw new Error(`Variant size not found for "${productRow.name}"`);
-        }
-
-        if (Number(targetVariant.stock || 0) < qty) {
-          throw new Error(
-            `Not enough stock for selected variant of "${productRow.name}"`,
-          );
-        }
       } else {
-        if (Number(productRow.stock_quantity || 0) < qty) {
-          throw new Error(`Not enough stock for "${productRow.name}"`);
-        }
+        if (p.stock_quantity < qty)
+          throw new Error(`Not enough stock for ${p.name}`);
+        await connection.query(
+          "UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?",
+          [qty, p.id],
+        );
       }
-
-      const serviceOption = String(
-        it?.serviceOption ?? it?.service_option ?? "",
-      ).trim();
-
-      const isShippingKit = serviceOption === "shipping";
-
-      const basePriceCents = Math.round(
-        Number(productRow.price_value || 0) * 100,
-      );
-
-      const unitPriceCents =
-        basePriceCents + (isShippingKit ? SHIPPING_KIT_FEE_CENTS : 0);
 
       normalized.push({
-        productId,
-        productName: productRow.name,
-        unitPriceCents,
+        productId: p.id,
+        productName: p.name,
+        priceCents: Math.round(p.price_value * 100),
         qty,
         color: color || null,
         size: size || null,
-        serviceOption: serviceOption || null,
-        imageUrl: it?.image_url ?? it?.image ?? productRow.thumbnail ?? null,
+        imageUrl: it.image || p.thumbnail,
       });
     }
 
-    const itemsTotalCents = normalized.reduce(
-      (sum, it) => sum + it.unitPriceCents * it.qty,
+    const itemsTotal = normalized.reduce(
+      (sum, i) => sum + i.priceCents * i.qty,
       0,
     );
+    const deliveryFee = deliveryType === "pickup" ? 0 : 300;
 
-    const calcDeliveryFeeCents = ({ type, method }) => {
-      if (type === "pickup") return 0;
-      if (type !== "ship") return 0;
-      if (method === "lp") return 200;
-      if (method === "omniva") return 250;
-      return 299;
-    };
-
-    const deliveryFeeCents = calcDeliveryFeeCents({
-      type: deliveryType,
-      method: deliveryMethod,
-    });
-
-    const totalCents = itemsTotalCents + deliveryFeeCents;
-
-    const status = "Pending";
-    const currency = "EUR";
-
-    const [orderResult] = await connection.query(
-      `INSERT INTO orders
-        (user_id, status, total_cents, currency,
-         contact_email, delivery_type, delivery_method, delivery_fee_cents,
-         ship_country, ship_first_name, ship_last_name, ship_address, ship_apartment,
-         ship_city, ship_postal_code, ship_phone, payment_type, payment_bank)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    const [orderRes] = await connection.query(
+      `INSERT INTO orders 
+      (user_id, status, total_cents, currency, contact_email, delivery_type, delivery_method, delivery_fee_cents, ship_first_name, ship_last_name, ship_address, ship_city, ship_postal_code, ship_phone, payment_type, payment_bank) 
+      VALUES (?, 'Pending', ?, 'EUR', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         userId,
-        status,
-        totalCents,
-        currency,
+        itemsTotal + deliveryFee,
         email,
         deliveryType,
         deliveryMethod,
-        deliveryFeeCents,
-        shipping?.country ?? null,
-        shipping?.firstName ?? null,
-        shipping?.lastName ?? null,
-        shipping?.address ?? null,
-        shipping?.apartment ?? null,
-        shipping?.city ?? null,
-        shipping?.postalCode ?? null,
-        shipping?.phone ?? null,
+        deliveryFee,
+        shipping?.firstName,
+        shipping?.lastName,
+        shipping?.address,
+        shipping?.city,
+        shipping?.postalCode,
+        shipping?.phone,
         paymentType,
         paymentBank,
       ],
     );
 
-    const orderId = orderResult.insertId;
-
-    for (const it of normalized) {
-      const [productRows] = await connection.query(
-        `SELECT id, stock_quantity, variants
-         FROM products
-         WHERE id = ?
-         LIMIT 1
-         FOR UPDATE`,
-        [it.productId],
-      );
-
-      const productRow = productRows[0];
-
-      if (!productRow) {
-        throw new Error(`Product not found for "${it.productName}"`);
-      }
-
-      const parsedVariants = safeJsonParse(productRow.variants, {});
-      const usesVariantLevelStock =
-        hasVariantLevelStockStructure(parsedVariants);
-
-      if (usesVariantLevelStock) {
-        if (!it.color || !it.size) {
-          throw new Error(`Missing color or size for "${it.productName}"`);
-        }
-
-        const nextVariants = decreaseVariantStock(
-          parsedVariants,
-          it.color,
-          it.size,
-          it.qty,
-        );
-
-        const nextTotalStock = getTotalStockFromVariantStructure(nextVariants);
-
-        await connection.query(
-          `UPDATE products
-           SET variants = ?, stock_quantity = ?
-           WHERE id = ?`,
-          [JSON.stringify(nextVariants), nextTotalStock, it.productId],
-        );
-      } else {
-        const [updateResult] = await connection.query(
-          `UPDATE products
-           SET stock_quantity = stock_quantity - ?
-           WHERE id = ? AND stock_quantity >= ?`,
-          [it.qty, it.productId, it.qty],
-        );
-
-        if (updateResult.affectedRows === 0) {
-          throw new Error(`Not enough stock for "${it.productName}"`);
-        }
-      }
-    }
-
-    const values = normalized.map((it) => [
+    const orderId = orderRes.insertId;
+    const itemValues = normalized.map((i) => [
       orderId,
-      it.productId,
-      it.productName,
-      it.unitPriceCents,
-      it.qty,
-      it.color,
-      it.size,
-      it.serviceOption,
-      it.imageUrl,
+      i.productId,
+      i.productName,
+      i.priceCents,
+      i.qty,
+      i.color,
+      i.size,
+      i.imageUrl,
     ]);
-
     await connection.query(
-      `INSERT INTO order_items
-       (order_id, product_id, product_name, price_cents, quantity, color, size, service_option, image_url)
-       VALUES ?`,
-      [values],
+      "INSERT INTO order_items (order_id, product_id, product_name, price_cents, quantity, color, size, image_url) VALUES ?",
+      [itemValues],
     );
 
     await connection.commit();
-
-    return res.status(201).json({ ok: true, orderId });
+    res.status(201).json({ ok: true, orderId });
   } catch (err) {
-    if (connection) {
-      await connection.rollback();
-    }
-
-    console.log("Create order error:", err);
-
-    const message = String(err?.message || "");
-
-    if (
-      message.includes("Not enough stock") ||
-      message.includes("Variant color not found") ||
-      message.includes("Variant size not found") ||
-      message.includes("Missing color or size") ||
-      message.includes("Product not found")
-    ) {
-      return res.status(409).json({ message });
-    }
-
-    return res.status(500).json({ message });
+    if (connection) await connection.rollback();
+    res.status(400).json({ message: err.message });
   } finally {
-    if (connection) {
-      connection.release();
-    }
+    if (connection) connection.release();
   }
 });
 

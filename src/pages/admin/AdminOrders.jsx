@@ -7,6 +7,7 @@ import AdminOrdersFilters from "@/pages/admin/components/AdminOrdersFilters";
 import AdminOrderDetailsModal from "@/pages/admin/components/AdminOrderDetailsModal";
 import AdminOrdersTable from "@/pages/admin/components/AdminOrdersTable";
 import AdminOrdersMobileList from "@/pages/admin/components/AdminOrdersMobileList";
+import Loader from "@/components/ui/Loader"; // IMPORTUOJAME LOADERĮ
 import useAdminOrders from "@/pages/admin/hooks/useAdminOrders";
 import useOrderStatusUpdate from "@/pages/admin/hooks/useOrderStatusUpdate";
 import {
@@ -44,7 +45,6 @@ export default function AdminOrders() {
     };
 
     window.addEventListener("keydown", handleKeyDown);
-
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
@@ -162,13 +162,15 @@ export default function AdminOrders() {
         </div>
 
         {loading ? (
-          <p className="mt-6 font-ui text-sm text-black/60">Loading...</p>
+          <div className="flex min-h-[400px] w-full items-center justify-center">
+            <Loader className="h-12 w-12" />
+          </div>
         ) : error ? (
           <div className="mt-6 border border-red-600 bg-red-50 px-4 py-3 font-ui text-sm text-red-700">
             {error}
           </div>
         ) : filteredOrders.length === 0 ? (
-          <p className="mt-6 font-ui text-sm text-black/60">
+          <p className="mt-6 font-ui text-sm text-black/60 text-center py-20">
             No matching orders found.
           </p>
         ) : (
