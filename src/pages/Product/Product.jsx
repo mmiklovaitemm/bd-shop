@@ -15,11 +15,6 @@ import { useProduct } from "@/hooks/useProducts";
 import preventDragHandler from "@/utils/preventDrag";
 
 function ProductView({ product }) {
-  // Debug logas sekimui
-  useEffect(() => {
-    console.log("DEBUG - Duomenys gauti į ProductView:", product);
-  }, [product]);
-
   const { t } = useLanguage();
   const { addToCart } = useAddToCart();
   const openBag = useBagDrawer((s) => s.open);
@@ -40,22 +35,20 @@ function ProductView({ product }) {
     availableColors[0] || "silver",
   );
 
-  // 2. Dydžiai
-  // Sutvarkyta dydžių logika: viską verčiame į String, kad sutaptų tipai
+  // 2. Dydžiai - užtikriname, kad viskas yra String
   const effectiveAvailableSizes = useMemo(() => {
     const v = product?.variants?.[selectedColor];
     if (Array.isArray(v) && v.length > 0) {
-      // Paimame dydžius iš variantų ir paverčiame į tekstą
       return v.map((item) => String(item.size || item));
     }
-    // Jei variantų nėra, paimame iš pagrindinio sizes masyvo ir paverčiame į tekstą
     return Array.isArray(product?.sizes)
       ? product.sizes.map((s) => String(s))
       : [];
   }, [product, selectedColor]);
 
+  // Svarbu: pradinį dydį nustatome kaip String
   const [selectedSize, setSelectedSize] = useState(
-    effectiveAvailableSizes[0] || null,
+    effectiveAvailableSizes[0] ? String(effectiveAvailableSizes[0]) : null,
   );
 
   // 3. Variantas

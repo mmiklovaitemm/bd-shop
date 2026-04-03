@@ -53,7 +53,12 @@ const SizeSelector = memo(
         {sizes.map((size) => {
           const normalizedSize = String(size);
           const isActive = String(selectedSize) === normalizedSize;
-          const isAvailable = availableSizes.includes(normalizedSize);
+
+          // Tikriname prieinamumą paverčiant viską į tekstą (String)
+          const isAvailable = availableSizes
+            .map(String)
+            .includes(normalizedSize);
+
           return (
             <button
               key={normalizedSize}
@@ -129,15 +134,10 @@ const ProductInfo = memo(function ProductInfo({
   const { has, toggle } = useFavorites();
   const isWishlisted = has(product?.id);
 
-  // NAUJA GRIEŽTA LOGIKA:
-  // 1. Jei currentStock yra 0, bet stockQuantity yra 10 -> isSoldOut turi būti FALSE.
-  // 2. Jei bent vienas iš jų teigiamas -> leidžiame pirkti.
+  // PAGRINDINIS PATAISYMAS: Naudojame bendrą likutį, jei varianto stock yra 0 arba nerastas
   const totalStock =
     Number(currentStock) || Number(product?.stockQuantity) || 0;
   const isSoldOut = totalStock <= 0;
-
-  // DEBUG: matysi, ką gauna mygtukas
-  console.log("MYGTUKO PATIKRA:", { currentStock, totalStock, isSoldOut });
 
   if (!product) return null;
 
@@ -172,9 +172,7 @@ const ProductInfo = memo(function ProductInfo({
 
       <div className="mt-3">
         <p className="font-ui text-[12px] text-black/55">
-          {isSoldOut
-            ? t.selectedVariantSoldOut
-            : `${t.inStock}: ${currentStock}`}
+          {isSoldOut ? t.selectedVariantSoldOut : `${t.inStock}: ${totalStock}`}
         </p>
       </div>
 
