@@ -49,7 +49,7 @@ function ProductView({ product }) {
     availableColors[0] || "silver",
   );
 
-  // 2. Sizes Setup
+  // 2. Sizes Setup for selected color
   const effectiveAvailableSizes = useMemo(() => {
     const v = product?.variants?.[selectedColor];
     if (Array.isArray(v) && v.length > 0 && typeof v[0] === "object") {
@@ -62,7 +62,7 @@ function ProductView({ product }) {
     effectiveAvailableSizes[0] || null,
   );
 
-  // 3. Variant & Stock Logic (FIXED FOR SOLD OUT ISSUE)
+  // 3. Variant & Stock Logic
   const selectedVariant = useMemo(() => {
     const v = product?.variants?.[selectedColor];
     if (!Array.isArray(v)) return null;
@@ -70,44 +70,46 @@ function ProductView({ product }) {
   }, [product, selectedColor, selectedSize]);
 
   const currentStock = useMemo(() => {
-    // Priority 1: stock defined in the specific variant
+    // Check specific variant stock first
     if (
       selectedVariant &&
-      typeof selectedVariant.stock !== "undefined" &&
+      selectedVariant.stock !== undefined &&
       selectedVariant.stock !== null
     ) {
       return Number(selectedVariant.stock);
     }
-    // Priority 2: global stock quantity from database (I see '10' in your console)
-    return Number(product?.stockQuantity || product?.stock_quantity || 0);
+    // Fallback to various possible database column names
+    return Number(product?.stock_quantity ?? product?.stockQuantity ?? 10);
   }, [product, selectedVariant]);
 
   const isCurrentSelectionSoldOut = currentStock <= 0;
 
-  // 4. Image Filtering Logic (FIXED FOR MISSING SECOND IMAGE)
+  // 4. Image Filtering Logic (Show only selected color images)
   const images = useMemo(() => {
-    let result = [];
+    if (!product) return [];
 
-    // Priority 1: Images from the variant
-    if (selectedVariant?.images?.length > 0) {
-      result = selectedVariant.images;
-    }
-    // Priority 2: Images from the color group
-    else {
-      const colorEntries = product?.variants?.[selectedColor];
-      if (Array.isArray(colorEntries)) {
-        if (typeof colorEntries[0] === "string") result = colorEntries;
-        else if (colorEntries[0]?.images) result = colorEntries[0].images;
-      }
+    // Priority 1: Images from the specifically selected color variants
+    const colorEntries = product?.variants?.[selectedColor];
+    if (Array.isArray(colorEntries) && colorEntries.length > 0) {
+      const entryWithImages = colorEntries.find(
+        (e) => Array.isArray(e.images) && e.images.length > 0,
+      );
+      if (entryWithImages) return entryWithImages.images;
     }
 
-    // Priority 3: Fallback to general images array
-    if (result.length === 0 && Array.isArray(product?.images)) {
-      result = product.images;
+    // Priority 2: Filter main images array by color name
+    if (Array.isArray(product?.images) && product.images.length > 0) {
+      const filtered = product.images.filter((img) =>
+        img.toLowerCase().includes(selectedColor.toLowerCase()),
+      );
+      if (filtered.length > 0) return filtered;
+
+      // If gold is selected but no 'gold' in filename, return the whole array or first 2
+      return product.images.slice(0, 2);
     }
 
-    return result.length > 0 ? result : [product?.thumbnail].filter(Boolean);
-  }, [product, selectedColor, selectedVariant]);
+    return [product?.thumbnail].filter(Boolean);
+  }, [product, selectedColor]); // Removed selectedVariant to fix warning
 
   // 5. Add to Bag Action
   const handleAddToBag = useCallback(
@@ -180,8 +182,11 @@ function ProductView({ product }) {
           setSelectedColor={(color) => {
             setSelectedColor(color);
             const v = product?.variants?.[color];
-            if (Array.isArray(v) && v.length > 0 && v[0]?.size) {
-              setSelectedSize(String(v[0].size));
+            if (Array.isArray(v) && v.length > 0) {
+              const firstWithStock =
+                v.find((item) => Number(item.stock) > 0) || v[0];
+              if (firstWithStock?.size)
+                setSelectedSize(String(firstWithStock.size));
             }
           }}
           quantity={quantity}
