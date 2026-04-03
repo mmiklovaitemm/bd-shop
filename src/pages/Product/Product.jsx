@@ -25,7 +25,7 @@ function ProductView({ product }) {
   const [activeImgIndex, setActiveImgIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
 
-  // 1. Spalvų paruošimas - nustatome, kokios spalvos yra prieinamos
+  // 1. Prepare colors - determine which colors are available
   const availableColors = useMemo(() => {
     const colors = Array.isArray(product?.colors) ? product.colors : [];
     return colors.length > 0 ? colors : Object.keys(product?.variants || {});
@@ -35,7 +35,7 @@ function ProductView({ product }) {
     availableColors[0] || "silver",
   );
 
-  // 2. Pagalbinė funkcija dydžiams gauti pagal konkrečią spalvą
+  // 2. Helper function to get sizes based on a specific color
   const getSizesForColor = useCallback(
     (color) => {
       const v = product?.variants?.[color];
@@ -48,55 +48,70 @@ function ProductView({ product }) {
     [product],
   );
 
-  // Dydžiai, kurie prieinami šiuo metu pasirinktai spalvai
+  // Sizes available for the currently selected color
   const effectiveAvailableSizes = useMemo(
     () => getSizesForColor(selectedColor),
     [selectedColor, getSizesForColor],
   );
 
-  // Pradinis dydis - automatiškai parenkamas pirmas prieinamas
+  // Initial size setup - automatically select the first available size with stock
   const [selectedSize, setSelectedSize] = useState(() => {
-    const sizes = getSizesForColor(availableColors[0] || "silver");
+    const color = availableColors[0] || "silver";
+    const v = product?.variants?.[color];
+    if (Array.isArray(v) && v.length > 0) {
+      const firstAvailable = v.find((item) => Number(item.stock) > 0);
+      if (firstAvailable) return String(firstAvailable.size);
+      return String(v[0].size);
+    }
+    const sizes = getSizesForColor(color);
     return sizes.length > 0 ? sizes[0] : null;
   });
 
-  // SPALVOS KEITIMO LOGIKA: kai keičiame spalvą, iškart nustatome ir pirmą tos spalvos dydį
+  // COLOR CHANGE LOGIC: When color changes, immediately set the first available size for that color
   const handleColorChange = useCallback(
     (newColor) => {
       setSelectedColor(newColor);
-      const newSizes = getSizesForColor(newColor);
-      if (newSizes.length > 0) {
-        setSelectedSize(newSizes[0]);
+      const variants = product?.variants?.[newColor];
+      if (Array.isArray(variants) && variants.length > 0) {
+        // Find the first size in this color that has stock
+        const firstWithStock = variants.find((v) => Number(v.stock) > 0);
+        setSelectedSize(
+          firstWithStock
+            ? String(firstWithStock.size)
+            : String(variants[0].size),
+        );
+      } else {
+        // Fallback if variants structure is missing
+        const newSizes = getSizesForColor(newColor);
+        if (newSizes.length > 0) setSelectedSize(newSizes[0]);
       }
     },
-    [getSizesForColor],
+    [product, getSizesForColor],
   );
 
-  // 3. TIKSLUS LIKUČIO SKAIČIAVIMAS: žiūrime į pasirinktą spalvą IR dydį
+  // 3. ACCURATE STOCK CALCULATION: Check specific selected color AND size
   const currentStock = useMemo(() => {
     if (!product?.variants || Object.keys(product.variants).length === 0) {
       return Number(product?.stockQuantity ?? product?.stock_quantity ?? 0);
     }
-
     const variantData = product.variants[selectedColor];
     if (!Array.isArray(variantData)) return 0;
-
     const selectedV = variantData.find(
       (v) => String(v.size) === String(selectedSize),
     );
 
-    // Jei radome konkretų variantą, imame jo stock, kitaip 0
+    // If specific variant is found, return its stock, otherwise 0
     return selectedV ? Number(selectedV.stock) : 0;
   }, [product, selectedColor, selectedSize]);
 
   const isCurrentSelectionSoldOut = currentStock <= 0;
 
-  // 4. Nuotraukų filtravimas pagal spalvą
+  // 4. Image filtering based on selected color
   const images = useMemo(() => {
     if (!product) return [];
     const colorVariants = product?.variants?.[selectedColor];
 
-    // Pirmiausia tikriname, ar variantas turi savo nuotraukas
+    // First, check if the variant has its own images
     if (Array.isArray(colorVariants) && colorVariants.length > 0) {
       const variantWithImages = colorVariants.find(
         (v) => Array.isArray(v.images) && v.images.length > 0,
@@ -104,7 +119,7 @@ function ProductView({ product }) {
       if (variantWithImages) return variantWithImages.images;
     }
 
-    // Jei ne, filtruojame bendrą nuotraukų masyvą
+    // If not, filter the general images array
     if (Array.isArray(product.images)) {
       const filtered = product.images.filter((img) => {
         const url = img.toLowerCase();
@@ -117,7 +132,7 @@ function ProductView({ product }) {
     return [product.thumbnail].filter(Boolean);
   }, [product, selectedColor]);
 
-  // Krepšelio funkcija
+  // Add to Bag handler
   const handleAddToBag = useCallback(
     (e) => {
       if (e && e.preventDefault) e.preventDefault();
@@ -183,6 +198,7 @@ function ProductView({ product }) {
           setQuantity={setQuantity}
           onAddToBag={handleAddToBag}
           onOpenDetails={() => setIsDetailsOpen(true)}
+          onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
         />
       </div>
 
@@ -192,6 +208,7 @@ function ProductView({ product }) {
         product={product}
       />
 
+      {/* Render HowItWorksPanel only for specific category */}
       {product?.category === "personal" && (
         <HowItWorksPanel
           isOpen={isHowItWorksOpen}
@@ -206,7 +223,6 @@ function ProductView({ product }) {
         activeImgIndex={activeImgIndex}
         setActiveImgIndex={setActiveImgIndex}
       />
-
       <FullWidthDivider />
       <YouMayAlsoLike currentProduct={product} />
     </main>
@@ -216,11 +232,9 @@ function ProductView({ product }) {
 export default function Product() {
   const { id } = useParams();
   const { product, loading } = useProduct(id);
-
   if (loading)
     return <div className="p-20 text-center font-ui">Loading...</div>;
   if (!product)
     return <div className="p-20 text-center font-ui">Product not found.</div>;
-
   return <ProductView key={product.id} product={product} />;
 }
