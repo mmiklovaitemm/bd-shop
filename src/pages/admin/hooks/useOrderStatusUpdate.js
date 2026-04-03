@@ -1,26 +1,33 @@
 import { useState } from "react";
 
-const API_ORIGIN =
-  import.meta.env.VITE_API_URL || "https://bd-shop-gfva.onrender.com";
+// Užtikriname, kad API_ORIGIN neturėtų pasvirojo brūkšnio gale
+const API_URL = (
+  import.meta.env.VITE_API_URL || "https://bd-shop-gfva.onrender.com"
+).replace(/\/+$/, "");
 
 export default function useOrderStatusUpdate({ setOrders, fetchOrders }) {
   const [savingId, setSavingId] = useState(null);
 
   const handleStatusChange = async (orderId, nextStatus) => {
+    if (!orderId) return;
+
     try {
       setSavingId(orderId);
 
-      const res = await fetch(`${API_ORIGIN}/api/orders/${orderId}/status`, {
+      const response = await fetch(`${API_URL}/api/orders/${orderId}/status`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
         credentials: "include",
         body: JSON.stringify({ status: nextStatus }),
       });
 
-      const data = await res.json().catch(() => ({}));
+      const data = await response.json().catch(() => ({}));
 
-      if (!res.ok) {
-        throw new Error(data?.message || "Failed to update status.");
+      if (!response.ok) {
+        throw new Error(data?.message || `Server error: ${response.status}`);
       }
 
       setOrders((prev) =>
@@ -29,9 +36,10 @@ export default function useOrderStatusUpdate({ setOrders, fetchOrders }) {
         ),
       );
 
-      fetchOrders();
+      if (fetchOrders) fetchOrders();
     } catch (err) {
-      alert(err?.message || "Failed to update status.");
+      console.error("Order status update failed:", err);
+      alert(err?.message || "Failed to update status. Please try again.");
     } finally {
       setSavingId(null);
     }
