@@ -1,5 +1,4 @@
-// src/pages/Product.jsx
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import useLanguage from "@/context/useLanguage";
@@ -16,123 +15,23 @@ import ProductInfo from "@/pages/Product/components/ProductInfo";
 import YouMayAlsoLike from "@/pages/Product/components/YouMayAlsoLike";
 import HowItWorksPanel from "@/pages/Product/components/HowItWorksPanel";
 
-// Constants
-import { HOVER_CLASSES } from "@/pages/Product/constants";
-
 // Hooks
 import useAddToCart from "@/hooks/useAddToCart";
 import useBagDrawer from "@/store/useBagDrawer";
 import { useProduct } from "@/hooks/useProducts";
 
 // Utils
-import cn from "@/utils/cn";
 import preventDragHandler from "@/utils/preventDrag";
 
-// --- HELPERS ---
+function ProductView({ product }) {
+  // DEBUG - padės pamatyti, ar duomenys ateina teisingi
+  useEffect(() => {
+    console.log("DEBUG - Produkto duomenys puslapyje:", product);
+  }, [product]);
 
-/**
- * Safely parses JSON strings from DB
- */
-function safeJsonParse(value, fallback) {
-  if (value === null || value === undefined) return fallback;
-  if (typeof value !== "string") return value;
-  try {
-    return JSON.parse(value);
-  } catch {
-    return fallback;
-  }
-}
-
-function isVariantObject(value) {
-  return (
-    value &&
-    typeof value === "object" &&
-    !Array.isArray(value) &&
-    Array.isArray(value.images)
-  );
-}
-
-function hasVariantLevelStock(product) {
-  const variants = product?.variants || {};
-  return Object.values(variants).some(
-    (value) =>
-      Array.isArray(value) && value.length > 0 && isVariantObject(value[0]),
-  );
-}
-
-function getAllColors(product) {
-  return Array.isArray(product?.colors) ? product.colors.filter(Boolean) : [];
-}
-
-function getFallbackColor(product) {
-  return getAllColors(product)[0] || null;
-}
-
-function getAvailableColors(product, usesVariantLevelStock) {
-  const colors = getAllColors(product);
-
-  if (!usesVariantLevelStock) return colors;
-
-  const inStockColors = colors.filter((color) => {
-    const entries = product?.variants?.[color] || [];
-    return entries.some((variant) => Number(variant?.stock || 0) > 0);
-  });
-
-  return inStockColors.length ? inStockColors : colors;
-}
-
-function getAvailableSizesForColor(product, color, usesVariantLevelStock) {
-  if (!product) return [];
-
-  if (!usesVariantLevelStock) {
-    return (product?.sizes || []).map(String);
-  }
-
-  const entries = Array.isArray(product?.variants?.[color])
-    ? product.variants[color]
-    : [];
-
-  return entries
-    .filter((variant) => Number(variant?.stock || 0) > 0)
-    .map((variant) => String(variant?.size))
-    .filter(Boolean);
-}
-
-function getFirstAvailableColor(product, usesVariantLevelStock) {
-  const availableColors = getAvailableColors(product, usesVariantLevelStock);
-  return availableColors[0] || getFallbackColor(product);
-}
-
-function getFirstAvailableSize(product, color, usesVariantLevelStock) {
-  const availableSizes = getAvailableSizesForColor(
-    product,
-    color,
-    usesVariantLevelStock,
-  );
-
-  if (availableSizes.length > 0) {
-    return availableSizes[0];
-  }
-
-  return product?.sizes?.[0] ? String(product.sizes[0]) : null;
-}
-
-function ProductView({ product: rawProduct }) {
   const { t } = useLanguage();
   const { addToCart } = useAddToCart();
   const openBag = useBagDrawer((s) => s.open);
-
-  // PREPARE DATA: Ensure objects are parsed even if they come as strings
-  const product = useMemo(() => {
-    if (!rawProduct) return null;
-    return {
-      ...rawProduct,
-      variants: safeJsonParse(rawProduct.variants, {}),
-      colors: safeJsonParse(rawProduct.colors, []),
-      sizes: safeJsonParse(rawProduct.sizes, []),
-      details: safeJsonParse(rawProduct.details, {}),
-    };
-  }, [rawProduct]);
 
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
@@ -140,249 +39,125 @@ function ProductView({ product: rawProduct }) {
   const [activeImgIndex, setActiveImgIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
 
-  const usesVariantLevelStock = useMemo(
-    () => hasVariantLevelStock(product),
-    [product],
+  // 1. Spalvų nustatymas
+  const availableColors = useMemo(() => {
+    const colors = Array.isArray(product?.colors) ? product.colors : [];
+    return colors.length > 0 ? colors : Object.keys(product?.variants || {});
+  }, [product]);
+
+  const [selectedColor, setSelectedColor] = useState(
+    availableColors[0] || "silver",
   );
 
-  const availableColors = useMemo(
-    () => getAvailableColors(product, usesVariantLevelStock),
-    [product, usesVariantLevelStock],
-  );
-
-  const initialColor = useMemo(
-    () => getFirstAvailableColor(product, usesVariantLevelStock),
-    [product, usesVariantLevelStock],
-  );
-
-  const [selectedColor, setSelectedColor] = useState(initialColor);
-
-  const initialSize = useMemo(
-    () => getFirstAvailableSize(product, initialColor, usesVariantLevelStock),
-    [product, initialColor, usesVariantLevelStock],
-  );
-
-  const [selectedSize, setSelectedSize] = useState(initialSize);
-
-  const [selectedService, setSelectedService] = useState(
-    product?.details?.serviceOptions?.[0]?.value || null,
-  );
-
-  const effectiveSelectedColor = useMemo(() => {
-    if (selectedColor && availableColors.includes(selectedColor)) {
-      return selectedColor;
-    }
-    return getFirstAvailableColor(product, usesVariantLevelStock);
-  }, [availableColors, product, selectedColor, usesVariantLevelStock]);
-
-  const effectiveColorEntries = useMemo(() => {
-    if (!usesVariantLevelStock || !effectiveSelectedColor) return [];
-    return Array.isArray(product?.variants?.[effectiveSelectedColor])
-      ? product.variants[effectiveSelectedColor]
-      : [];
-  }, [product, effectiveSelectedColor, usesVariantLevelStock]);
-
+  // 2. Dydžių nustatymas pasirinktai spalvai
   const effectiveAvailableSizes = useMemo(() => {
-    return getAvailableSizesForColor(
-      product,
-      effectiveSelectedColor,
-      usesVariantLevelStock,
-    );
-  }, [product, effectiveSelectedColor, usesVariantLevelStock]);
-
-  const effectiveSelectedSize = useMemo(() => {
-    const normalizedSelectedSize =
-      selectedSize == null ? null : String(selectedSize);
-
-    if (effectiveAvailableSizes.includes(normalizedSelectedSize)) {
-      return normalizedSelectedSize;
+    const v = product?.variants?.[selectedColor];
+    if (Array.isArray(v)) {
+      return v.map((item) => String(item.size || item));
     }
+    return Array.isArray(product?.sizes) ? product.sizes.map(String) : [];
+  }, [product, selectedColor]);
 
-    return getFirstAvailableSize(
-      product,
-      effectiveSelectedColor,
-      usesVariantLevelStock,
-    );
-  }, [
-    effectiveAvailableSizes,
-    effectiveSelectedColor,
-    product,
-    selectedSize,
-    usesVariantLevelStock,
-  ]);
+  const [selectedSize, setSelectedSize] = useState(
+    effectiveAvailableSizes[0] || null,
+  );
 
+  // 3. Varianto ir sandėlio nustatymas
   const selectedVariant = useMemo(() => {
-    if (!usesVariantLevelStock) return null;
-    return (
-      effectiveColorEntries.find(
-        (variant) => String(variant?.size) === String(effectiveSelectedSize),
-      ) || null
-    );
-  }, [effectiveColorEntries, effectiveSelectedSize, usesVariantLevelStock]);
+    const v = product?.variants?.[selectedColor];
+    if (!Array.isArray(v)) return null;
+    return v.find((item) => String(item.size) === String(selectedSize)) || v[0];
+  }, [product, selectedColor, selectedSize]);
 
   const currentStock = useMemo(() => {
-    if (!usesVariantLevelStock) {
-      return Math.max(
-        0,
-        Number(product?.stockQuantity || product?.stock_quantity) || 0,
-      );
+    if (selectedVariant && typeof selectedVariant.stock !== "undefined") {
+      return Number(selectedVariant.stock);
     }
-    return Math.max(0, Number(selectedVariant?.stock) || 0);
-  }, [product, selectedVariant, usesVariantLevelStock]);
+    return Number(product?.stockQuantity || product?.stock_quantity || 0);
+  }, [product, selectedVariant]);
 
   const isCurrentSelectionSoldOut = currentStock <= 0;
 
+  // 4. Nuotraukų galerija
   const images = useMemo(() => {
-    if (!product) return [];
+    if (selectedVariant?.images?.length) return selectedVariant.images;
+    if (Array.isArray(product?.images) && product.images.length > 0)
+      return product.images;
+    return [product?.thumbnail].filter(Boolean);
+  }, [product, selectedVariant]);
 
-    if (usesVariantLevelStock) {
-      if (selectedVariant?.images?.length) {
-        return selectedVariant.images.filter(Boolean);
-      }
+  const handleAddToBag = useCallback(() => {
+    if (isCurrentSelectionSoldOut) return;
 
-      const fallbackColor =
-        getFirstAvailableColor(product, true) || getFallbackColor(product);
-
-      const fallbackVariant = (product?.variants?.[fallbackColor] || []).find(
-        (variant) =>
-          Array.isArray(variant?.images) && variant.images.length > 0,
-      );
-
-      return fallbackVariant?.images?.filter(Boolean) || [];
-    }
-
-    const fallbackColor = getFallbackColor(product);
-    const base = (product?.variants?.[fallbackColor] || []).filter(Boolean);
-    const selectedArr = (
-      product?.variants?.[effectiveSelectedColor] || []
-    ).filter(Boolean);
-
-    const merged = base.map((img, idx) => selectedArr[idx] || img);
-    const extras = selectedArr.slice(base.length);
-
-    return [...merged, ...extras].filter(Boolean);
-  }, [product, effectiveSelectedColor, selectedVariant, usesVariantLevelStock]);
-
-  const openLightbox = useCallback((index) => {
-    setActiveImgIndex(index);
-    setIsLightboxOpen(true);
-  }, []);
-
-  const closeLightbox = useCallback(() => {
-    setIsLightboxOpen(false);
-  }, []);
-
-  const handleAddToBag = useCallback(
-    (e) => {
-      e?.preventDefault?.();
-      if (!product || isCurrentSelectionSoldOut) return;
-
-      const img = usesVariantLevelStock
-        ? selectedVariant?.images?.[0] || product?.thumbnail || ""
-        : product?.variants?.[effectiveSelectedColor]?.[0] ||
-          product?.thumbnail ||
-          "";
-
-      addToCart({
-        product,
-        productId: String(product.id),
-        name: product.name,
-        price: product.price,
-        category: product.category,
-        color: String(effectiveSelectedColor || "silver"),
-        size: effectiveSelectedSize ? String(effectiveSelectedSize) : null,
-        quantity: Number(quantity) || 1,
-        image: img,
-        serviceOption: selectedService || null,
-      });
-
-      openBag();
-    },
-    [
-      addToCart,
-      effectiveSelectedColor,
-      effectiveSelectedSize,
-      isCurrentSelectionSoldOut,
-      openBag,
+    addToCart({
       product,
+      productId: String(product.id),
+      name: product.name,
+      price: product.price,
+      color: selectedColor,
+      size: selectedSize,
       quantity,
-      selectedService,
-      selectedVariant,
-      usesVariantLevelStock,
-    ],
-  );
+      image: images[0] || product?.thumbnail,
+    });
 
-  const handleSelectColor = useCallback(
-    (color) => {
-      setSelectedColor(color);
-      const nextSize = getFirstAvailableSize(
-        product,
-        color,
-        usesVariantLevelStock,
-      );
-      setSelectedSize(nextSize);
-      setQuantity(1);
-    },
-    [product, usesVariantLevelStock],
-  );
-
-  const handleSelectSize = useCallback((size) => {
-    setSelectedSize(size == null ? null : String(size));
-    setQuantity(1);
-  }, []);
+    openBag();
+  }, [
+    product,
+    isCurrentSelectionSoldOut,
+    selectedColor,
+    selectedSize,
+    quantity,
+    images,
+    addToCart,
+    openBag,
+  ]);
 
   return (
     <main
-      className="mx-auto w-full select-none px-4 py-4 md:max-w-[1200px] md:px-1 md:py-4 lg:max-w-none lg:px-2"
+      className="mx-auto w-full px-4 py-4 md:max-w-[1200px]"
       onDragStart={preventDragHandler}
     >
       <div className="mb-4">
         <Link
           to="/collections"
-          className="group inline-flex select-none items-center font-ui text-[14px] text-black/80"
+          className="inline-flex items-center gap-2 text-[14px] text-black/80 hover:text-black"
         >
-          <span
-            className={cn(
-              "inline-flex items-center gap-2",
-              HOVER_CLASSES.group,
-            )}
-          >
-            <img
-              src={backIcon}
-              alt=""
-              className="h-3 w-3 transition-transform duration-200 ease-out"
-            />
-            <span>{t.back}</span>
-          </span>
+          <img src={backIcon} alt="" className="h-3 w-3" />
+          <span>{t.back}</span>
         </Link>
       </div>
 
-      <div className="md:mb-5 md:grid md:grid-cols-[1fr_360px] md:items-start md:gap-8 lg:grid-cols-[1fr_420px] lg:gap-10">
+      <div className="md:grid md:grid-cols-[1fr_360px] md:gap-8 lg:grid-cols-[1fr_420px] lg:gap-10">
         <ImageGallery
           images={images}
           product={product}
-          openLightbox={openLightbox}
-          btnHover={HOVER_CLASSES.btn}
+          openLightbox={(index) => {
+            setActiveImgIndex(index);
+            setIsLightboxOpen(true);
+          }}
         />
+
         <ProductInfo
           product={product}
-          selectedSize={effectiveSelectedSize}
-          selectedColor={effectiveSelectedColor}
+          selectedSize={selectedSize}
+          selectedColor={selectedColor}
           availableSizes={effectiveAvailableSizes}
           availableColors={availableColors}
           currentStock={currentStock}
           isCurrentSelectionSoldOut={isCurrentSelectionSoldOut}
-          usesVariantLevelStock={usesVariantLevelStock}
-          setSelectedSize={handleSelectSize}
-          setSelectedColor={handleSelectColor}
+          setSelectedSize={setSelectedSize}
+          setSelectedColor={(color) => {
+            setSelectedColor(color);
+            // Automatiškai parenkame pirmą prieinamą dydį naujai spalvai
+            const newSizes =
+              product?.variants?.[color]?.map((i) => String(i.size)) || [];
+            if (newSizes.length > 0) setSelectedSize(newSizes[0]);
+          }}
           quantity={quantity}
           setQuantity={setQuantity}
-          selectedService={selectedService}
-          setSelectedService={setSelectedService}
           onAddToBag={handleAddToBag}
           onOpenDetails={() => setIsDetailsOpen(true)}
           onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
-          hoverClasses={HOVER_CLASSES}
         />
       </div>
 
@@ -390,23 +165,23 @@ function ProductView({ product: rawProduct }) {
         isOpen={isDetailsOpen}
         onClose={() => setIsDetailsOpen(false)}
         product={product}
-        selectedColor={effectiveSelectedColor}
-        selectedSize={effectiveSelectedSize}
       />
+
       {product?.category === "personal" && (
         <HowItWorksPanel
           isOpen={isHowItWorksOpen}
           onClose={() => setIsHowItWorksOpen(false)}
         />
       )}
+
       <Lightbox
         isOpen={isLightboxOpen}
-        onClose={closeLightbox}
+        onClose={() => setIsLightboxOpen(false)}
         images={images}
         activeImgIndex={activeImgIndex}
         setActiveImgIndex={setActiveImgIndex}
-        product={product}
       />
+
       <FullWidthDivider />
       <YouMayAlsoLike currentProduct={product} />
     </main>
@@ -414,22 +189,13 @@ function ProductView({ product: rawProduct }) {
 }
 
 export default function Product() {
-  const { t } = useLanguage();
   const { id } = useParams();
   const { product, loading } = useProduct(id);
 
   if (loading)
-    return (
-      <main className="mx-auto w-full max-w-[1200px] px-4 py-10 text-center">
-        <p>{t.loading}</p>
-      </main>
-    );
+    return <div className="p-20 text-center font-ui">Kraunama...</div>;
   if (!product)
-    return (
-      <main className="mx-auto w-full max-w-[1200px] px-4 py-10 text-center">
-        <p>{t.productNotFound}</p>
-      </main>
-    );
+    return <div className="p-20 text-center font-ui">Prekė nerasta.</div>;
 
-  return <ProductView key={product.id} product={product} />;
+  return <ProductView product={product} />;
 }
