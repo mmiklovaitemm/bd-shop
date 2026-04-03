@@ -25,7 +25,6 @@ function ProductView({ product }) {
   const [activeImgIndex, setActiveImgIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
 
-  // 1. Spalvų paruošimas
   const availableColors = useMemo(() => {
     const colors = Array.isArray(product?.colors) ? product.colors : [];
     return colors.length > 0 ? colors : Object.keys(product?.variants || {});
@@ -35,7 +34,6 @@ function ProductView({ product }) {
     availableColors[0] || "silver",
   );
 
-  // 2. DYDŽIŲ PARUOŠIMAS (Visada paverčiame į String)
   const effectiveAvailableSizes = useMemo(() => {
     const v = product?.variants?.[selectedColor];
     if (Array.isArray(v) && v.length > 0 && typeof v[0] === "object") {
@@ -47,7 +45,6 @@ function ProductView({ product }) {
     return [];
   }, [product, selectedColor]);
 
-  // Saugus pradinio dydžio nustatymas
   const [selectedSize, setSelectedSize] = useState(() => {
     const initialV = product?.variants?.[availableColors[0] || "silver"];
     if (Array.isArray(initialV) && initialV.length > 0)
@@ -57,7 +54,6 @@ function ProductView({ product }) {
     return null;
   });
 
-  // 3. Likučio skaičiavimas (Stock)
   const currentStock = useMemo(() => {
     const variantData = product?.variants?.[selectedColor];
     const selectedV = Array.isArray(variantData)
@@ -67,22 +63,41 @@ function ProductView({ product }) {
     if (selectedV && selectedV.stock !== undefined) {
       return Number(selectedV.stock);
     }
-    // Jei variante stock nėra, paimame tą 10 iš stockQuantity
     return Number(product?.stockQuantity ?? product?.stock_quantity ?? 10);
   }, [product, selectedColor, selectedSize]);
 
   const isCurrentSelectionSoldOut = currentStock <= 0;
 
-  // 4. Nuotraukų parinkimas
   const images = useMemo(() => {
     if (!product) return [];
-    if (Array.isArray(product.images) && product.images.length > 0) {
-      const filtered = product.images.filter((img) =>
-        img.toLowerCase().includes(selectedColor.toLowerCase()),
+
+    const colorVariants = product?.variants?.[selectedColor];
+    if (Array.isArray(colorVariants) && colorVariants.length > 0) {
+      const variantWithImages = colorVariants.find(
+        (v) => Array.isArray(v.images) && v.images.length > 0,
       );
-      if (filtered.length > 0) return filtered;
-      return product.images.slice(0, 4);
+      if (variantWithImages) return variantWithImages.images;
     }
+
+    if (Array.isArray(product.images) && product.images.length > 0) {
+      const filtered = product.images.filter((img) => {
+        const url = img.toLowerCase();
+        const color = selectedColor.toLowerCase();
+
+        if (color === "silver") {
+          return !url.includes("gold");
+        }
+
+        return url.includes(color);
+      });
+
+      if (filtered.length > 0) return filtered;
+
+      return selectedColor === "silver"
+        ? product.images.slice(0, 2)
+        : product.images.filter((img) => img.toLowerCase().includes("gold"));
+    }
+
     return [product.thumbnail].filter(Boolean);
   }, [product, selectedColor]);
 
