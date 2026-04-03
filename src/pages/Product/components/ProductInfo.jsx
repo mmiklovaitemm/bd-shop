@@ -71,11 +71,8 @@ const SizeSelector = memo(function SizeSelector({
       {sizes.map((size) => {
         const normalizedSize = String(size);
         const isActive = String(selectedSize) === normalizedSize;
-        // Logic: if availableSizes is empty, we assume global stock rules
-        const isAvailable =
-          availableSizes.length > 0
-            ? availableSizes.includes(normalizedSize)
-            : true;
+        // Check availability against calculated sizes
+        const isAvailable = availableSizes.includes(normalizedSize);
 
         return (
           <button
@@ -112,7 +109,7 @@ const ColorSelector = memo(function ColorSelector({
     <div className="mt-2 flex flex-wrap gap-2">
       {colors.map((color) => {
         const isActive = selectedColor === color;
-        // If availableColors is empty, don't block selection (rely on global stock)
+        // Check if color is in stock
         const isAvailable =
           availableColors.length === 0 || availableColors.includes(color);
 
@@ -185,6 +182,9 @@ const ProductInfo = memo(function ProductInfo({
   const { has, toggle } = useFavorites();
   const isWishlisted = has(product?.id);
 
+  // Derived SOLD OUT status from parent calculation
+  const isSoldOut = Boolean(isCurrentSelectionSoldOut);
+
   if (!product) return null;
 
   return (
@@ -220,7 +220,7 @@ const ProductInfo = memo(function ProductInfo({
 
       <div className="mt-3">
         <p className="font-ui text-[12px] text-black/55">
-          {isCurrentSelectionSoldOut
+          {isSoldOut
             ? t.selectedVariantSoldOut
             : `${t.inStock}: ${currentStock}`}
         </p>
@@ -233,7 +233,7 @@ const ProductInfo = memo(function ProductInfo({
 
       <div className="mt-6 flex items-stretch gap-2">
         <div className="flex-1">
-          {isCurrentSelectionSoldOut ? (
+          {isSoldOut ? (
             <button
               disabled
               className="h-12 w-full border border-black/10 bg-black/5 text-black/40 uppercase text-[13px] cursor-not-allowed"

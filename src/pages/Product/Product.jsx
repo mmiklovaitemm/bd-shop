@@ -39,7 +39,7 @@ function ProductView({ product }) {
   const [activeImgIndex, setActiveImgIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
 
-  // 1. Color Setup
+  // 1. Setup available colors
   const availableColors = useMemo(() => {
     const colors = Array.isArray(product?.colors) ? product.colors : [];
     return colors.length > 0 ? colors : Object.keys(product?.variants || {});
@@ -49,7 +49,7 @@ function ProductView({ product }) {
     availableColors[0] || "silver",
   );
 
-  // 2. Sizes Setup for selected color
+  // 2. Setup sizes for the selected color
   const effectiveAvailableSizes = useMemo(() => {
     const v = product?.variants?.[selectedColor];
     if (Array.isArray(v) && v.length > 0 && typeof v[0] === "object") {
@@ -62,33 +62,36 @@ function ProductView({ product }) {
     effectiveAvailableSizes[0] || null,
   );
 
-  // 3. Variant & Stock Logic
+  // 3. Variant selection
   const selectedVariant = useMemo(() => {
     const v = product?.variants?.[selectedColor];
     if (!Array.isArray(v)) return null;
     return v.find((item) => String(item.size) === String(selectedSize)) || v[0];
   }, [product, selectedColor, selectedSize]);
 
+  // 4. Stock calculation - FIXED TO PREVENT "SOLD OUT"
   const currentStock = useMemo(() => {
-    // Check specific variant stock first (from variants JSON)
+    // Priority 1: stock defined in the specific variant
     if (
       selectedVariant &&
-      selectedVariant.stock !== undefined &&
+      typeof selectedVariant.stock !== "undefined" &&
       selectedVariant.stock !== null
     ) {
       return Number(selectedVariant.stock);
     }
-    // Fallback to various possible database column names (Crucial for fix)
-    return Number(product?.stock_quantity ?? product?.stockQuantity ?? 10);
+    // Priority 2: global stock quantity from database (fallback for your current structure)
+    const globalStock = product?.stockQuantity ?? product?.stock_quantity;
+    if (typeof globalStock !== "undefined" && globalStock !== null) {
+      return Number(globalStock);
+    }
+    return 0;
   }, [product, selectedVariant]);
 
   const isCurrentSelectionSoldOut = currentStock <= 0;
 
-  // 4. Image Filtering Logic (Show only selected color images)
+  // 5. Image gallery logic
   const images = useMemo(() => {
     if (!product) return [];
-
-    // Priority 1: Images from the specifically selected color variants
     const colorEntries = product?.variants?.[selectedColor];
     if (Array.isArray(colorEntries) && colorEntries.length > 0) {
       const entryWithImages = colorEntries.find(
@@ -96,26 +99,20 @@ function ProductView({ product }) {
       );
       if (entryWithImages) return entryWithImages.images;
     }
-
-    // Priority 2: Filter main images array by color name
     if (Array.isArray(product?.images) && product.images.length > 0) {
       const filtered = product.images.filter((img) =>
         img.toLowerCase().includes(selectedColor.toLowerCase()),
       );
       if (filtered.length > 0) return filtered;
-
       return product.images.slice(0, 2);
     }
-
     return [product?.thumbnail].filter(Boolean);
-  }, [product, selectedColor]); // FIXED: Removed selectedVariant to clear the warning
+  }, [product, selectedColor]);
 
-  // 5. Add to Bag Action
   const handleAddToBag = useCallback(
     (e) => {
       if (e && e.preventDefault) e.preventDefault();
       if (isCurrentSelectionSoldOut) return;
-
       try {
         addToCart({
           product,
@@ -223,11 +220,9 @@ function ProductView({ product }) {
 export default function Product() {
   const { id } = useParams();
   const { product, loading } = useProduct(id);
-
   if (loading)
     return <div className="p-20 text-center font-ui">Loading...</div>;
   if (!product)
     return <div className="p-20 text-center font-ui">Product not found.</div>;
-
   return <ProductView key={product.id} product={product} />;
 }
