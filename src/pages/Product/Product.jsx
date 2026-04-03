@@ -24,9 +24,9 @@ import { useProduct } from "@/hooks/useProducts";
 import preventDragHandler from "@/utils/preventDrag";
 
 function ProductView({ product }) {
-  // DEBUG - padės pamatyti, ar duomenys ateina teisingi
+  // DEBUG - Helps verify if data arrives correctly
   useEffect(() => {
-    console.log("DEBUG - Produkto duomenys puslapyje:", product);
+    console.log("DEBUG - Product data in page:", product);
   }, [product]);
 
   const { t } = useLanguage();
@@ -39,7 +39,7 @@ function ProductView({ product }) {
   const [activeImgIndex, setActiveImgIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
 
-  // 1. Spalvų nustatymas
+  // 1. Color Setup
   const availableColors = useMemo(() => {
     const colors = Array.isArray(product?.colors) ? product.colors : [];
     return colors.length > 0 ? colors : Object.keys(product?.variants || {});
@@ -49,7 +49,7 @@ function ProductView({ product }) {
     availableColors[0] || "silver",
   );
 
-  // 2. Dydžių nustatymas pasirinktai spalvai
+  // 2. Sizes Setup for selected color
   const effectiveAvailableSizes = useMemo(() => {
     const v = product?.variants?.[selectedColor];
     if (Array.isArray(v)) {
@@ -62,7 +62,7 @@ function ProductView({ product }) {
     effectiveAvailableSizes[0] || null,
   );
 
-  // 3. Varianto ir sandėlio nustatymas
+  // 3. Variant and Stock determination
   const selectedVariant = useMemo(() => {
     const v = product?.variants?.[selectedColor];
     if (!Array.isArray(v)) return null;
@@ -78,23 +78,38 @@ function ProductView({ product }) {
 
   const isCurrentSelectionSoldOut = currentStock <= 0;
 
-  // 4. Nuotraukų galerija - RODOME TIK PASIRINKTOS SPALVOS NUOTRAUKAS
+  // 4. Image Gallery Logic
   const images = useMemo(() => {
-    // 1. Pirmiausia bandome imti nuotraukas iš konkretaus varianto (jei struktūra leidžia)
-    if (selectedVariant?.images?.length) {
+    // A. Priority: Images from the specifically selected variant (color + size)
+    if (selectedVariant?.images?.length > 0) {
       return selectedVariant.images;
     }
 
-    // 2. Jei variantas neturi savo images, bet turime bendrą variants objektą
-    const colorImages = product?.variants?.[selectedColor];
-    if (Array.isArray(colorImages)) {
-      // Jei tai nuotraukų masyvas tiesiogiai
-      if (typeof colorImages[0] === "string") return colorImages;
-      // Jei tai objektų masyvas (paimame nuotraukas iš pirmo pasitaikiusio varianto)
-      if (colorImages[0]?.images) return colorImages[0].images;
+    // B. Secondary: Images from any variant of the same color
+    const colorEntries = product?.variants?.[selectedColor];
+    if (Array.isArray(colorEntries) && colorEntries.length > 0) {
+      // Find first entry in that color that has images
+      const entryWithImages = colorEntries.find((e) => e.images?.length > 0);
+      if (entryWithImages) return entryWithImages.images;
+
+      // If the array is just strings (fallback for different DB structures)
+      if (typeof colorEntries[0] === "string") return colorEntries;
     }
 
-    // 3. Galutinis variantas (fallback)
+    // C. Third: General product images array (from DB images column)
+    if (Array.isArray(product?.images) && product.images.length > 0) {
+      // If we are in 'gold' mode, try to find images containing 'gold' in filename
+      if (selectedColor === "gold") {
+        const goldImages = product.images.filter((img) =>
+          img.toLowerCase().includes("gold"),
+        );
+        if (goldImages.length > 0) return goldImages;
+      }
+      // Otherwise return first two (usually the default color)
+      return product.images.slice(0, 2);
+    }
+
+    // D. Final Fallback: Thumbnail
     return [product?.thumbnail].filter(Boolean);
   }, [product, selectedColor, selectedVariant]);
 
@@ -160,10 +175,11 @@ function ProductView({ product }) {
           setSelectedSize={setSelectedSize}
           setSelectedColor={(color) => {
             setSelectedColor(color);
-            // Automatiškai parenkame pirmą prieinamą dydį naujai spalvai
-            const newSizes =
-              product?.variants?.[color]?.map((i) => String(i.size)) || [];
-            if (newSizes.length > 0) setSelectedSize(newSizes[0]);
+            const variantEntries = product?.variants?.[color];
+            if (Array.isArray(variantEntries)) {
+              const firstSize = variantEntries[0]?.size;
+              if (firstSize) setSelectedSize(String(firstSize));
+            }
           }}
           quantity={quantity}
           setQuantity={setQuantity}
@@ -205,9 +221,9 @@ export default function Product() {
   const { product, loading } = useProduct(id);
 
   if (loading)
-    return <div className="p-20 text-center font-ui">Kraunama...</div>;
+    return <div className="p-20 text-center font-ui">Loading...</div>;
   if (!product)
-    return <div className="p-20 text-center font-ui">Prekė nerasta.</div>;
+    return <div className="p-20 text-center font-ui">Product not found.</div>;
 
   return <ProductView product={product} />;
 }
