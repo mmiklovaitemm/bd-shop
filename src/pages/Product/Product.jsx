@@ -178,7 +178,9 @@ function ProductView({ product }) {
             setIsLightboxOpen(true);
           }}
         />
-
+        console.log("TEST - currentStock reiksme:", currentStock);
+        console.log("TEST - isCurrentSelectionSoldOut reiksme:",
+        isCurrentSelectionSoldOut);
         <ProductInfo
           product={product}
           selectedSize={selectedSize}
