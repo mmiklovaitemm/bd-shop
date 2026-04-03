@@ -9,7 +9,7 @@ import DetailsPanel from "@/pages/Product/components/DetailsPanel";
 import ProductInfo from "@/pages/Product/components/ProductInfo";
 import YouMayAlsoLike from "@/pages/Product/components/YouMayAlsoLike";
 import HowItWorksPanel from "@/pages/Product/components/HowItWorksPanel";
-import Loader from "@/components/ui/Loader"; // IMPORTUOJAME NAUJĄ LOADERĮ
+import Loader from "@/components/ui/Loader";
 import useAddToCart from "@/hooks/useAddToCart";
 import useBagDrawer from "@/store/useBagDrawer";
 import { useProduct } from "@/hooks/useProducts";
@@ -90,9 +90,10 @@ function ProductView({ product }) {
     [product, getSizesForColor],
   );
 
-  // 3. ACCURATE STOCK CALCULATION: Check specific selected color AND size
+  // 3. ACCURATE STOCK CALCULATION: Set fallback to 0 instead of 10
   const currentStock = useMemo(() => {
     if (!product?.variants || Object.keys(product.variants).length === 0) {
+      // If no variant data exists, we show 0 unless explicitly set in stockQuantity
       return Number(product?.stockQuantity ?? product?.stock_quantity ?? 0);
     }
     const variantData = product.variants[selectedColor];
@@ -112,7 +113,6 @@ function ProductView({ product }) {
     if (!product) return [];
     const colorVariants = product?.variants?.[selectedColor];
 
-    // First, check if the variant has its own images
     if (Array.isArray(colorVariants) && colorVariants.length > 0) {
       const variantWithImages = colorVariants.find(
         (v) => Array.isArray(v.images) && v.images.length > 0,
@@ -120,7 +120,6 @@ function ProductView({ product }) {
       if (variantWithImages) return variantWithImages.images;
     }
 
-    // If not, filter the general images array
     if (Array.isArray(product.images)) {
       const filtered = product.images.filter((img) => {
         const url = img.toLowerCase();
@@ -209,7 +208,6 @@ function ProductView({ product }) {
         product={product}
       />
 
-      {/* Render HowItWorksPanel only for specific category */}
       {product?.category === "personal" && (
         <HowItWorksPanel
           isOpen={isHowItWorksOpen}

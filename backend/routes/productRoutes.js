@@ -44,7 +44,6 @@ function normalizeFrontendAssetUrl(value) {
   return raw;
 }
 
-// --- SUTVARKYTA VARIANTŲ KŪRIMO LOGIKA ---
 function buildVariants({ variants = [], sizes = [], variantStock = {} }) {
   const cleanSizes = sizes.length ? sizes : ["one size"];
   const result = {};
@@ -57,6 +56,7 @@ function buildVariants({ variants = [], sizes = [], variantStock = {} }) {
 
     result[color] = cleanSizes.map((size) => {
       let stock = 0;
+
       if (variantStock[color] && variantStock[color][size] !== undefined) {
         stock = Number(variantStock[color][size]);
       } else if (
@@ -68,7 +68,7 @@ function buildVariants({ variants = [], sizes = [], variantStock = {} }) {
 
       return {
         size: String(size),
-        stock: Math.max(0, stock),
+        stock: Math.max(0, isNaN(stock) ? 0 : stock),
         images: normalizedImages,
       };
     });
@@ -92,9 +92,10 @@ function mapProductRow(row) {
   const details = safeJsonParse(row.details, {});
   const images = safeJsonParse(row.images, []);
 
-  const stockFromDb = Number(row.stock_quantity);
-  const totalStockQuantity = !isNaN(stockFromDb)
-    ? stockFromDb
+  const stockValueFromDb =
+    row.stock_quantity !== null ? Number(row.stock_quantity) : NaN;
+  const totalStockQuantity = !isNaN(stockValueFromDb)
+    ? stockValueFromDb
     : getTotalStockFromVariants(variants);
 
   return {
@@ -143,7 +144,6 @@ router.get("/:id", async (req, res) => {
 /** UPDATE */
 router.put("/:id", requireAdmin, async (req, res) => {
   try {
-    // IŠ BODY PASIIMAME TIK TUOS DUOMENIS, KURIŲ REIKIA SQL UŽKLAUSAI
     const {
       name,
       category,
