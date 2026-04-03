@@ -21,12 +21,10 @@ function getImagesFromVariantArray(variantArray) {
 
   const firstItem = variantArray[0];
 
-  // If the array contains simple strings (URLs)
   if (typeof firstItem === "string") {
     return variantArray.filter(Boolean);
   }
 
-  // If the array contains objects with structure like { stock, images: [] }
   if (isVariantObject(firstItem)) {
     const firstAvailableVariant =
       variantArray.find((item) => Number(item?.stock || 0) > 0) ||
@@ -46,7 +44,7 @@ export default function useProductCardMedia(product) {
     () => ({
       variants: {},
       colors: [],
-      images: [], // General product images array
+      images: [],
       thumbnail: "",
       image: null,
       name: "",
@@ -62,7 +60,6 @@ export default function useProductCardMedia(product) {
     const variants = safeProduct.variants || {};
     const colorsFromProduct = safeProduct.colors || [];
 
-    // Look for a color that has images assigned in the variants object
     const found = colorsFromProduct.find((color) => {
       const images = getImagesFromVariantArray(variants?.[color]);
       return images.length > 0;
@@ -70,7 +67,6 @@ export default function useProductCardMedia(product) {
 
     if (found) return found;
 
-    // If no match found in colors list, take the first key from variants object
     const variantKeys = Object.keys(variants);
     const firstKeyWithImages = variantKeys.find((key) => {
       const images = getImagesFromVariantArray(variants?.[key]);
@@ -79,13 +75,18 @@ export default function useProductCardMedia(product) {
 
     if (firstKeyWithImages) return firstKeyWithImages;
 
-    return "silver"; // Default fallback
+    return "silver";
   }, [safeProduct.colors, safeProduct.variants]);
 
   // 3. Determine Main and Hover images
   const { mainSrc, hoverSrc } = useMemo(() => {
     const variants = safeProduct.variants || {};
     const variantImages = getImagesFromVariantArray(variants?.[baseColor]);
+
+    // COLLECT ALL UNIQUE IMAGES FROM ALL VARIANTS AS FALLBACK
+    const allImagesFromVariants = Object.values(variants)
+      .flatMap((v) => getImagesFromVariantArray(v))
+      .filter(Boolean);
 
     const imageValue = safeProduct.image;
     const imageSrc =
@@ -95,15 +96,13 @@ export default function useProductCardMedia(product) {
           ? imageValue.src || imageValue.url || ""
           : "";
 
-    // MAIN IMAGE:
-    // Priority: Variant's first image > product thumbnail > main image object source
+    // Priority: Current variant image > thumbnail > main image src
     const main = variantImages[0] || safeProduct.thumbnail || imageSrc || "";
 
-    // HOVER IMAGE (The secondary view):
-    // Priority:
-    // 1. The second image from the specific variant
-    // 2. The second image from the general product "images" array
-    // 3. Otherwise null
+    // HOVER LOGIC:
+    // 1. Try second image of current variant
+    // 2. Try second image of general images array
+    // 3. Try ANY other image from any other variant (that isn't the main one)
     let hover = variantImages[1] || null;
 
     if (
@@ -111,12 +110,14 @@ export default function useProductCardMedia(product) {
       Array.isArray(safeProduct.images) &&
       safeProduct.images.length > 1
     ) {
-      // If the main image is the same as the first in the array, use the second one
-      // Otherwise, we can use the first one from the array as hover
       hover =
         main === safeProduct.images[0]
           ? safeProduct.images[1]
           : safeProduct.images[0];
+    }
+
+    if (!hover) {
+      hover = allImagesFromVariants.find((img) => img !== main) || null;
     }
 
     return { mainSrc: main, hoverSrc: hover };
@@ -124,7 +125,7 @@ export default function useProductCardMedia(product) {
     safeProduct.variants,
     safeProduct.thumbnail,
     safeProduct.image,
-    safeProduct.images, // Track general images array for hover fallback
+    safeProduct.images,
     baseColor,
   ]);
 

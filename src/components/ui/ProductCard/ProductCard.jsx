@@ -175,11 +175,11 @@ export default function ProductCard({
             </>
           )}
 
-          {safeProduct.isSoldOut && (
+          {/* {safeProduct.isSoldOut && (
             <div className="absolute left-4 top-4 z-[20] border border-black/70 bg-white/90 px-3 py-1 font-ui text-[10px] uppercase tracking-[0.12em]">
               {t.soldOut}
             </div>
-          )}
+          )} */}
 
           <div className="absolute inset-0 z-[25]">
             <ActionButtons
