@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import useLanguage from "@/context/useLanguage";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
@@ -15,6 +15,11 @@ import { useProduct } from "@/hooks/useProducts";
 import preventDragHandler from "@/utils/preventDrag";
 
 function ProductView({ product }) {
+  // --- GRĄŽINTAS DEBUG LOGAS ---
+  useEffect(() => {
+    console.log("DEBUG - Pilnas produkto objektas iš DB:", product);
+  }, [product]);
+
   const { t } = useLanguage();
   const { addToCart } = useAddToCart();
   const openBag = useBagDrawer((s) => s.open);
@@ -55,7 +60,7 @@ function ProductView({ product }) {
     return v.find((item) => String(item.size) === String(selectedSize)) || v[0];
   }, [product, selectedColor, selectedSize]);
 
-  // 4. --- GRIEŽTAS STOCK SKAIČIAVIMAS ---
+  // 4. --- PATOBULINTAS STOCK SKAIČIAVIMAS ---
   const currentStock = useMemo(() => {
     // A. Tikriname konkretų variantą
     if (
@@ -63,31 +68,30 @@ function ProductView({ product }) {
       typeof selectedVariant.stock !== "undefined" &&
       selectedVariant.stock !== null
     ) {
-      const vStock = Number(selectedVariant.stock);
-      if (!isNaN(vStock)) return vStock;
+      return Number(selectedVariant.stock);
     }
 
-    // B. Tikriname pagrindinį stockQuantity lauką (tavo 10 vnt)
-    const mainStock = product?.stockQuantity;
-    if (typeof mainStock !== "undefined" && mainStock !== null) {
-      return Number(mainStock);
+    // B. Tikriname stockQuantity (tavo atvejis)
+    if (typeof product?.stockQuantity !== "undefined") {
+      return Number(product.stockQuantity);
     }
 
-    // C. Tikriname stock_quantity (atsargai)
-    const altStock = product?.stock_quantity;
-    if (typeof altStock !== "undefined" && altStock !== null) {
-      return Number(altStock);
+    // C. Tikriname stock_quantity
+    if (typeof product?.stock_quantity !== "undefined") {
+      return Number(product.stock_quantity);
     }
 
-    // D. Jei isSoldOut: false, vadinasi prekių TURI BŪTI
-    if (product?.isSoldOut === false || product?.isSoldOut === 0) {
-      return 10; // Saugiklis
-    }
+    // D. Jei isSoldOut sako false, duodame 10
+    if (product?.isSoldOut === false) return 10;
 
     return 0;
   }, [product, selectedVariant]);
 
   const isCurrentSelectionSoldOut = currentStock <= 0;
+
+  // --- SEKLIAI ---
+  console.log("SEKLYS - currentStock yra:", currentStock);
+  console.log("SEKLYS - isSoldOut yra:", isCurrentSelectionSoldOut);
 
   // 5. Nuotraukos
   const images = useMemo(() => {
