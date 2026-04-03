@@ -1,34 +1,20 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
-
 import useLanguage from "@/context/useLanguage";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
-
-// Icons
 import backIcon from "@/assets/ui/product_page_back_icon.svg";
-
-// Components
 import ImageGallery from "@/pages/Product/components/ImageGallery";
 import Lightbox from "@/pages/Product/components/Lightbox";
 import DetailsPanel from "@/pages/Product/components/DetailsPanel";
 import ProductInfo from "@/pages/Product/components/ProductInfo";
 import YouMayAlsoLike from "@/pages/Product/components/YouMayAlsoLike";
 import HowItWorksPanel from "@/pages/Product/components/HowItWorksPanel";
-
-// Hooks
 import useAddToCart from "@/hooks/useAddToCart";
 import useBagDrawer from "@/store/useBagDrawer";
 import { useProduct } from "@/hooks/useProducts";
-
-// Utils
 import preventDragHandler from "@/utils/preventDrag";
 
 function ProductView({ product }) {
-  // DEBUG - verify data in console on load
-  useEffect(() => {
-    console.log("DEBUG - Product data loaded:", product);
-  }, [product]);
-
   const { t } = useLanguage();
   const { addToCart } = useAddToCart();
   const openBag = useBagDrawer((s) => s.open);
@@ -39,7 +25,6 @@ function ProductView({ product }) {
   const [activeImgIndex, setActiveImgIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
 
-  // 1. Setup available colors
   const availableColors = useMemo(() => {
     const colors = Array.isArray(product?.colors) ? product.colors : [];
     return colors.length > 0 ? colors : Object.keys(product?.variants || {});
@@ -49,10 +34,10 @@ function ProductView({ product }) {
     availableColors[0] || "silver",
   );
 
-  // 2. Setup sizes for the selected color
+  // DYDŽIŲ LOGIKA: Jei variantuose nėra stock, leidžiame rinktis visus produkto dydžius
   const effectiveAvailableSizes = useMemo(() => {
     const v = product?.variants?.[selectedColor];
-    if (Array.isArray(v) && v.length > 0 && typeof v[0] === "object") {
+    if (Array.isArray(v) && v.length > 0) {
       return v.map((item) => String(item.size || ""));
     }
     return Array.isArray(product?.sizes) ? product.sizes.map(String) : [];
@@ -62,16 +47,14 @@ function ProductView({ product }) {
     effectiveAvailableSizes[0] || null,
   );
 
-  // 3. Variant selection
   const selectedVariant = useMemo(() => {
     const v = product?.variants?.[selectedColor];
     if (!Array.isArray(v)) return null;
     return v.find((item) => String(item.size) === String(selectedSize)) || v[0];
   }, [product, selectedColor, selectedSize]);
 
-  // 4. Stock calculation - FIXED BASED ON YOUR CONSOLE LOG
+  // ATSARGŲ LOGIKA: Imame 10 iš stockQuantity, jei variante nėra stock
   const currentStock = useMemo(() => {
-    // A. First check if variant has stock defined
     if (
       selectedVariant &&
       selectedVariant.stock !== undefined &&
@@ -79,22 +62,12 @@ function ProductView({ product }) {
     ) {
       return Number(selectedVariant.stock);
     }
-
-    // B. If variant doesn't have stock, use the global property from your console
-    // In your screenshot, it is exactly 'stockQuantity'
-    const globalStock = product?.stockQuantity ?? product?.stock_quantity;
-
-    if (globalStock !== undefined && globalStock !== null) {
-      return Number(globalStock);
-    }
-
-    // C. Last resort fallback
-    return 0;
+    // Svarbu: tavo konsolėje matosi 'stockQuantity'
+    return Number(product?.stockQuantity ?? product?.stock_quantity ?? 0);
   }, [product, selectedVariant]);
 
   const isCurrentSelectionSoldOut = currentStock <= 0;
 
-  // 5. Image gallery logic
   const images = useMemo(() => {
     if (!product) return [];
     const colorEntries = product?.variants?.[selectedColor];
@@ -108,8 +81,7 @@ function ProductView({ product }) {
       const filtered = product.images.filter((img) =>
         img.toLowerCase().includes(selectedColor.toLowerCase()),
       );
-      if (filtered.length > 0) return filtered;
-      return product.images.slice(0, 2);
+      return filtered.length > 0 ? filtered : product.images.slice(0, 2);
     }
     return [product?.thumbnail].filter(Boolean);
   }, [product, selectedColor]);
@@ -117,34 +89,22 @@ function ProductView({ product }) {
   const handleAddToBag = useCallback(
     (e) => {
       if (e && e.preventDefault) e.preventDefault();
-
-      console.log("DEBUG - Click detected. Current stock:", currentStock);
-
-      if (isCurrentSelectionSoldOut) {
-        console.warn("DEBUG - Item is sold out, action blocked");
-        return;
-      }
-
-      try {
-        addToCart({
-          product,
-          productId: String(product.id),
-          name: product.name,
-          price: product.price,
-          color: String(selectedColor),
-          size: selectedSize ? String(selectedSize) : null,
-          quantity: Number(quantity),
-          image: images[0] || product?.thumbnail || "",
-        });
-        openBag();
-      } catch (err) {
-        console.error("DEBUG - Cart error:", err);
-      }
+      if (isCurrentSelectionSoldOut) return;
+      addToCart({
+        product,
+        productId: String(product.id),
+        name: product.name,
+        price: product.price,
+        color: String(selectedColor),
+        size: selectedSize ? String(selectedSize) : null,
+        quantity: Number(quantity),
+        image: images[0] || product?.thumbnail || "",
+      });
+      openBag();
     },
     [
       product,
       isCurrentSelectionSoldOut,
-      currentStock,
       selectedColor,
       selectedSize,
       quantity,
@@ -178,9 +138,10 @@ function ProductView({ product }) {
             setIsLightboxOpen(true);
           }}
         />
-        console.log("TEST - currentStock reiksme:", currentStock);
-        console.log("TEST - isCurrentSelectionSoldOut reiksme:",
-        isCurrentSelectionSoldOut);
+
+        {/* ČIA MATYSIME AR DUOMENYS TEISINGI */}
+        {console.log("DEBUG RENDER - currentStock:", currentStock)}
+
         <ProductInfo
           product={product}
           selectedSize={selectedSize}
@@ -235,11 +196,9 @@ function ProductView({ product }) {
 export default function Product() {
   const { id } = useParams();
   const { product, loading } = useProduct(id);
-
   if (loading)
     return <div className="p-20 text-center font-ui">Loading...</div>;
   if (!product)
     return <div className="p-20 text-center font-ui">Product not found.</div>;
-
   return <ProductView key={product.id} product={product} />;
 }
