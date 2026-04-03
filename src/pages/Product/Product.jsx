@@ -26,7 +26,7 @@ function ProductView({ product }) {
   const [activeImgIndex, setActiveImgIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
 
-  // 1. Prepare colors - determine which colors are available
+  // 1. Prepare colors
   const availableColors = useMemo(() => {
     const colors = Array.isArray(product?.colors) ? product.colors : [];
     return colors.length > 0 ? colors : Object.keys(product?.variants || {});
@@ -36,7 +36,7 @@ function ProductView({ product }) {
     availableColors[0] || "silver",
   );
 
-  // 2. Helper function to get sizes based on a specific color
+  // 2. Helper function to get sizes
   const getSizesForColor = useCallback(
     (color) => {
       const v = product?.variants?.[color];
@@ -49,13 +49,12 @@ function ProductView({ product }) {
     [product],
   );
 
-  // Sizes available for the currently selected color
   const effectiveAvailableSizes = useMemo(
     () => getSizesForColor(selectedColor),
     [selectedColor, getSizesForColor],
   );
 
-  // Initial size setup - automatically select the first available size with stock
+  // Initial size setup
   const [selectedSize, setSelectedSize] = useState(() => {
     const color = availableColors[0] || "silver";
     const v = product?.variants?.[color];
@@ -68,13 +67,12 @@ function ProductView({ product }) {
     return sizes.length > 0 ? sizes[0] : null;
   });
 
-  // COLOR CHANGE LOGIC: When color changes, immediately set the first available size for that color
+  // COLOR CHANGE LOGIC
   const handleColorChange = useCallback(
     (newColor) => {
       setSelectedColor(newColor);
       const variants = product?.variants?.[newColor];
       if (Array.isArray(variants) && variants.length > 0) {
-        // Find the first size in this color that has stock
         const firstWithStock = variants.find((v) => Number(v.stock) > 0);
         setSelectedSize(
           firstWithStock
@@ -82,7 +80,6 @@ function ProductView({ product }) {
             : String(variants[0].size),
         );
       } else {
-        // Fallback if variants structure is missing
         const newSizes = getSizesForColor(newColor);
         if (newSizes.length > 0) setSelectedSize(newSizes[0]);
       }
@@ -90,10 +87,9 @@ function ProductView({ product }) {
     [product, getSizesForColor],
   );
 
-  // 3. ACCURATE STOCK CALCULATION: Set fallback to 0 instead of 10
+  // 3. ACCURATE STOCK CALCULATION
   const currentStock = useMemo(() => {
     if (!product?.variants || Object.keys(product.variants).length === 0) {
-      // If no variant data exists, we show 0 unless explicitly set in stockQuantity
       return Number(product?.stockQuantity ?? product?.stock_quantity ?? 0);
     }
     const variantData = product.variants[selectedColor];
@@ -102,13 +98,13 @@ function ProductView({ product }) {
       (v) => String(v.size) === String(selectedSize),
     );
 
-    // If specific variant is found, return its stock, otherwise 0
     return selectedV ? Number(selectedV.stock) : 0;
   }, [product, selectedColor, selectedSize]);
 
+  // CRITICAL: This determines if the button is disabled
   const isCurrentSelectionSoldOut = currentStock <= 0;
 
-  // 4. Image filtering based on selected color
+  // 4. Image filtering
   const images = useMemo(() => {
     if (!product) return [];
     const colorVariants = product?.variants?.[selectedColor];
@@ -132,11 +128,15 @@ function ProductView({ product }) {
     return [product.thumbnail].filter(Boolean);
   }, [product, selectedColor]);
 
-  // Add to Bag handler
   const handleAddToBag = useCallback(
     (e) => {
       if (e && e.preventDefault) e.preventDefault();
-      if (isCurrentSelectionSoldOut) return;
+
+      if (isCurrentSelectionSoldOut || currentStock <= 0) {
+        console.error("Attempted to add out-of-stock item");
+        return;
+      }
+
       addToCart({
         product,
         productId: String(product.id),
@@ -152,6 +152,7 @@ function ProductView({ product }) {
     [
       product,
       isCurrentSelectionSoldOut,
+      currentStock,
       selectedColor,
       selectedSize,
       quantity,
@@ -192,6 +193,7 @@ function ProductView({ product }) {
           selectedColor={selectedColor}
           availableSizes={effectiveAvailableSizes}
           currentStock={currentStock}
+          isSoldOut={isCurrentSelectionSoldOut}
           setSelectedSize={setSelectedSize}
           setSelectedColor={handleColorChange}
           quantity={quantity}

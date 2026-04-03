@@ -57,8 +57,8 @@ const ProductInfo = memo(function ProductInfo({
   const { has, toggle } = useFavorites();
   const isWishlisted = has(product?.id);
 
-  // PAGRINDINIS TIKRINIMAS: Ar šiuo metu pasirinktas derinys (spalva + dydis) turi likutį
-  const isSoldOut = Number(currentStock) <= 0;
+  const stockNumber = isNaN(Number(currentStock)) ? 0 : Number(currentStock);
+  const isSoldOut = stockNumber <= 0;
 
   if (!product) return null;
 
@@ -71,7 +71,6 @@ const ProductInfo = memo(function ProductInfo({
         <p className="font-ui text-[16px] text-black/90">{product.price}</p>
       </div>
 
-      {/* DYDŽIŲ SELEKTORIUS */}
       <div className="mt-5">
         <p className="font-ui text-[13px] text-black/70">{t.size}:</p>
         <div className="mt-2 flex flex-wrap gap-2">
@@ -79,13 +78,13 @@ const ProductInfo = memo(function ProductInfo({
             const sText = String(size);
             const isActive = String(selectedSize) === sText;
 
-            // Tikriname kiekvieno dydžio prieinamumą pasirinktoje spalvoje
             const variantData = product.variants?.[selectedColor];
-            const vStock = Array.isArray(variantData)
+            const vStockRaw = Array.isArray(variantData)
               ? variantData.find((v) => String(v.size) === sText)?.stock
               : product.stockQuantity;
 
-            const isAvailable = Number(vStock || 0) > 0;
+            const vStockNum = isNaN(Number(vStockRaw)) ? 0 : Number(vStockRaw);
+            const isAvailable = vStockNum > 0;
 
             return (
               <button
@@ -108,7 +107,6 @@ const ProductInfo = memo(function ProductInfo({
         </div>
       </div>
 
-      {/* SPALVŲ SELEKTORIUS */}
       <div className="mt-5">
         <p className="font-ui text-[13px] text-black/70">{t.color}:</p>
         <div className="mt-2 flex flex-wrap gap-2">
@@ -135,7 +133,7 @@ const ProductInfo = memo(function ProductInfo({
 
       <div className="mt-3">
         <p className="font-ui text-[12px] text-black/55">
-          {isSoldOut ? "Sold Out" : `${t.inStock}: ${currentStock}`}
+          {isSoldOut ? "Sold Out" : `${t.inStock}: ${stockNumber}`}
         </p>
       </div>
 
@@ -144,7 +142,8 @@ const ProductInfo = memo(function ProductInfo({
         <div className="mt-2 inline-flex h-10 items-center border border-black/30">
           <button
             type="button"
-            className="w-10 h-full hover:bg-black/5"
+            className="w-10 h-full hover:bg-black/5 disabled:opacity-30"
+            disabled={isSoldOut}
             onClick={() => setQuantity((q) => Math.max(1, q - 1))}
           >
             –
@@ -152,7 +151,8 @@ const ProductInfo = memo(function ProductInfo({
           <div className="w-10 text-center font-ui text-[13px]">{quantity}</div>
           <button
             type="button"
-            className="w-10 h-full hover:bg-black/5"
+            className="w-10 h-full hover:bg-black/5 disabled:opacity-30"
+            disabled={isSoldOut}
             onClick={() => setQuantity((q) => q + 1)}
           >
             +
