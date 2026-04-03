@@ -9,10 +9,15 @@ const connectionUrl =
 
 const db = await mysql.createConnection(connectionUrl);
 
-console.log("Cleaning old products...");
+console.log("--- VALOMI SENI PRODUKTAI ---");
 await db.execute("DELETE FROM products");
 
 for (const p of PRODUCTS) {
+  const productImages =
+    p.images && p.images.length > 0
+      ? p.images
+      : Object.values(p.variants || {}).flat();
+
   await db.execute(
     `
     INSERT INTO products (
@@ -25,14 +30,14 @@ for (const p of PRODUCTS) {
       has_gem, 
       surface, 
       thumbnail, 
-      images,      -- PRIDĖTA: naujas stulpelis
-      colors, 
+      images, 
       variants, 
+      colors, 
       gemstones, 
       sizes, 
       details
     ) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) -- PRIDĖTAS vienas papildomas ?
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
     [
       p.id,
@@ -44,17 +49,17 @@ for (const p of PRODUCTS) {
       p.hasGem ? 1 : 0,
       p.surface,
       p.thumbnail,
-      JSON.stringify(p.images),
-      JSON.stringify(p.colors),
-      JSON.stringify(p.variants),
-      JSON.stringify(p.gemstones),
-      JSON.stringify(p.sizes),
-      JSON.stringify(p.details),
+      JSON.stringify(productImages),
+      JSON.stringify(p.variants || {}),
+      JSON.stringify(p.colors || []),
+      JSON.stringify(p.gemstones || []),
+      JSON.stringify(p.sizes || []),
+      JSON.stringify(p.details || {}),
     ],
   );
 
-  console.log("Inserted:", p.id);
+  console.log("Sėkmingai įkeltas:", p.id);
 }
 
 await db.end();
-console.log("DONE: All products imported with images!");
+console.log("--- A ŽINGSNIS BAIGTAS: DUOMENYS ATNAUJINTI ---");
