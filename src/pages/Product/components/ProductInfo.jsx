@@ -110,131 +110,152 @@ const ColorSelector = memo(
   },
 );
 
-const ProductInfo = memo(
-  ({
-    product,
-    selectedSize,
-    selectedColor,
-    availableSizes,
-    availableColors,
-    currentStock,
-    setSelectedSize,
-    setSelectedColor,
-    quantity,
-    setQuantity,
-    onAddToBag,
-    onOpenDetails,
-    onOpenHowItWorks,
-  }) => {
-    const { t } = useLanguage();
-    const { has, toggle } = useFavorites();
-    const isWishlisted = has(product?.id);
+const ProductInfo = memo(function ProductInfo({
+  product,
+  selectedSize,
+  selectedColor,
+  availableSizes = [],
+  availableColors = [],
+  currentStock = 0,
+  setSelectedSize,
+  setSelectedColor,
+  quantity,
+  setQuantity,
+  onAddToBag,
+  onOpenDetails,
+  onOpenHowItWorks,
+}) {
+  const { t } = useLanguage();
+  const { has, toggle } = useFavorites();
+  const isWishlisted = has(product?.id);
 
-    // GRIEŽTA LOGIKA: Jei currentStock yra 10 (kaip tavo konsolėje), isSoldOut privalo būti FALSE
-    const isSoldOut = Number(currentStock) <= 0;
+  // NAUJA GRIEŽTA LOGIKA:
+  // 1. Jei currentStock yra 0, bet stockQuantity yra 10 -> isSoldOut turi būti FALSE.
+  // 2. Jei bent vienas iš jų teigiamas -> leidžiame pirkti.
+  const totalStock =
+    Number(currentStock) || Number(product?.stockQuantity) || 0;
+  const isSoldOut = totalStock <= 0;
 
-    if (!product) return null;
+  // DEBUG: matysi, ką gauna mygtukas
+  console.log("MYGTUKO PATIKRA:", { currentStock, totalStock, isSoldOut });
 
-    return (
-      <div className="md:pt-1">
-        <div className="mt-5 flex items-end justify-between gap-4 md:mt-0">
-          <h1 className="font-display text-[28px] font-medium leading-none">
-            {product.name}
-          </h1>
-          <p className="font-ui text-[16px] text-black/90">{product.price}</p>
-        </div>
+  if (!product) return null;
 
-        <div className="mt-5">
-          <p className="font-ui text-[13px] text-black/70">{t.size}:</p>
-          <SizeSelector
-            sizes={product.sizes}
-            availableSizes={availableSizes}
-            selectedSize={selectedSize}
-            onSelectSize={setSelectedSize}
-          />
-        </div>
+  return (
+    <div className="md:pt-1">
+      <div className="mt-5 flex items-end justify-between gap-4 md:mt-0">
+        <h1 className="font-display text-[28px] font-medium leading-none">
+          {product.name}
+        </h1>
+        <p className="font-ui text-[16px] text-black/90">{product.price}</p>
+      </div>
 
-        <div className="mt-5">
-          <p className="font-ui text-[13px] text-black/70">{t.color}:</p>
-          <ColorSelector
-            colors={product.colors}
-            availableColors={availableColors}
-            selectedColor={selectedColor}
-            onSelectColor={setSelectedColor}
-          />
-        </div>
+      <div className="mt-5">
+        <p className="font-ui text-[13px] text-black/70">{t.size}:</p>
+        <SizeSelector
+          sizes={product.sizes}
+          availableSizes={availableSizes}
+          selectedSize={selectedSize}
+          onSelectSize={setSelectedSize}
+        />
+      </div>
 
-        <div className="mt-3">
-          <p className="font-ui text-[12px] text-black/55">
-            {isSoldOut
-              ? t.selectedVariantSoldOut
-              : `${t.inStock}: ${currentStock}`}
-          </p>
-        </div>
+      <div className="mt-5">
+        <p className="font-ui text-[13px] text-black/70">{t.color}:</p>
+        <ColorSelector
+          colors={product.colors}
+          availableColors={availableColors}
+          selectedColor={selectedColor}
+          onSelectColor={setSelectedColor}
+        />
+      </div>
 
-        <div className="mt-5">
-          <p className="font-ui text-[13px] text-black/70">{t.quantity}:</p>
-          <div className="mt-2 inline-flex h-10 items-center border border-black/30">
-            <button
-              type="button"
-              className="w-10 h-full hover:bg-black/5"
-              onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-            >
-              –
-            </button>
-            <div className="w-10 text-center font-ui text-[13px]">
-              {quantity}
-            </div>
-            <button
-              type="button"
-              className="w-10 h-full hover:bg-black/5"
-              onClick={() => setQuantity((q) => q + 1)}
-            >
-              +
-            </button>
-          </div>
-        </div>
+      <div className="mt-3">
+        <p className="font-ui text-[12px] text-black/55">
+          {isSoldOut
+            ? t.selectedVariantSoldOut
+            : `${t.inStock}: ${currentStock}`}
+        </p>
+      </div>
 
-        <div className="mt-6 flex items-stretch gap-2">
-          <div className="flex-1">
-            {isSoldOut ? (
-              <button
-                disabled
-                className="h-12 w-full border border-black/10 bg-black/5 text-black/40 uppercase text-[13px] cursor-not-allowed"
-              >
-                {t.soldOut}
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={onAddToBag}
-                className="flex h-12 w-full items-center justify-center gap-3 bg-black text-white uppercase text-[13px] tracking-widest transition-transform hover:scale-[1.01]"
-              >
-                <img src={bagIcon} alt="" className="h-4 w-4 invert" />
-                {t.addToBag}
-              </button>
-            )}
-          </div>
+      <div className="mt-5">
+        <p className="font-ui text-[13px] text-black/70">{t.quantity}:</p>
+        <div className="mt-2 inline-flex h-10 items-center border border-black/30">
           <button
-            onClick={() => toggle(product.id)}
-            className="flex h-12 w-12 items-center justify-center border border-black/20"
+            type="button"
+            className="w-10 h-full hover:bg-black/5"
+            onClick={() => setQuantity((q) => Math.max(1, q - 1))}
           >
-            <FiHeart
-              className={cn(
-                "h-5 w-5",
-                isWishlisted ? "fill-red-600 text-red-600" : "text-black/30",
-              )}
-            />
+            –
+          </button>
+          <div className="w-10 text-center font-ui text-[13px]">{quantity}</div>
+          <button
+            type="button"
+            className="w-10 h-full hover:bg-black/5"
+            onClick={() => setQuantity((q) => q + 1)}
+          >
+            +
           </button>
         </div>
+      </div>
 
+      <div className="mt-6 flex items-stretch gap-2">
+        <div className="flex-1">
+          {isSoldOut ? (
+            <button
+              disabled
+              className="h-12 w-full border border-black/10 bg-black/5 text-black/40 uppercase text-[13px] cursor-not-allowed"
+            >
+              {t.soldOut}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onAddToBag}
+              className="flex h-12 w-full items-center justify-center gap-3 bg-black text-white uppercase text-[13px] tracking-widest transition-transform hover:scale-[1.01]"
+            >
+              <img src={bagIcon} alt="" className="h-4 w-4 invert" />
+              {t.addToBag}
+            </button>
+          )}
+        </div>
+        <button
+          onClick={() => toggle(product.id)}
+          className="flex h-12 w-12 items-center justify-center border border-black/20"
+        >
+          <FiHeart
+            className={cn(
+              "h-5 w-5",
+              isWishlisted ? "fill-red-600 text-red-600" : "text-black/30",
+            )}
+          />
+        </button>
+      </div>
+
+      <div
+        className="mt-6 bg-black/5 px-4 py-3 cursor-pointer group"
+        onClick={onOpenDetails}
+      >
+        <div className="flex items-center justify-between font-ui text-[13px]">
+          <span className="underline underline-offset-4">
+            {t.dimensionsAndDetails}
+          </span>
+          <img
+            src={arrowUpRightIcon}
+            alt=""
+            className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+          />
+        </div>
+      </div>
+
+      {product.category === "personal" && (
         <div
-          className="mt-6 bg-black/5 px-4 py-3 cursor-pointer group"
-          onClick={onOpenDetails}
+          className="mt-2 bg-black/5 px-4 py-3 cursor-pointer group"
+          onClick={onOpenHowItWorks}
         >
           <div className="flex items-center justify-between font-ui text-[13px]">
             <span className="underline underline-offset-4">
-              {t.dimensionsAndDetails}
+              {t.personalJewelleryHowItWorks}
             </span>
             <img
               src={arrowUpRightIcon}
@@ -243,28 +264,10 @@ const ProductInfo = memo(
             />
           </div>
         </div>
-
-        {product.category === "personal" && (
-          <div
-            className="mt-2 bg-black/5 px-4 py-3 cursor-pointer group"
-            onClick={onOpenHowItWorks}
-          >
-            <div className="flex items-center justify-between font-ui text-[13px]">
-              <span className="underline underline-offset-4">
-                {t.personalJewelleryHowItWorks}
-              </span>
-              <img
-                src={arrowUpRightIcon}
-                alt=""
-                className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-              />
-            </div>
-          </div>
-        )}
-        <ProductBenefits />
-      </div>
-    );
-  },
-);
+      )}
+      <ProductBenefits />
+    </div>
+  );
+});
 
 export default ProductInfo;

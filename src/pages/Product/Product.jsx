@@ -41,12 +41,17 @@ function ProductView({ product }) {
   );
 
   // 2. Dydžiai
+  // Sutvarkyta dydžių logika: viską verčiame į String, kad sutaptų tipai
   const effectiveAvailableSizes = useMemo(() => {
     const v = product?.variants?.[selectedColor];
     if (Array.isArray(v) && v.length > 0) {
-      return v.map((item) => String(item.size || ""));
+      // Paimame dydžius iš variantų ir paverčiame į tekstą
+      return v.map((item) => String(item.size || item));
     }
-    return Array.isArray(product?.sizes) ? product.sizes.map(String) : [];
+    // Jei variantų nėra, paimame iš pagrindinio sizes masyvo ir paverčiame į tekstą
+    return Array.isArray(product?.sizes)
+      ? product.sizes.map((s) => String(s))
+      : [];
   }, [product, selectedColor]);
 
   const [selectedSize, setSelectedSize] = useState(
