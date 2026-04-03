@@ -9,13 +9,38 @@ const getUrl = (path) => {
   return `${base}${cleanPath}`;
 };
 
+function ensureParsed(item) {
+  if (!item) return item;
+
+  const fieldsToParse = [
+    "variants",
+    "colors",
+    "sizes",
+    "images",
+    "details",
+    "gemstones",
+  ];
+  const newItem = { ...item };
+
+  fieldsToParse.forEach((field) => {
+    if (typeof newItem[field] === "string") {
+      try {
+        newItem[field] = JSON.parse(newItem[field]);
+      } catch (e) {
+        console.warn(`Nepavyko suvirškinti ${field} lauko:`, e);
+      }
+    }
+  });
+
+  return newItem;
+}
+
 export function useProducts() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const controller = new AbortController();
-
     const url = getUrl("/products?view=listing");
 
     fetch(url, {
@@ -32,7 +57,7 @@ export function useProducts() {
               ? data.data
               : [];
 
-        setProducts(list);
+        setProducts(list.map(ensureParsed));
         setLoading(false);
       })
       .catch((err) => {
@@ -70,8 +95,8 @@ export function useProduct(id) {
     fetch(url, { signal: controller.signal })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        const p = data?.product ?? data?.data ?? data ?? null;
-        setProduct(p);
+        const rawP = data?.product ?? data?.data ?? data ?? null;
+        setProduct(rawP ? ensureParsed(rawP) : null);
         setLoading(false);
       })
       .catch((err) => {
