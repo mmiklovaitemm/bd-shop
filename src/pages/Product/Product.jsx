@@ -25,7 +25,7 @@ function ProductView({ product }) {
   const [activeImgIndex, setActiveImgIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
 
-  // 1. Spalvų paruošimas
+  // 1. Spalvų paruošimas - nustatome, kokios spalvos yra prieinamos
   const availableColors = useMemo(() => {
     const colors = Array.isArray(product?.colors) ? product.colors : [];
     return colors.length > 0 ? colors : Object.keys(product?.variants || {});
@@ -35,33 +35,32 @@ function ProductView({ product }) {
     availableColors[0] || "silver",
   );
 
-  // 2. Pagalbinė funkcija dydžiams gauti pagal spalvą
+  // 2. Pagalbinė funkcija dydžiams gauti pagal konkrečią spalvą
   const getSizesForColor = useCallback(
     (color) => {
       const v = product?.variants?.[color];
-      if (Array.isArray(v) && v.length > 0) {
+      if (Array.isArray(v) && v.length > 0)
         return v.map((item) => String(item.size));
-      }
-      if (Array.isArray(product?.sizes)) {
+      if (Array.isArray(product?.sizes))
         return product.sizes.map((s) => String(s));
-      }
       return [];
     },
     [product],
   );
 
+  // Dydžiai, kurie prieinami šiuo metu pasirinktai spalvai
   const effectiveAvailableSizes = useMemo(
     () => getSizesForColor(selectedColor),
     [selectedColor, getSizesForColor],
   );
 
-  // Pradinio dydžio nustatymas
+  // Pradinis dydis - automatiškai parenkamas pirmas prieinamas
   const [selectedSize, setSelectedSize] = useState(() => {
     const sizes = getSizesForColor(availableColors[0] || "silver");
     return sizes.length > 0 ? sizes[0] : null;
   });
 
-  // SPALVOS KEITIMO FUNKCIJA (Čia saugiai atnaujiname ir dydį)
+  // SPALVOS KEITIMO LOGIKA: kai keičiame spalvą, iškart nustatome ir pirmą tos spalvos dydį
   const handleColorChange = useCallback(
     (newColor) => {
       setSelectedColor(newColor);
@@ -73,7 +72,7 @@ function ProductView({ product }) {
     [getSizesForColor],
   );
 
-  // 3. LIKUČIO SKAIČIAVIMAS
+  // 3. TIKSLUS LIKUČIO SKAIČIAVIMAS: žiūrime į pasirinktą spalvą IR dydį
   const currentStock = useMemo(() => {
     if (!product?.variants || Object.keys(product.variants).length === 0) {
       return Number(product?.stockQuantity ?? product?.stock_quantity ?? 0);
@@ -85,15 +84,19 @@ function ProductView({ product }) {
     const selectedV = variantData.find(
       (v) => String(v.size) === String(selectedSize),
     );
+
+    // Jei radome konkretų variantą, imame jo stock, kitaip 0
     return selectedV ? Number(selectedV.stock) : 0;
   }, [product, selectedColor, selectedSize]);
 
   const isCurrentSelectionSoldOut = currentStock <= 0;
 
-  // 4. Nuotraukų filtravimas
+  // 4. Nuotraukų filtravimas pagal spalvą
   const images = useMemo(() => {
     if (!product) return [];
     const colorVariants = product?.variants?.[selectedColor];
+
+    // Pirmiausia tikriname, ar variantas turi savo nuotraukas
     if (Array.isArray(colorVariants) && colorVariants.length > 0) {
       const variantWithImages = colorVariants.find(
         (v) => Array.isArray(v.images) && v.images.length > 0,
@@ -101,7 +104,8 @@ function ProductView({ product }) {
       if (variantWithImages) return variantWithImages.images;
     }
 
-    if (Array.isArray(product.images) && product.images.length > 0) {
+    // Jei ne, filtruojame bendrą nuotraukų masyvą
+    if (Array.isArray(product.images)) {
       const filtered = product.images.filter((img) => {
         const url = img.toLowerCase();
         const color = selectedColor.toLowerCase();
@@ -113,11 +117,11 @@ function ProductView({ product }) {
     return [product.thumbnail].filter(Boolean);
   }, [product, selectedColor]);
 
+  // Krepšelio funkcija
   const handleAddToBag = useCallback(
     (e) => {
       if (e && e.preventDefault) e.preventDefault();
       if (isCurrentSelectionSoldOut) return;
-
       addToCart({
         product,
         productId: String(product.id),
@@ -172,7 +176,6 @@ function ProductView({ product }) {
           selectedSize={selectedSize}
           selectedColor={selectedColor}
           availableSizes={effectiveAvailableSizes}
-          availableColors={availableColors}
           currentStock={currentStock}
           setSelectedSize={setSelectedSize}
           setSelectedColor={handleColorChange}
@@ -188,12 +191,14 @@ function ProductView({ product }) {
         onClose={() => setIsDetailsOpen(false)}
         product={product}
       />
+
       {product?.category === "personal" && (
         <HowItWorksPanel
           isOpen={isHowItWorksOpen}
           onClose={() => setIsHowItWorksOpen(false)}
         />
       )}
+
       <Lightbox
         isOpen={isLightboxOpen}
         onClose={() => setIsLightboxOpen(false)}
@@ -201,6 +206,7 @@ function ProductView({ product }) {
         activeImgIndex={activeImgIndex}
         setActiveImgIndex={setActiveImgIndex}
       />
+
       <FullWidthDivider />
       <YouMayAlsoLike currentProduct={product} />
     </main>
@@ -210,9 +216,11 @@ function ProductView({ product }) {
 export default function Product() {
   const { id } = useParams();
   const { product, loading } = useProduct(id);
+
   if (loading)
     return <div className="p-20 text-center font-ui">Loading...</div>;
   if (!product)
     return <div className="p-20 text-center font-ui">Product not found.</div>;
+
   return <ProductView key={product.id} product={product} />;
 }

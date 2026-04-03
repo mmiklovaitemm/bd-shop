@@ -45,8 +45,7 @@ const ProductInfo = memo(function ProductInfo({
   product,
   selectedSize,
   selectedColor,
-  availableSizes = [],
-  currentStock = 0,
+  currentStock,
   setSelectedSize,
   setSelectedColor,
   quantity,
@@ -58,10 +57,8 @@ const ProductInfo = memo(function ProductInfo({
   const { has, toggle } = useFavorites();
   const isWishlisted = has(product?.id);
 
-  // GRIEŽTAS TIKRINIMAS: Naudojame bendrą likutį (10), jei varianto stock yra 0
-  const totalStock =
-    Number(currentStock) || Number(product?.stockQuantity) || 0;
-  const isSoldOut = totalStock <= 0;
+  // PAGRINDINIS TIKRINIMAS: Ar šiuo metu pasirinktas derinys (spalva + dydis) turi likutį
+  const isSoldOut = Number(currentStock) <= 0;
 
   if (!product) return null;
 
@@ -82,9 +79,13 @@ const ProductInfo = memo(function ProductInfo({
             const sText = String(size);
             const isActive = String(selectedSize) === sText;
 
-            // Jei turime stock (pvz. 10), visi produkto dydžiai turi būti pasiekiami
-            const isAvailable =
-              availableSizes.map(String).includes(sText) || totalStock > 0;
+            // Tikriname kiekvieno dydžio prieinamumą pasirinktoje spalvoje
+            const variantData = product.variants?.[selectedColor];
+            const vStock = Array.isArray(variantData)
+              ? variantData.find((v) => String(v.size) === sText)?.stock
+              : product.stockQuantity;
+
+            const isAvailable = Number(vStock || 0) > 0;
 
             return (
               <button
@@ -97,7 +98,7 @@ const ProductInfo = memo(function ProductInfo({
                   isActive
                     ? "bg-black text-white border-black"
                     : "bg-white text-black border-black/40 hover:bg-black/5",
-                  !isAvailable && "opacity-30 cursor-not-allowed",
+                  !isAvailable && "opacity-20 cursor-not-allowed bg-black/5",
                 )}
               >
                 {size}
@@ -134,7 +135,7 @@ const ProductInfo = memo(function ProductInfo({
 
       <div className="mt-3">
         <p className="font-ui text-[12px] text-black/55">
-          {isSoldOut ? t.selectedVariantSoldOut : `${t.inStock}: ${totalStock}`}
+          {isSoldOut ? "Sold Out" : `${t.inStock}: ${currentStock}`}
         </p>
       </div>
 
@@ -166,7 +167,7 @@ const ProductInfo = memo(function ProductInfo({
               disabled
               className="h-12 w-full border border-black/10 bg-black/5 text-black/40 uppercase text-[13px] cursor-not-allowed"
             >
-              {t.soldOut}
+              Sold Out
             </button>
           ) : (
             <button
