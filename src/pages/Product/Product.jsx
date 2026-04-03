@@ -9,6 +9,7 @@ import DetailsPanel from "@/pages/Product/components/DetailsPanel";
 import ProductInfo from "@/pages/Product/components/ProductInfo";
 import YouMayAlsoLike from "@/pages/Product/components/YouMayAlsoLike";
 import HowItWorksPanel from "@/pages/Product/components/HowItWorksPanel";
+import Loader from "@/components/ui/Loader"; // IMPORTUOJAME NAUJĄ LOADERĮ
 import useAddToCart from "@/hooks/useAddToCart";
 import useBagDrawer from "@/store/useBagDrawer";
 import { useProduct } from "@/hooks/useProducts";
@@ -232,9 +233,21 @@ function ProductView({ product }) {
 export default function Product() {
   const { id } = useParams();
   const { product, loading } = useProduct(id);
-  if (loading)
-    return <div className="p-20 text-center font-ui">Loading...</div>;
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[60vh] w-full items-center justify-center">
+        <Loader className="h-12 w-12" />
+      </div>
+    );
+  }
+
   if (!product)
-    return <div className="p-20 text-center font-ui">Product not found.</div>;
+    return (
+      <div className="p-20 text-center font-ui text-black/50">
+        Product not found.
+      </div>
+    );
+
   return <ProductView key={product.id} product={product} />;
 }

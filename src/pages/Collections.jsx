@@ -11,11 +11,11 @@ import AboutStudioSection from "@/components/ui/AboutStudioSection";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 import ProductsToolbar from "@/components/sections/ProductsToolbar";
 import ProductsFilterPanel from "@/components/sections/ProductsFilterPanel";
-import PageTitle from "@/components/ui/PageTitle"; // Importuojame suvienodintą antraštę
+import PageTitle from "@/components/ui/PageTitle";
+import Loader from "@/components/ui/Loader"; // IMPORTUOJAME NAUJĄ LOADERĮ
 import { Reveal } from "@/components/sections/Reveal";
 import { useProducts } from "@/hooks/useProducts";
 
-// --- Pagalbinės funkcijos (filtrai) lieka nepakeistos ---
 function hasGemValue(product) {
   return product?.hasGem === true;
 }
@@ -214,7 +214,6 @@ export default function Collections() {
     return list;
   }, [productsInCategory, effectivePriceRange, selectedMaterial]);
 
-  // --- Filter Options with Counts ---
   const materialOptions = useMemo(() => {
     const counts = {};
     productsInCategory
@@ -387,6 +386,7 @@ export default function Collections() {
       },
       { replace: true },
     );
+
   const handleChangeCategory = (n) => {
     handleClearAll();
     setSearchParams(
@@ -507,7 +507,9 @@ export default function Collections() {
 
           <div>
             {loading ? (
-              <div className="py-10 text-center text-black/70">{t.loading}</div>
+              <div className="flex min-h-[400px] items-center justify-center">
+                <Loader className="h-12 w-12" />
+              </div>
             ) : isEmpty ? (
               <div className="py-10 text-center text-black/70">
                 {t.noProductsFound}

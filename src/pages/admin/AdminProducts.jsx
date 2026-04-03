@@ -8,6 +8,7 @@ import AdminProductsTable from "@/pages/admin/components/AdminProductsTable";
 import AdminProductDeleteModal from "@/pages/admin/components/AdminProductDeleteModal";
 import AdminProductBulkDeleteModal from "@/pages/admin/components/AdminProductBulkDeleteModal";
 import AdminProductEditModal from "@/pages/admin/components/AdminProductEditModal";
+import Loader from "@/components/ui/Loader"; // IMPORTUOJAME LOADERĮ
 
 import { getStockBadge } from "@/pages/admin/helpers/productHelpers";
 
@@ -345,7 +346,9 @@ export default function AdminProducts() {
         )}
 
         {loading ? (
-          <p className="mt-6 font-ui text-sm text-black/60">Loading...</p>
+          <div className="flex min-h-[400px] w-full items-center justify-center">
+            <Loader className="h-12 w-12" />
+          </div>
         ) : error ? (
           <div className="mt-6 border border-red-600 bg-red-50 px-4 py-3 font-ui text-sm text-red-700">
             {error}
