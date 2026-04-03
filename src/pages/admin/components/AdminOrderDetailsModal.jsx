@@ -1,5 +1,6 @@
 import StatusPill from "@/pages/account/StatusPill";
 import { getDeliveryLabel } from "@/pages/admin/helpers/orderHelpers";
+import Loader from "@/components/ui/Loader"; // Pridėtas loaderis
 
 export default function AdminOrderDetailsModal({
   order,
@@ -49,7 +50,7 @@ export default function AdminOrderDetailsModal({
 
           <button
             type="button"
-            className="border border-black bg-white px-3 py-2"
+            className="border border-black bg-white px-3 py-2 hover:bg-black hover:text-white transition-colors"
             onClick={onClose}
           >
             Close
@@ -58,9 +59,13 @@ export default function AdminOrderDetailsModal({
 
         <div className="grid grid-cols-1 gap-5 p-4 font-ui text-sm md:grid-cols-2 md:p-6 xl:grid-cols-3">
           <div>
-            <p className="font-semibold">Customer</p>
+            <p className="font-semibold uppercase text-[11px] tracking-wider text-black/40">
+              Customer
+            </p>
             <div className="mt-2 space-y-1 text-black/70">
-              <p>{order.contact_email || "-"}</p>
+              <p className="font-medium text-black">
+                {order.contact_email || "-"}
+              </p>
               <p>
                 {[order.ship_first_name, order.ship_last_name]
                   .filter(Boolean)
@@ -82,7 +87,9 @@ export default function AdminOrderDetailsModal({
           </div>
 
           <div>
-            <p className="font-semibold">Delivery</p>
+            <p className="font-semibold uppercase text-[11px] tracking-wider text-black/40">
+              Delivery
+            </p>
             <div className="mt-2 space-y-1 text-black/70">
               <p>Type: {deliveryTypeLabel}</p>
 
@@ -104,45 +111,58 @@ export default function AdminOrderDetailsModal({
               <p>
                 Fee: €{(Number(order.delivery_fee_cents || 0) / 100).toFixed(2)}
               </p>
-              <p>Total: €{(Number(order.total_cents || 0) / 100).toFixed(2)}</p>
+              <p className="font-medium text-black">
+                Total: €{(Number(order.total_cents || 0) / 100).toFixed(2)}
+              </p>
             </div>
           </div>
 
           <div>
-            <p className="font-semibold">Status</p>
+            <p className="font-semibold uppercase text-[11px] tracking-wider text-black/40">
+              Status Control
+            </p>
             <div className="mt-2 space-y-3">
               <StatusPill status={order.status || "Pending"} />
 
-              <select
-                className="border border-black bg-white px-3 py-2 disabled:opacity-60"
-                disabled={savingId === order.id || currentStatus === "Canceled"}
-                value={currentStatus}
-                onChange={(e) => {
-                  onStatusChange(order.id, e.target.value);
-                }}
-              >
-                {availableStatusOptions.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  className="w-full border border-black bg-white px-3 py-2 outline-none disabled:opacity-60"
+                  disabled={
+                    savingId === order.id || currentStatus === "Canceled"
+                  }
+                  value={currentStatus}
+                  onChange={(e) => {
+                    onStatusChange(order.id, e.target.value);
+                  }}
+                >
+                  {availableStatusOptions.map((status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
+                  ))}
+                </select>
 
-              {savingId === order.id ? (
-                <p className="text-xs text-black/50">Saving...</p>
-              ) : null}
+                {savingId === order.id && (
+                  <div className="absolute right-10 top-1/2 -translate-y-1/2">
+                    <Loader className="h-4 w-4" />
+                  </div>
+                )}
+              </div>
 
-              {currentStatus === "Canceled" ? (
-                <p className="text-xs text-red-600">
-                  This order is canceled. Stock has already been restored.
+              {currentStatus === "Canceled" && (
+                <p className="text-[11px] leading-tight text-red-600">
+                  This order is canceled. Stock has already been restored and
+                  cannot be reopened.
                 </p>
-              ) : null}
+              )}
             </div>
           </div>
         </div>
 
         <div className="border-t border-black px-4 py-4 md:px-6 md:py-6">
-          <p className="font-ui text-sm font-semibold">Products</p>
+          <p className="font-semibold uppercase text-[11px] tracking-wider text-black/40">
+            Order Items
+          </p>
 
           <div className="mt-4 grid gap-3">
             {(order.items || []).map((item) => (
@@ -150,8 +170,8 @@ export default function AdminOrderDetailsModal({
                 key={item.id}
                 className="border border-black/10 bg-black/5 px-4 py-4"
               >
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-[72px_1fr]">
-                  <div className="mx-auto h-[72px] w-[72px] overflow-hidden bg-white sm:mx-0">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-[72px_1fr]">
+                  <div className="mx-auto h-[72px] w-[72px] overflow-hidden bg-white sm:mx-0 border border-black/5">
                     {item.image_url ? (
                       <img
                         src={item.image_url}
@@ -160,7 +180,7 @@ export default function AdminOrderDetailsModal({
                         loading="lazy"
                       />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center text-[11px] text-black/40">
+                      <div className="flex h-full w-full items-center justify-center text-[11px] text-black/40 italic">
                         No image
                       </div>
                     )}
@@ -171,20 +191,37 @@ export default function AdminOrderDetailsModal({
                       <p className="font-medium text-black">
                         {item.product_name}
                       </p>
-                      <p>€{(Number(item.price_cents || 0) / 100).toFixed(2)}</p>
+                      <p className="font-medium">
+                        €{(Number(item.price_cents || 0) / 100).toFixed(2)}
+                      </p>
                     </div>
 
-                    <div className="mt-2 space-y-1 text-black/70">
-                      <p>Qty: {item.quantity || 1}</p>
-                      <p>Color: {item.color || "-"}</p>
-                      <p>Size: {item.size || "-"}</p>
+                    <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-[13px] text-black/70">
+                      <p>
+                        Quantity:{" "}
+                        <span className="text-black">{item.quantity || 1}</span>
+                      </p>
+                      <p>
+                        Color:{" "}
+                        <span className="text-black capitalize">
+                          {item.color || "-"}
+                        </span>
+                      </p>
+                      <p>
+                        Size:{" "}
+                        <span className="text-black uppercase">
+                          {item.size || "-"}
+                        </span>
+                      </p>
                       <p>
                         Service:{" "}
-                        {item.service_option === "shipping"
-                          ? "Shipping kit (+15€)"
-                          : item.service_option === "in_store"
-                            ? "In-store"
-                            : "-"}
+                        <span className="text-black">
+                          {item.service_option === "shipping"
+                            ? "Shipping kit (+15€)"
+                            : item.service_option === "in_store"
+                              ? "In-store"
+                              : "Standard"}
+                        </span>
                       </p>
                     </div>
                   </div>

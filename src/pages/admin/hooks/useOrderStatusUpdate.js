@@ -1,9 +1,11 @@
 import { useState } from "react";
 
-// Užtikriname, kad API_ORIGIN neturėtų pasvirojo brūkšnio gale
-const API_URL = (
-  import.meta.env.VITE_API_URL || "https://bd-shop-gfva.onrender.com"
-).replace(/\/+$/, "");
+const getCleanApiUrl = () => {
+  let url = import.meta.env.VITE_API_URL || "https://bd-shop-gfva.onrender.com";
+  return url.replace(/\/api\/?$/, "").replace(/\/+$/, "");
+};
+
+const BASE_URL = getCleanApiUrl();
 
 export default function useOrderStatusUpdate({ setOrders, fetchOrders }) {
   const [savingId, setSavingId] = useState(null);
@@ -14,7 +16,9 @@ export default function useOrderStatusUpdate({ setOrders, fetchOrders }) {
     try {
       setSavingId(orderId);
 
-      const response = await fetch(`${API_URL}/api/orders/${orderId}/status`, {
+      const endpoint = `${BASE_URL}/api/orders/${orderId}/status`;
+
+      const response = await fetch(endpoint, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

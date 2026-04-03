@@ -1,8 +1,11 @@
 import { useEffect, useState, useCallback } from "react";
 
-const API_URL = (
-  import.meta.env.VITE_API_URL || "https://bd-shop-gfva.onrender.com"
-).replace(/\/+$/, "");
+const getCleanApiUrl = () => {
+  let url = import.meta.env.VITE_API_URL || "https://bd-shop-gfva.onrender.com";
+  return url.replace(/\/api\/?$/, "").replace(/\/+$/, "");
+};
+
+const BASE_URL = getCleanApiUrl();
 
 export default function useAdminOrders() {
   const [orders, setOrders] = useState([]);
@@ -14,7 +17,7 @@ export default function useAdminOrders() {
       setError("");
       setLoading(true);
 
-      const endpoint = `${API_URL}/api/orders/all`;
+      const endpoint = `${BASE_URL}/api/orders/all`;
 
       const token = localStorage.getItem("access_token");
 
