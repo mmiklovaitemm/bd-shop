@@ -48,13 +48,13 @@ const SizeSelector = memo(
       return (
         <p className="mt-2 font-ui text-[13px] text-black/50">{t.oneSize}</p>
       );
+
     return (
       <div className="mt-2 flex flex-wrap gap-2">
         {sizes.map((size) => {
           const normalizedSize = String(size);
           const isActive = String(selectedSize) === normalizedSize;
-
-          // Tikriname prieinamumą paverčiant viską į tekstą (String)
+          // Užtikriname, kad lyginame String su String masyvu
           const isAvailable = availableSizes
             .map(String)
             .includes(normalizedSize);
@@ -134,7 +134,7 @@ const ProductInfo = memo(function ProductInfo({
   const { has, toggle } = useFavorites();
   const isWishlisted = has(product?.id);
 
-  // PAGRINDINIS PATAISYMAS: Naudojame bendrą likutį, jei varianto stock yra 0 arba nerastas
+  // PRIORITETAS: Naudojame bendrą stockQuantity, jei currentStock (variantų) yra 0
   const totalStock =
     Number(currentStock) || Number(product?.stockQuantity) || 0;
   const isSoldOut = totalStock <= 0;
