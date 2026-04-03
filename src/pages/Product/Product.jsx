@@ -49,11 +49,11 @@ function ProductView({ product }) {
     availableColors[0] || "silver",
   );
 
-  // 2. Sizes Setup for the selected color
+  // 2. Sizes Setup
   const effectiveAvailableSizes = useMemo(() => {
     const v = product?.variants?.[selectedColor];
-    if (Array.isArray(v)) {
-      return v.map((item) => String(item.size || item));
+    if (Array.isArray(v) && v.length > 0 && typeof v[0] === "object") {
+      return v.map((item) => String(item.size || ""));
     }
     return Array.isArray(product?.sizes) ? product.sizes.map(String) : [];
   }, [product, selectedColor]);
@@ -62,53 +62,61 @@ function ProductView({ product }) {
     effectiveAvailableSizes[0] || null,
   );
 
-  // 3. Variant Logic to determine stock and specific images
+  // 3. Variant & Stock Logic (FIXED FOR SOLD OUT ISSUE)
   const selectedVariant = useMemo(() => {
     const v = product?.variants?.[selectedColor];
     if (!Array.isArray(v)) return null;
-    // Find exact size match or fallback to the first available variant
     return v.find((item) => String(item.size) === String(selectedSize)) || v[0];
   }, [product, selectedColor, selectedSize]);
 
   const currentStock = useMemo(() => {
-    if (selectedVariant && typeof selectedVariant.stock !== "undefined") {
+    // Priority 1: stock defined in the specific variant
+    if (
+      selectedVariant &&
+      typeof selectedVariant.stock !== "undefined" &&
+      selectedVariant.stock !== null
+    ) {
       return Number(selectedVariant.stock);
     }
+    // Priority 2: global stock quantity from database (I see '10' in your console)
     return Number(product?.stockQuantity || product?.stock_quantity || 0);
   }, [product, selectedVariant]);
 
   const isCurrentSelectionSoldOut = currentStock <= 0;
 
-  // 4. Image Filtering Logic
+  // 4. Image Filtering Logic (FIXED FOR MISSING SECOND IMAGE)
   const images = useMemo(() => {
-    // Priority 1: Images from the specific selected variant
-    if (selectedVariant?.images?.length > 0) return selectedVariant.images;
+    let result = [];
 
-    // Priority 2: Any images from the selected color group
-    const colorEntries = product?.variants?.[selectedColor];
-    if (Array.isArray(colorEntries) && colorEntries.length > 0) {
-      const entryWithImages = colorEntries.find((e) => e.images?.length > 0);
-      if (entryWithImages) return entryWithImages.images;
+    // Priority 1: Images from the variant
+    if (selectedVariant?.images?.length > 0) {
+      result = selectedVariant.images;
+    }
+    // Priority 2: Images from the color group
+    else {
+      const colorEntries = product?.variants?.[selectedColor];
+      if (Array.isArray(colorEntries)) {
+        if (typeof colorEntries[0] === "string") result = colorEntries;
+        else if (colorEntries[0]?.images) result = colorEntries[0].images;
+      }
     }
 
-    // Fallback: Thumbnail or general images
-    return [product?.thumbnail].filter(Boolean);
+    // Priority 3: Fallback to general images array
+    if (result.length === 0 && Array.isArray(product?.images)) {
+      result = product.images;
+    }
+
+    return result.length > 0 ? result : [product?.thumbnail].filter(Boolean);
   }, [product, selectedColor, selectedVariant]);
 
   // 5. Add to Bag Action
   const handleAddToBag = useCallback(
     (e) => {
       if (e && e.preventDefault) e.preventDefault();
-
-      console.log("DEBUG - handleAddToBag triggered");
-
-      if (isCurrentSelectionSoldOut) {
-        console.warn("DEBUG - Item sold out, cannot add to bag");
-        return;
-      }
+      if (isCurrentSelectionSoldOut) return;
 
       try {
-        const cartItem = {
+        addToCart({
           product,
           productId: String(product.id),
           name: product.name,
@@ -117,12 +125,7 @@ function ProductView({ product }) {
           size: selectedSize ? String(selectedSize) : null,
           quantity: Number(quantity),
           image: images[0] || product?.thumbnail || "",
-        };
-
-        console.log("DEBUG - Executing addToCart with:", cartItem);
-        addToCart(cartItem);
-
-        console.log("DEBUG - Opening Bag Drawer");
+        });
         openBag();
       } catch (err) {
         console.error("DEBUG - Cart error:", err);
@@ -159,8 +162,8 @@ function ProductView({ product }) {
         <ImageGallery
           images={images}
           product={product}
-          openLightbox={(index) => {
-            setActiveImgIndex(index);
+          openLightbox={(i) => {
+            setActiveImgIndex(i);
             setIsLightboxOpen(true);
           }}
         />
@@ -176,14 +179,9 @@ function ProductView({ product }) {
           setSelectedSize={setSelectedSize}
           setSelectedColor={(color) => {
             setSelectedColor(color);
-            const variantEntries = product?.variants?.[color];
-            if (Array.isArray(variantEntries) && variantEntries.length > 0) {
-              // Automatically pick the first available size for the new color
-              const firstAvailable =
-                variantEntries.find((v) => Number(v.stock) > 0) ||
-                variantEntries[0];
-              if (firstAvailable?.size)
-                setSelectedSize(String(firstAvailable.size));
+            const v = product?.variants?.[color];
+            if (Array.isArray(v) && v.length > 0 && v[0]?.size) {
+              setSelectedSize(String(v[0].size));
             }
           }}
           quantity={quantity}
@@ -199,14 +197,12 @@ function ProductView({ product }) {
         onClose={() => setIsDetailsOpen(false)}
         product={product}
       />
-
       {product?.category === "personal" && (
         <HowItWorksPanel
           isOpen={isHowItWorksOpen}
           onClose={() => setIsHowItWorksOpen(false)}
         />
       )}
-
       <Lightbox
         isOpen={isLightboxOpen}
         onClose={() => setIsLightboxOpen(false)}
@@ -214,7 +210,6 @@ function ProductView({ product }) {
         activeImgIndex={activeImgIndex}
         setActiveImgIndex={setActiveImgIndex}
       />
-
       <FullWidthDivider />
       <YouMayAlsoLike currentProduct={product} />
     </main>
