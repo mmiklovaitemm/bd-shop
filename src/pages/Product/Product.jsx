@@ -69,21 +69,26 @@ function ProductView({ product }) {
     return v.find((item) => String(item.size) === String(selectedSize)) || v[0];
   }, [product, selectedColor, selectedSize]);
 
-  // 4. Stock calculation - FIXED TO PREVENT "SOLD OUT"
+  // 4. Stock calculation - FIXED BASED ON YOUR CONSOLE LOG
   const currentStock = useMemo(() => {
-    // Priority 1: stock defined in the specific variant
+    // A. First check if variant has stock defined
     if (
       selectedVariant &&
-      typeof selectedVariant.stock !== "undefined" &&
+      selectedVariant.stock !== undefined &&
       selectedVariant.stock !== null
     ) {
       return Number(selectedVariant.stock);
     }
-    // Priority 2: global stock quantity from database (fallback for your current structure)
+
+    // B. If variant doesn't have stock, use the global property from your console
+    // In your screenshot, it is exactly 'stockQuantity'
     const globalStock = product?.stockQuantity ?? product?.stock_quantity;
-    if (typeof globalStock !== "undefined" && globalStock !== null) {
+
+    if (globalStock !== undefined && globalStock !== null) {
       return Number(globalStock);
     }
+
+    // C. Last resort fallback
     return 0;
   }, [product, selectedVariant]);
 
@@ -112,7 +117,14 @@ function ProductView({ product }) {
   const handleAddToBag = useCallback(
     (e) => {
       if (e && e.preventDefault) e.preventDefault();
-      if (isCurrentSelectionSoldOut) return;
+
+      console.log("DEBUG - Click detected. Current stock:", currentStock);
+
+      if (isCurrentSelectionSoldOut) {
+        console.warn("DEBUG - Item is sold out, action blocked");
+        return;
+      }
+
       try {
         addToCart({
           product,
@@ -132,6 +144,7 @@ function ProductView({ product }) {
     [
       product,
       isCurrentSelectionSoldOut,
+      currentStock,
       selectedColor,
       selectedSize,
       quantity,
@@ -220,9 +233,11 @@ function ProductView({ product }) {
 export default function Product() {
   const { id } = useParams();
   const { product, loading } = useProduct(id);
+
   if (loading)
     return <div className="p-20 text-center font-ui">Loading...</div>;
   if (!product)
     return <div className="p-20 text-center font-ui">Product not found.</div>;
+
   return <ProductView key={product.id} product={product} />;
 }
