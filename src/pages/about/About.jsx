@@ -1,19 +1,19 @@
+// src/pages/about/About.jsx
 import useLanguage from "@/context/useLanguage";
 import AboutStudioSection from "@/components/ui/AboutStudioSection";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 import TestimonialsSlider from "@/components/sections/TestimonialsSlider";
-import { Reveal } from "@/components/sections/Reveal"; // Importuojame tavo Reveal
+import { Reveal } from "@/components/sections/Reveal";
+import PageTitle from "@/components/ui/PageTitle";
 
 import BestSellersIntro from "./BestSellersIntro";
 import TwoImageStrip from "./TwoImageStrip";
 import OurSalons from "./OurSalons";
 
-// new collection
+// Nuotraukų importai...
 import newColMobile from "@/assets/images/new-collection/hero-mobile.webp";
 import newColTablet from "@/assets/images/new-collection/hero-tablet.webp";
 import newColDesktop from "@/assets/images/new-collection/hero-desktop.webp";
-
-// personalized jewelry
 import persMobile from "@/assets/images/personalized-jewelry/personalized-hero-mobile.webp";
 import persTablet from "@/assets/images/personalized-jewelry/personalized-hero-tablet.webp";
 import persDesktop from "@/assets/images/personalized-jewelry/personalized-hero-desktop.webp";
@@ -23,15 +23,9 @@ export default function About() {
 
   return (
     <div>
-      <section className="px-4 py-5">
-        <Reveal>
-          <h1 className="font-display text-[44px] leading-[1.05] tracking-[-0.02em] text-black xs:text-[36px]">
-            {t.aboutUs}
-          </h1>
-        </Reveal>
-      </section>
-
-      <FullWidthDivider />
+      <Reveal>
+        <PageTitle title={t.aboutUs} />
+      </Reveal>
 
       <Reveal>
         <AboutStudioSection />

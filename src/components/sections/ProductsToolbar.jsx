@@ -1,3 +1,4 @@
+// src/components/sections/ProductsToolbar.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { HiChevronDown } from "react-icons/hi";
 
@@ -7,7 +8,6 @@ import FullWidthDivider from "../ui/FullWidthDivider";
 import useLanguage from "@/context/useLanguage";
 
 export default function ProductsToolbar({
-  title,
   categories = [],
   activeCategoryValue = "rings",
   activeCategoryLabel = "Rings",
@@ -26,13 +26,7 @@ export default function ProductsToolbar({
       { value: "date_asc", label: t.sortDateOldToNew },
       { value: "date_desc", label: t.sortDateNewToOld },
     ],
-    [
-      t.sortPriceHighToLow,
-      t.sortPriceLowToHigh,
-      t.sortBestSelling,
-      t.sortDateOldToNew,
-      t.sortDateNewToOld,
-    ],
+    [t],
   );
 
   const [isSortOpen, setIsSortOpen] = useState(false);
@@ -42,8 +36,6 @@ export default function ProductsToolbar({
   const categoryWrapRef = useRef(null);
   const sortWrapRef = useRef(null);
 
-  const resolvedTitle = title || t.collections;
-
   const activeSortLabel = useMemo(() => {
     const found = SORT_OPTIONS.find((o) => o.value === sortValue);
     return found ? found.label : t.sortPriceHighToLow;
@@ -51,14 +43,9 @@ export default function ProductsToolbar({
 
   useEffect(() => {
     const onPointerDown = (e) => {
-      const catEl = categoryWrapRef.current;
-      const sortEl = sortWrapRef.current;
-
-      const clickedInCategory = catEl?.contains(e.target);
-      const clickedInSort = sortEl?.contains(e.target);
-
-      if (!clickedInCategory) setIsCategoryOpen(false);
-      if (!clickedInSort) setIsSortOpen(false);
+      if (!categoryWrapRef.current?.contains(e.target))
+        setIsCategoryOpen(false);
+      if (!sortWrapRef.current?.contains(e.target)) setIsSortOpen(false);
     };
 
     const onKeyDown = (e) => {
@@ -71,7 +58,6 @@ export default function ProductsToolbar({
 
     window.addEventListener("pointerdown", onPointerDown);
     window.addEventListener("keydown", onKeyDown);
-
     return () => {
       window.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("keydown", onKeyDown);
@@ -79,57 +65,38 @@ export default function ProductsToolbar({
   }, []);
 
   const toggleCategory = () => {
-    setIsCategoryOpen((p) => {
-      const next = !p;
-      if (next) {
-        setIsSortOpen(false);
-        setIsSortDrawerOpen(false);
-      }
-      return next;
-    });
+    setIsCategoryOpen((p) => !p);
+    setIsSortOpen(false);
   };
 
   const toggleSort = () => {
     const isMobile = window.matchMedia("(max-width: 1023px)").matches;
-
     if (isMobile) {
       setIsSortDrawerOpen(true);
-      setIsCategoryOpen(false);
-      setIsSortOpen(false);
       return;
     }
-
-    setIsSortOpen((p) => {
-      const next = !p;
-      if (next) setIsCategoryOpen(false);
-      return next;
-    });
+    setIsSortOpen((p) => !p);
+    setIsCategoryOpen(false);
   };
 
   return (
     <section className="w-full">
-      {/* Title */}
-      <div>
-        <h1 className="px-6 py-6 font-display text-[44px] leading-none md:text-[56px]">
-          {resolvedTitle}
-        </h1>
-      </div>
-      <FullWidthDivider />
+      {/* PAŠALINTA: Senas h1 ir FullWidthDivider blokas, 
+         nes dabar naudojame PageTitle.jsx 
+      */}
 
       {/* Category row */}
-      <div ref={categoryWrapRef} className="relative px-6 py-4">
+      <div ref={categoryWrapRef} className="relative px-8 py-4">
         {/* MOBILE/TABLET dropdown */}
         <button
           type="button"
           onClick={toggleCategory}
           className="flex w-full items-center justify-between font-ui text-[14px] text-black lg:hidden"
-          aria-label={t.selectCategory}
-          aria-haspopup="listbox"
           aria-expanded={isCategoryOpen}
         >
           <span className="font-medium">{activeCategoryLabel}</span>
           <HiChevronDown
-            className={`h-5 w-5 text-black/70 transition-transform duration-200 md:h-4 md:w-4 ${
+            className={`h-5 w-5 text-black/70 transition-transform duration-200 ${
               isCategoryOpen ? "rotate-180" : "rotate-0"
             }`}
           />
@@ -137,12 +104,12 @@ export default function ProductsToolbar({
 
         {isCategoryOpen && (
           <div className="absolute left-0 right-0 top-full z-50 mt-2 border border-black bg-white shadow-sm lg:hidden">
-            <ul role="listbox" className="py-2">
+            <ul className="py-2">
               {categories.map((cat) => (
                 <li key={cat.value}>
                   <button
                     type="button"
-                    className={`w-full px-4 py-2 text-left font-ui text-[13px] hover:bg-black/5 ${
+                    className={`w-full px-8 py-2 text-left font-ui text-[13px] hover:bg-black/5 ${
                       cat.value === activeCategoryValue
                         ? "font-medium"
                         : "font-normal"
@@ -164,17 +131,16 @@ export default function ProductsToolbar({
         <div className="hidden items-center justify-end gap-10 lg:flex">
           {categories.map((cat) => {
             const isActive = cat.value === activeCategoryValue;
-
             return (
               <button
                 key={cat.value}
                 type="button"
                 onClick={() => onCategoryChange?.(cat.value)}
-                className={[
-                  "relative font-ui text-[14px] transition-opacity",
-                  isActive ? "opacity-100" : "opacity-70 hover:opacity-100",
-                ].join(" ")}
-                aria-current={isActive ? "page" : undefined}
+                className={`relative font-ui text-[14px] transition-opacity ${
+                  isActive
+                    ? "opacity-100 font-medium"
+                    : "opacity-70 hover:opacity-100"
+                }`}
               >
                 <span>{cat.label}</span>
               </button>
@@ -182,22 +148,23 @@ export default function ProductsToolbar({
           })}
         </div>
       </div>
+
       <FullWidthDivider />
 
       {/* Filter + Sort row */}
-      <div className="flex justify-center border-t border-black/10">
-        <div className="flex w-full max-w-[1200px] items-center justify-between px-6 py-4">
+      <div className="flex justify-center">
+        <div className="flex w-full max-w-[1200px] items-center justify-between px-8 py-4">
           {/* FILTER BUTTON */}
           <button
             type="button"
             onClick={onOpenFilter}
-            className="flex h-10 items-center gap-3 border border-black px-6 font-ui text-[14px] uppercase tracking-widest transition-all duration-300 ease-out hover:bg-black hover:text-white active:scale-95"
+            className="flex h-10 items-center gap-3 border border-black px-6 font-ui text-[14px] uppercase tracking-widest transition-all duration-300 hover:bg-black hover:text-white active:scale-95"
           >
             <span>{t.filter}</span>
             <img
               src={filterIcon}
-              alt={t.filter}
-              className="h-3.5 w-3.5 opacity-70 transition-all group-hover:invert"
+              alt=""
+              className="h-3.5 w-3.5 opacity-70 group-hover:invert"
             />
           </button>
 
@@ -212,8 +179,6 @@ export default function ProductsToolbar({
                 type="button"
                 onClick={toggleSort}
                 className="inline-flex h-10 w-full items-center justify-between border border-black px-4 font-ui text-[13px] transition-all duration-300 hover:border-black/40"
-                aria-haspopup="listbox"
-                aria-expanded={isSortOpen}
               >
                 <span className="truncate">{activeSortLabel}</span>
                 <HiChevronDown
@@ -221,10 +186,9 @@ export default function ProductsToolbar({
                 />
               </button>
 
-              {/* desktop dropdown only */}
               {isSortOpen && (
                 <div className="absolute left-0 top-full z-50 -mt-px hidden w-full border border-black bg-white shadow-lg lg:block">
-                  <ul role="listbox" className="py-2">
+                  <ul className="py-2">
                     {SORT_OPTIONS.map((opt) => (
                       <li key={opt.value}>
                         <button
@@ -251,7 +215,6 @@ export default function ProductsToolbar({
         </div>
       </div>
 
-      {/* mobile sort drawer */}
       <ProductsSortPanel
         isOpen={isSortDrawerOpen}
         onClose={() => setIsSortDrawerOpen(false)}

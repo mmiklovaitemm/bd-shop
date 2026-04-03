@@ -1,3 +1,4 @@
+// src/pages/Collections.jsx
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams } from "react-router-dom";
@@ -10,9 +11,11 @@ import AboutStudioSection from "@/components/ui/AboutStudioSection";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 import ProductsToolbar from "@/components/sections/ProductsToolbar";
 import ProductsFilterPanel from "@/components/sections/ProductsFilterPanel";
+import PageTitle from "@/components/ui/PageTitle"; // Importuojame suvienodintą antraštę
 import { Reveal } from "@/components/sections/Reveal";
 import { useProducts } from "@/hooks/useProducts";
 
+// --- Pagalbinės funkcijos (filtrai) lieka nepakeistos ---
 function hasGemValue(product) {
   return product?.hasGem === true;
 }
@@ -48,52 +51,33 @@ function toTitleCaseLabel(value) {
 
 function formatMaterialLabel(value, t) {
   const normalized = normalizeMaterialValue(value);
-
   const knownLabels = {
     silver: t.silver,
     gold: t.gold,
     pearl: t.perlas,
     "soft-blue": t.softBlue,
-    "soft green": t.softGreen,
     "soft-green": t.softGreen,
     "soft-yellow": t.softYellow,
-    "soft yellow": t.softYellow,
   };
-
   return knownLabels[normalized] || toTitleCaseLabel(normalized);
 }
 
 function applyAppearanceFilter(list, selectedAppearance) {
   let out = list;
-
   if (selectedAppearance?.length) {
     for (const value of selectedAppearance) {
-      if (value === "with_gem") {
-        out = out.filter((p) => hasGemValue(p));
-      }
-
-      if (value === "without_gem") {
-        out = out.filter((p) => !hasGemValue(p));
-      }
-
-      if (value === "rough") {
-        out = out.filter((p) => p.surface === "rough");
-      }
-
-      if (value === "smooth") {
-        out = out.filter((p) => p.surface === "smooth");
-      }
+      if (value === "with_gem") out = out.filter((p) => hasGemValue(p));
+      if (value === "without_gem") out = out.filter((p) => !hasGemValue(p));
+      if (value === "rough") out = out.filter((p) => p.surface === "rough");
+      if (value === "smooth") out = out.filter((p) => p.surface === "smooth");
     }
   }
-
   return out;
 }
 
 function applyGemsFilter(list, selectedGems) {
   if (!selectedGems?.length) return list;
-
   const normalizedSelected = selectedGems.map(normalizeGemValue);
-
   return list.filter((p) =>
     (p.gemstones || [])
       .map(normalizeGemValue)
@@ -103,9 +87,7 @@ function applyGemsFilter(list, selectedGems) {
 
 function applySizeFilter(list, selectedSize) {
   if (selectedSize == null) return list;
-
   const normalizedSelected = normalizeSizeValue(selectedSize);
-
   return list.filter((p) =>
     (p.sizes || []).map(normalizeSizeValue).includes(normalizedSelected),
   );
@@ -115,9 +97,7 @@ const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
+    transition: { staggerChildren: 0.1 },
   },
 };
 
@@ -156,19 +136,16 @@ export default function Collections() {
 
   const activeCategory =
     searchParams.get("category") || searchParams.get("filter") || "rings";
-
   const pageFromUrl = Number(searchParams.get("page") || 1);
   const page =
     Number.isFinite(pageFromUrl) && pageFromUrl > 0 ? pageFromUrl : 1;
 
   const [sortValue, setSortValue] = useState("price_desc");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-
   const [selectedMaterial, setSelectedMaterial] = useState(null);
   const [selectedAppearance, setSelectedAppearance] = useState([]);
   const [selectedGems, setSelectedGems] = useState([]);
   const [selectedSize, setSelectedSize] = useState(null);
-
   const [customPriceRange, setCustomPriceRange] = useState(null);
 
   const [pageSize, setPageSize] = useState(() => {
@@ -178,48 +155,29 @@ export default function Collections() {
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 767px)");
-
-    const handleChange = (event) => {
-      setPageSize(event.matches ? 8 : 12);
-    };
-
-    if (media.addEventListener) {
-      media.addEventListener("change", handleChange);
-    } else {
-      media.addListener(handleChange);
-    }
-
-    return () => {
-      if (media.removeEventListener) {
-        media.removeEventListener("change", handleChange);
-      } else {
-        media.removeListener(handleChange);
-      }
-    };
+    const handleChange = (e) => setPageSize(e.matches ? 8 : 12);
+    media.addEventListener("change", handleChange);
+    return () => media.removeEventListener("change", handleChange);
   }, []);
 
   const activeCategoryLabel =
     CATEGORY_ITEMS.find((c) => c.value === activeCategory)?.label || t.rings;
 
   const productsInCategory = useMemo(() => {
-    if (activeCategory === "best-sellers") {
+    if (activeCategory === "best-sellers")
       return products.filter((p) => p.isBestSeller);
-    }
-
     if (activeCategory === "new-collection") {
       return [...products]
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-        .slice(0, 5);
+        .slice(0, 10);
     }
-
     return products.filter((p) => p.category === activeCategory);
   }, [activeCategory, products]);
 
   const priceBounds = useMemo(() => {
     const prices = productsInCategory
       .map((p) => Number(p.priceValue) || 0)
-      .filter((value) => value >= 0);
-
+      .filter((v) => v >= 0);
     return {
       min: prices.length ? Math.min(...prices) : 0,
       max: prices.length ? Math.max(...prices) : 0,
@@ -227,72 +185,50 @@ export default function Collections() {
   }, [productsInCategory]);
 
   const effectivePriceRange = useMemo(() => {
-    if (!customPriceRange) {
+    if (!customPriceRange)
       return { min: priceBounds.min, max: priceBounds.max };
-    }
-
-    const min = Math.max(
-      priceBounds.min,
-      Math.min(customPriceRange.min, priceBounds.max),
-    );
-    const max = Math.max(
-      priceBounds.min,
-      Math.min(customPriceRange.max, priceBounds.max),
-    );
-
     return {
-      min: Math.min(min, max),
-      max: Math.max(min, max),
+      min: Math.max(
+        priceBounds.min,
+        Math.min(customPriceRange.min, priceBounds.max),
+      ),
+      max: Math.max(
+        priceBounds.min,
+        Math.min(customPriceRange.max, priceBounds.max),
+      ),
     };
-  }, [customPriceRange, priceBounds.min, priceBounds.max]);
+  }, [customPriceRange, priceBounds]);
 
   const baseAfterPriceMaterial = useMemo(() => {
-    let list = [...productsInCategory];
-
-    list = list.filter(
+    let list = [...productsInCategory].filter(
       (p) =>
         Number(p.priceValue) >= effectivePriceRange.min &&
         Number(p.priceValue) <= effectivePriceRange.max,
     );
-
     if (selectedMaterial) {
-      const normalizedSelectedMaterial =
-        normalizeMaterialValue(selectedMaterial);
-
+      const norm = normalizeMaterialValue(selectedMaterial);
       list = list.filter((p) =>
-        (p.colors || [])
-          .map(normalizeMaterialValue)
-          .includes(normalizedSelectedMaterial),
+        (p.colors || []).map(normalizeMaterialValue).includes(norm),
       );
     }
-
     return list;
-  }, [
-    productsInCategory,
-    effectivePriceRange.min,
-    effectivePriceRange.max,
-    selectedMaterial,
-  ]);
+  }, [productsInCategory, effectivePriceRange, selectedMaterial]);
 
+  // --- Filter Options with Counts ---
   const materialOptions = useMemo(() => {
-    let list = [...productsInCategory];
-
-    list = list.filter(
-      (p) =>
-        Number(p.priceValue) >= effectivePriceRange.min &&
-        Number(p.priceValue) <= effectivePriceRange.max,
-    );
-
     const counts = {};
-
-    for (const product of list) {
-      for (const color of product.colors || []) {
-        const normalized = normalizeMaterialValue(color);
-        if (!normalized) continue;
-        counts[normalized] = (counts[normalized] || 0) + 1;
-      }
-    }
-
+    productsInCategory
+      .filter(
+        (p) =>
+          Number(p.priceValue) >= effectivePriceRange.min &&
+          Number(p.priceValue) <= effectivePriceRange.max,
+      )
+      .forEach((product) =>
+        (product.colors || []).forEach((color) => {
+          const norm = normalizeMaterialValue(color);
+          if (norm) counts[norm] = (counts[norm] || 0) + 1;
+        }),
+      );
     return Object.entries(counts)
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([value, count]) => ({
@@ -300,63 +236,26 @@ export default function Collections() {
         label: formatMaterialLabel(value, t),
         count,
       }));
-  }, [productsInCategory, effectivePriceRange.min, effectivePriceRange.max, t]);
-
-  const availableGemOptions = useMemo(() => {
-    const counts = {};
-
-    for (const product of productsInCategory) {
-      for (const gem of product.gemstones || []) {
-        const normalized = normalizeGemValue(gem);
-        if (!normalized) continue;
-        counts[normalized] = (counts[normalized] || 0) + 1;
-      }
-    }
-
-    const labelMap = {
-      kristolas: t.kristolas,
-      cirkonis: t.cirkonis,
-      deimantas: t.deimantas,
-      perlas: t.perlas,
-    };
-
-    return Object.keys(counts)
-      .sort((a, b) => a.localeCompare(b))
-      .map((value) => ({
-        value,
-        label: labelMap[value] || toTitleCaseLabel(value),
-      }));
-  }, [productsInCategory, t]);
+  }, [productsInCategory, effectivePriceRange, t]);
 
   const appearanceOptionsWithCount = useMemo(() => {
     return APPEARANCE_OPTIONS.map((opt) => {
-      const appearanceWithoutThis = selectedAppearance.filter(
-        (value) => value !== opt.value,
+      const others = selectedAppearance.filter((v) => v !== opt.value);
+      let list = applyAppearanceFilter(
+        applySizeFilter(
+          applyGemsFilter([...baseAfterPriceMaterial], selectedGems),
+          selectedSize,
+        ),
+        others,
       );
-
-      let list = [...baseAfterPriceMaterial];
-      list = applyGemsFilter(list, selectedGems);
-      list = applySizeFilter(list, selectedSize);
-      list = applyAppearanceFilter(list, appearanceWithoutThis);
-
       let count = 0;
-
-      if (opt.value === "with_gem") {
-        count = list.filter((p) => hasGemValue(p)).length;
-      }
-
-      if (opt.value === "without_gem") {
+      if (opt.value === "with_gem") count = list.filter(hasGemValue).length;
+      if (opt.value === "without_gem")
         count = list.filter((p) => !hasGemValue(p)).length;
-      }
-
-      if (opt.value === "rough") {
+      if (opt.value === "rough")
         count = list.filter((p) => p.surface === "rough").length;
-      }
-
-      if (opt.value === "smooth") {
+      if (opt.value === "smooth")
         count = list.filter((p) => p.surface === "smooth").length;
-      }
-
       return { ...opt, count };
     });
   }, [
@@ -368,64 +267,70 @@ export default function Collections() {
   ]);
 
   const gemOptionsWithCount = useMemo(() => {
-    return availableGemOptions.map((opt) => {
-      const gemsWithoutThis = selectedGems.filter((g) => g !== opt.value);
-
-      let list = [...baseAfterPriceMaterial];
-      list = applyAppearanceFilter(list, selectedAppearance);
-      list = applySizeFilter(list, selectedSize);
-      list = applyGemsFilter(list, gemsWithoutThis);
-
-      const count = list.filter((p) =>
-        (p.gemstones || []).map(normalizeGemValue).includes(opt.value),
-      ).length;
-
-      return { ...opt, count };
-    });
+    const available = {};
+    productsInCategory.forEach((p) =>
+      (p.gemstones || []).forEach((g) => {
+        const norm = normalizeGemValue(g);
+        if (norm) available[norm] = (available[norm] || 0) + 1;
+      }),
+    );
+    const labelMap = {
+      kristolas: t.kristolas,
+      cirkonis: t.cirkonis,
+      deimantas: t.deimantas,
+      perlas: t.perlas,
+    };
+    return Object.keys(available)
+      .sort()
+      .map((value) => {
+        const others = selectedGems.filter((g) => g !== value);
+        let list = applyGemsFilter(
+          applySizeFilter(
+            applyAppearanceFilter(
+              [...baseAfterPriceMaterial],
+              selectedAppearance,
+            ),
+            selectedSize,
+          ),
+          others,
+        );
+        const count = list.filter((p) =>
+          (p.gemstones || []).map(normalizeGemValue).includes(value),
+        ).length;
+        return {
+          value,
+          label: labelMap[value] || toTitleCaseLabel(value),
+          count,
+        };
+      });
   }, [
-    availableGemOptions,
+    productsInCategory,
     baseAfterPriceMaterial,
     selectedAppearance,
     selectedGems,
     selectedSize,
+    t,
   ]);
 
   const sizeOptionsWithCount = useMemo(() => {
     const allSizes = Array.from(
       new Set(
         productsInCategory.flatMap((p) =>
-          (p.sizes || []).map((size) => normalizeSizeValue(size)),
+          (p.sizes || []).map(normalizeSizeValue),
         ),
       ),
     )
       .filter(Boolean)
-      .sort((a, b) => {
-        const na = Number(a);
-        const nb = Number(b);
-
-        if (!Number.isNaN(na) && !Number.isNaN(nb)) {
-          return na - nb;
-        }
-
-        return String(a).localeCompare(String(b));
-      });
-
-    if (!allSizes.length) return [];
-
+      .sort((a, b) => Number(a) - Number(b));
     return allSizes.map((size) => {
-      let list = [...baseAfterPriceMaterial];
-      list = applyAppearanceFilter(list, selectedAppearance);
-      list = applyGemsFilter(list, selectedGems);
-
+      let list = applyGemsFilter(
+        applyAppearanceFilter([...baseAfterPriceMaterial], selectedAppearance),
+        selectedGems,
+      );
       const count = list.filter((p) =>
         (p.sizes || []).map(normalizeSizeValue).includes(size),
       ).length;
-
-      return {
-        value: size,
-        label: String(size),
-        count,
-      };
+      return { value: size, label: String(size), count };
     });
   }, [
     productsInCategory,
@@ -435,23 +340,17 @@ export default function Collections() {
   ]);
 
   const filteredAndSortedProducts = useMemo(() => {
-    let list = [...baseAfterPriceMaterial];
-
-    list = applyAppearanceFilter(list, selectedAppearance);
-    list = applyGemsFilter(list, selectedGems);
-    list = applySizeFilter(list, selectedSize);
-
-    switch (sortValue) {
-      case "price_asc":
-        list.sort((a, b) => Number(a.priceValue) - Number(b.priceValue));
-        break;
-      case "price_desc":
-        list.sort((a, b) => Number(b.priceValue) - Number(a.priceValue));
-        break;
-      default:
-        break;
-    }
-
+    let list = applySizeFilter(
+      applyGemsFilter(
+        applyAppearanceFilter([...baseAfterPriceMaterial], selectedAppearance),
+        selectedGems,
+      ),
+      selectedSize,
+    );
+    if (sortValue === "price_asc")
+      list.sort((a, b) => Number(a.priceValue) - Number(b.priceValue));
+    else if (sortValue === "price_desc")
+      list.sort((a, b) => Number(b.priceValue) - Number(a.priceValue));
     return list;
   }, [
     baseAfterPriceMaterial,
@@ -465,47 +364,35 @@ export default function Collections() {
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
   const safePage = Math.min(page, totalPages);
   const showingCount = Math.min(safePage * pageSize, totalItems);
+  const pageItems = useMemo(
+    () =>
+      filteredAndSortedProducts.slice(
+        (safePage - 1) * pageSize,
+        safePage * pageSize,
+      ),
+    [filteredAndSortedProducts, safePage, pageSize],
+  );
 
-  const pageItems = useMemo(() => {
-    const start = (safePage - 1) * pageSize;
-    return filteredAndSortedProducts.slice(start, start + pageSize);
-  }, [filteredAndSortedProducts, safePage, pageSize]);
+  useEffect(
+    () => window.scrollTo({ top: 0, behavior: "auto" }),
+    [activeCategory, safePage],
+  );
 
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "auto" });
-  }, [activeCategory, safePage]);
-
-  const setPageInUrl = (nextPage) => {
+  const handlePageChange = (n) =>
     setSearchParams(
       (prev) => {
         const sp = new URLSearchParams(prev);
-        sp.set("page", String(nextPage));
+        sp.set("page", String(n));
         return sp;
       },
       { replace: true },
     );
-  };
-
-  const resetPageInUrl = () => {
-    setPageInUrl(1);
-  };
-
-  const handlePageChange = (nextPage) => {
-    const clamped = Math.max(1, Math.min(nextPage, totalPages));
-    setPageInUrl(clamped);
-  };
-
-  const handleChangeCategory = (next) => {
-    setSelectedMaterial(null);
-    setSelectedAppearance([]);
-    setSelectedGems([]);
-    setSelectedSize(null);
-    setCustomPriceRange(null);
-
+  const handleChangeCategory = (n) => {
+    handleClearAll();
     setSearchParams(
       (prev) => {
         const sp = new URLSearchParams(prev);
-        sp.set("category", next);
+        sp.set("category", n);
         sp.set("page", "1");
         sp.delete("filter");
         return sp;
@@ -513,44 +400,37 @@ export default function Collections() {
       { replace: true },
     );
   };
-
-  const handleMaterialChange = (nextMaterial) => {
-    setSelectedMaterial(nextMaterial);
-    resetPageInUrl();
+  const handleMaterialChange = (v) => {
+    setSelectedMaterial(v);
+    handlePageChange(1);
   };
-
-  const handlePriceChange = (nextRange) => {
-    setCustomPriceRange(nextRange);
-    resetPageInUrl();
+  const handlePriceChange = (v) => {
+    setCustomPriceRange(v);
+    handlePageChange(1);
   };
-
-  const handleAppearanceChange = (nextAppearance) => {
-    setSelectedAppearance(nextAppearance);
-    resetPageInUrl();
+  const handleAppearanceChange = (v) => {
+    setSelectedAppearance(v);
+    handlePageChange(1);
   };
-
-  const handleGemsChange = (nextGems) => {
-    setSelectedGems(nextGems);
-    resetPageInUrl();
+  const handleGemsChange = (v) => {
+    setSelectedGems(v);
+    handlePageChange(1);
   };
-
-  const handleSizeChange = (nextSize) => {
-    setSelectedSize(nextSize);
-    resetPageInUrl();
+  const handleSizeChange = (v) => {
+    setSelectedSize(v);
+    handlePageChange(1);
   };
-
-  const handleSortChange = (nextSort) => {
-    setSortValue(nextSort);
-    resetPageInUrl();
+  const handleSortChange = (v) => {
+    setSortValue(v);
+    handlePageChange(1);
   };
-
   const handleClearAll = () => {
     setSelectedMaterial(null);
     setSelectedAppearance([]);
     setSelectedGems([]);
     setSelectedSize(null);
     setCustomPriceRange(null);
-    resetPageInUrl();
+    handlePageChange(1);
   };
 
   const desktopColsClass = isFilterOpen ? "lg:grid-cols-3" : "lg:grid-cols-4";
@@ -558,8 +438,10 @@ export default function Collections() {
 
   return (
     <>
+      <PageTitle title={t.collections} />
+
       <ProductsToolbar
-        title={t.collections}
+        title={null}
         categories={CATEGORY_ITEMS}
         activeCategoryValue={activeCategory}
         activeCategoryLabel={activeCategoryLabel}
@@ -589,7 +471,6 @@ export default function Collections() {
         selectedSize={selectedSize}
         onSizeChange={handleSizeChange}
         onClearAll={handleClearAll}
-        clearDisabled={false}
       />
 
       <div className="mx-auto w-full max-w-[1200px] px-4 py-8 md:px-6 md:py-10 lg:px-1">
@@ -598,7 +479,7 @@ export default function Collections() {
             isFilterOpen ? "gap-6 lg:grid lg:grid-cols-[320px_1fr]" : "lg:block"
           }
         >
-          {isFilterOpen ? (
+          {isFilterOpen && (
             <div className="hidden lg:block">
               <ProductsFilterPanel
                 variant="desktop"
@@ -620,21 +501,16 @@ export default function Collections() {
                 selectedSize={selectedSize}
                 onSizeChange={handleSizeChange}
                 onClearAll={handleClearAll}
-                clearDisabled={false}
               />
             </div>
-          ) : null}
+          )}
 
           <div>
             {loading ? (
-              <div className="py-10 text-center">
-                <p className="font-ui text-[13px] text-black/70">{t.loading}</p>
-              </div>
+              <div className="py-10 text-center text-black/70">{t.loading}</div>
             ) : isEmpty ? (
-              <div className="py-10 text-center">
-                <p className="font-ui text-[13px] text-black/70">
-                  {t.noProductsFound}
-                </p>
+              <div className="py-10 text-center text-black/70">
+                {t.noProductsFound}
               </div>
             ) : (
               <>
@@ -646,7 +522,7 @@ export default function Collections() {
                     animate="visible"
                     exit="hidden"
                     className={[
-                      "grid grid-cols-2 gap-x-3 gap-y-5 min-[460px]:grid-cols-2 md:grid-cols-3 md:gap-x-4 md:gap-y-6",
+                      "grid grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-3 md:gap-x-4 md:gap-y-6",
                       desktopColsClass,
                     ].join(" ")}
                   >
@@ -657,10 +533,6 @@ export default function Collections() {
                           priority={idx < 4}
                           onAddToCart={() => {}}
                           onAddToFavorites={() => {}}
-                          onMediaReady={() => {}}
-                          onImageError={(e) => {
-                            e.currentTarget.src = `${import.meta.env.BASE_URL}products/fallback.png`;
-                          }}
                         />
                       </motion.div>
                     ))}
@@ -671,13 +543,11 @@ export default function Collections() {
                   <p className="font-ui text-[13px] text-black/70">
                     {t.showing} {showingCount} {t.of} {totalItems}
                   </p>
-
                   <Pagination
                     totalItems={totalItems}
                     page={safePage}
                     pageSize={pageSize}
                     onPageChange={handlePageChange}
-                    siblingCount={1}
                   />
                 </div>
               </>
