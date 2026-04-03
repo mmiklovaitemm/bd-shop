@@ -78,13 +78,25 @@ function ProductView({ product }) {
 
   const isCurrentSelectionSoldOut = currentStock <= 0;
 
-  // 4. Nuotraukų galerija
+  // 4. Nuotraukų galerija - RODOME TIK PASIRINKTOS SPALVOS NUOTRAUKAS
   const images = useMemo(() => {
-    if (selectedVariant?.images?.length) return selectedVariant.images;
-    if (Array.isArray(product?.images) && product.images.length > 0)
-      return product.images;
+    // 1. Pirmiausia bandome imti nuotraukas iš konkretaus varianto (jei struktūra leidžia)
+    if (selectedVariant?.images?.length) {
+      return selectedVariant.images;
+    }
+
+    // 2. Jei variantas neturi savo images, bet turime bendrą variants objektą
+    const colorImages = product?.variants?.[selectedColor];
+    if (Array.isArray(colorImages)) {
+      // Jei tai nuotraukų masyvas tiesiogiai
+      if (typeof colorImages[0] === "string") return colorImages;
+      // Jei tai objektų masyvas (paimame nuotraukas iš pirmo pasitaikiusio varianto)
+      if (colorImages[0]?.images) return colorImages[0].images;
+    }
+
+    // 3. Galutinis variantas (fallback)
     return [product?.thumbnail].filter(Boolean);
-  }, [product, selectedVariant]);
+  }, [product, selectedColor, selectedVariant]);
 
   const handleAddToBag = useCallback(() => {
     if (isCurrentSelectionSoldOut) return;
