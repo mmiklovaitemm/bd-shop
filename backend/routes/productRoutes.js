@@ -7,10 +7,8 @@ const router = express.Router();
 function safeJsonParse(value, fallback) {
   if (value === null || value === undefined) return fallback;
   if (typeof value !== "string") return value;
-
   const trimmed = value.trim();
   if (!trimmed) return fallback;
-
   try {
     return JSON.parse(trimmed);
   } catch {
@@ -31,15 +29,6 @@ function joinUrl(origin, path) {
   return `${o}/${p}`;
 }
 
-function withBase(path) {
-  const base = String(FRONTEND_BASE_PATH)
-    .replace(/^\/?/, "/")
-    .replace(/\/?$/, "/");
-
-  const clean = String(path).replace(/^\/+/, "");
-  return joinUrl(FRONTEND_ORIGIN, `${base}${clean}`);
-}
-
 function withBackendBase(path) {
   const clean = String(path).replace(/^\/+/, "");
   return joinUrl(BACKEND_ORIGIN, clean);
@@ -47,224 +36,65 @@ function withBackendBase(path) {
 
 function normalizeFrontendAssetUrl(value) {
   if (!value) return "";
-
   const raw = String(value).trim();
   if (!raw) return "";
-
-  if (/^https?:\/\//i.test(raw)) {
-    try {
-      const url = new URL(raw);
-
-      if (url.hostname === "localhost" || url.hostname === "127.0.0.1") {
-        if (url.pathname.startsWith("/products/")) {
-          return withBase(url.pathname.replace(/^\/+/, ""));
-        }
-
-        if (url.pathname.startsWith("/uploads/")) {
-          return withBackendBase(url.pathname.replace(/^\/+/, ""));
-        }
-      }
-
-      return raw;
-    } catch {
-      return raw;
-    }
-  }
-
-  if (raw.startsWith("/uploads/")) {
+  if (/^https?:\/\//i.test(raw)) return raw;
+  if (raw.startsWith("/uploads/") || raw.startsWith("uploads/"))
     return withBackendBase(raw);
-  }
-
-  if (raw.startsWith("uploads/")) {
-    return withBackendBase(raw);
-  }
-
-  const productsMatch = raw.match(/\/products\/(.+)$/);
-  if (productsMatch) {
-    return withBase(`products/${productsMatch[1]}`);
-  }
-
-  if (raw.startsWith("products/")) {
-    return withBase(raw);
-  }
-
-  if (raw.startsWith("/products/")) {
-    return withBase(raw.replace(/^\/+/, ""));
-  }
-
   return raw;
 }
 
-function normalizeImageList(category, list = []) {
-  return (list || [])
-    .map((item) => {
-      if (typeof item === "string") {
-        return item.trim();
-      }
-
-      if (item && typeof item === "object") {
-        if (typeof item.url === "string") return item.url.trim();
-        if (typeof item.src === "string") return item.src.trim();
-        if (typeof item.path === "string") return item.path.trim();
-        if (typeof item.value === "string") return item.value.trim();
-      }
-
-      return "";
-    })
-    .filter(Boolean)
-    .map((item) => {
-      if (/^https?:\/\//i.test(item)) {
-        try {
-          const url = new URL(item);
-
-          if (url.hostname === "localhost" || url.hostname === "127.0.0.1") {
-            if (url.pathname.startsWith("/products/")) {
-              return withBase(url.pathname.replace(/^\/+/, ""));
-            }
-
-            if (url.pathname.startsWith("/uploads/")) {
-              return withBackendBase(url.pathname.replace(/^\/+/, ""));
-            }
-          }
-
-          return item;
-        } catch {
-          return item;
-        }
-      }
-
-      if (item.startsWith("/uploads/")) {
-        return withBackendBase(item);
-      }
-
-      if (item.startsWith("uploads/")) {
-        return withBackendBase(item);
-      }
-
-      if (item.startsWith("/products/")) {
-        return withBase(item.replace(/^\/+/, ""));
-      }
-
-      if (item.startsWith("products/")) {
-        return withBase(item);
-      }
-
-      return withBase(`products/${category}/${item}`);
-    });
-}
-
+// --- SUTVARKYTA VARIANTŲ KŪRIMO LOGIKA ---
 function buildVariants({ variants = [], sizes = [], variantStock = {} }) {
   const cleanSizes = sizes.length ? sizes : ["one size"];
-
   const result = {};
 
   for (const variant of variants) {
     const color = variant.name.toLowerCase();
+    const normalizedImages = Array.isArray(variant.images)
+      ? variant.images.map(normalizeFrontendAssetUrl)
+      : [];
 
-    const normalizedImages = normalizeImageList(
-      variant.category || "",
-      variant.images,
-    );
+    result[color] = cleanSizes.map((size) => {
+      let stock = 0;
+      if (variantStock[color] && variantStock[color][size] !== undefined) {
+        stock = Number(variantStock[color][size]);
+      } else if (
+        variantStock[color] &&
+        variantStock[color]["default"] !== undefined
+      ) {
+        stock = Number(variantStock[color]["default"]);
+      }
 
-    result[color] = cleanSizes.map((size) => ({
-      size,
-      stock: Math.max(0, Number(variantStock?.[color]?.[size] || 0)),
-      images: normalizedImages,
-    }));
+      return {
+        size: String(size),
+        stock: Math.max(0, stock),
+        images: normalizedImages,
+      };
+    });
   }
-
   return result;
 }
 
 function getTotalStockFromVariants(variants = {}) {
   return Object.values(variants).reduce((total, colorVariants) => {
     if (!Array.isArray(colorVariants)) return total;
-
     return (
-      total +
-      colorVariants.reduce((sum, variant) => {
-        return sum + Math.max(0, Number(variant?.stock) || 0);
-      }, 0)
+      total + colorVariants.reduce((sum, v) => sum + (Number(v?.stock) || 0), 0)
     );
   }, 0);
 }
 
-function sanitizeDetails(input = {}, fallbackDescription = "") {
-  const raw =
-    input && typeof input === "object" && !Array.isArray(input) ? input : {};
-
-  const detailsText =
-    typeof raw.detailsText === "string" && raw.detailsText.trim()
-      ? raw.detailsText.trim()
-      : String(fallbackDescription || "").trim();
-
-  return {
-    ...raw,
-    detailsText,
-  };
-}
-
-function mapProductRowForListing(row) {
-  const colors = safeJsonParse(row.colors, []);
-  const sizes = safeJsonParse(row.sizes, []);
-  const details = safeJsonParse(row.details, {});
-  const images = safeJsonParse(row.images, []);
-
-  const normalizedGemstones = Array.isArray(details?.gemstones)
-    ? details.gemstones
-    : Array.isArray(row.gemstones)
-      ? row.gemstones
-      : [];
-
-  const stockQuantity = Math.max(0, Number(row.stock_quantity) || 0);
-
-  return {
-    id: row.id,
-    name: row.name,
-    category: row.category,
-    priceValue: Number(row.price_value),
-    price: `€${Number(row.price_value)}`,
-    createdAt: row.created_at,
-    isBestSeller: Boolean(row.is_best_seller),
-    thumbnail: normalizeFrontendAssetUrl(row.thumbnail),
-    images: images.map(normalizeFrontendAssetUrl),
-    colors,
-    sizes,
-    stockQuantity: stockQuantity,
-    isSoldOut: stockQuantity <= 0,
-    hasGem: Boolean(details?.hasGem ?? row.has_gem ?? false),
-    surface: String(details?.surface ?? row.surface ?? "")
-      .trim()
-      .toLowerCase(),
-    gemstones: normalizedGemstones,
-  };
-}
-
 function mapProductRow(row) {
   const colors = safeJsonParse(row.colors, []);
-  const variantsRaw = safeJsonParse(row.variants, {});
+  const variants = safeJsonParse(row.variants, {});
   const sizes = safeJsonParse(row.sizes, []);
   const details = safeJsonParse(row.details, {});
   const images = safeJsonParse(row.images, []);
 
-  const variants = Object.fromEntries(
-    Object.entries(variantsRaw || {}).map(([color, colorData]) => [
-      color,
-      Array.isArray(colorData)
-        ? colorData.map((variant) => ({
-            size: variant.size,
-            stock: Number(variant.stock) || 0,
-            images: Array.isArray(variant.images)
-              ? variant.images.map(normalizeFrontendAssetUrl)
-              : [],
-          }))
-        : [],
-    ]),
-  );
-
-  const dbStock = Number(row.stock_quantity);
-  const totalStockQuantity = !isNaN(dbStock)
-    ? dbStock
+  const stockFromDb = Number(row.stock_quantity);
+  const totalStockQuantity = !isNaN(stockFromDb)
+    ? stockFromDb
     : getTotalStockFromVariants(variants);
 
   return {
@@ -286,170 +116,60 @@ function mapProductRow(row) {
   };
 }
 
-/**
- * GET ALL
- */
+/** GET ALL */
 router.get("/", async (req, res) => {
   try {
-    const view = String(req.query.view || "")
-      .trim()
-      .toLowerCase();
-    const isListingView = view === "listing";
-
     const [rows] = await db.query("SELECT * FROM products");
-
-    if (isListingView) {
-      return res.json(rows.map(mapProductRowForListing));
-    }
-
-    return res.json(rows.map(mapProductRow));
+    res.json(rows.map(mapProductRow));
   } catch {
     res.status(500).json({ message: "Failed to fetch products" });
   }
 });
 
-/**
- * GET ONE
- */
+/** GET ONE */
 router.get("/:id", async (req, res) => {
   try {
     const [rows] = await db.query("SELECT * FROM products WHERE id = ?", [
       req.params.id,
     ]);
-
-    if (!rows.length) {
+    if (!rows.length)
       return res.status(404).json({ message: "Product not found" });
-    }
-
     res.json(mapProductRow(rows[0]));
   } catch {
     res.status(500).json({ message: "Failed to fetch product" });
   }
 });
 
-/**
- * CREATE
- */
-router.post("/", requireAdmin, async (req, res) => {
-  try {
-    const {
-      id,
-      name,
-      category,
-      priceValue,
-      createdAt,
-      description,
-      details: incomingDetails = {},
-      variants = [],
-      sizes = [],
-      variantStock = {},
-      isBestSeller = false,
-    } = req.body;
-
-    if (
-      !id ||
-      !name ||
-      !category ||
-      !priceValue ||
-      !createdAt ||
-      !description
-    ) {
-      return res.status(400).json({ message: "Missing required fields" });
-    }
-
-    const builtVariants = buildVariants({
-      variants: variants.map((v) => ({
-        ...v,
-        category,
-      })),
-      sizes,
-      variantStock,
-    });
-
-    const colors = Object.keys(builtVariants);
-    const totalStockQuantity = getTotalStockFromVariants(builtVariants);
-    const firstVariant = Object.values(builtVariants)[0];
-    const thumbnail = firstVariant?.[0]?.images?.[0] || "";
-    const allImages = Object.values(builtVariants).flatMap(
-      (colorArr) => colorArr[0]?.images || [],
-    );
-
-    const details = sanitizeDetails(incomingDetails, description);
-
-    await db.query(
-      `INSERT INTO products (
-        id, name, category, price_value, created_at,
-        is_best_seller, thumbnail, images, colors, variants,
-        sizes, details, stock_quantity
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        id,
-        name,
-        category,
-        Number(priceValue),
-        createdAt,
-        isBestSeller ? 1 : 0,
-        thumbnail,
-        JSON.stringify(allImages),
-        JSON.stringify(colors),
-        JSON.stringify(builtVariants),
-        JSON.stringify(sizes),
-        JSON.stringify(details),
-        totalStockQuantity,
-      ],
-    );
-
-    const [rows] = await db.query("SELECT * FROM products WHERE id = ?", [id]);
-
-    res.status(201).json({ product: mapProductRow(rows[0]) });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-/**
- * UPDATE
- */
+/** UPDATE */
 router.put("/:id", requireAdmin, async (req, res) => {
   try {
+    // IŠ BODY PASIIMAME TIK TUOS DUOMENIS, KURIŲ REIKIA SQL UŽKLAUSAI
     const {
-      id,
       name,
       category,
       priceValue,
       createdAt,
-      description,
-      details: incomingDetails = {},
-      variants = [],
-      sizes = [],
-      variantStock = {},
-      isBestSeller = false,
-    } = req.body;
-
-    const builtVariants = buildVariants({
-      variants: variants.map((v) => ({
-        ...v,
-        category,
-      })),
+      variants,
       sizes,
       variantStock,
-    });
+      isBestSeller,
+    } = req.body;
+    const id = req.params.id;
 
+    const builtVariants = buildVariants({ variants, sizes, variantStock });
     const colors = Object.keys(builtVariants);
-    const totalStockQuantity = getTotalStockFromVariants(builtVariants);
-    const firstVariant = Object.values(builtVariants)[0];
-    const thumbnail = firstVariant?.[0]?.images?.[0] || "";
+    const totalStock = getTotalStockFromVariants(builtVariants);
+
     const allImages = Object.values(builtVariants).flatMap(
       (colorArr) => colorArr[0]?.images || [],
     );
-
-    const details = sanitizeDetails(incomingDetails, description);
+    const thumbnail = allImages[0] || "";
 
     await db.query(
-      `UPDATE products SET
-        name = ?, category = ?, price_value = ?, created_at = ?,
-        is_best_seller = ?, thumbnail = ?, images = ?, colors = ?, variants = ?,
-        sizes = ?, details = ?, stock_quantity = ?
+      `UPDATE products SET 
+        name = ?, category = ?, price_value = ?, created_at = ?, 
+        is_best_seller = ?, thumbnail = ?, images = ?, colors = ?, 
+        variants = ?, sizes = ?, stock_quantity = ? 
       WHERE id = ?`,
       [
         name,
@@ -462,23 +182,20 @@ router.put("/:id", requireAdmin, async (req, res) => {
         JSON.stringify(colors),
         JSON.stringify(builtVariants),
         JSON.stringify(sizes),
-        JSON.stringify(details),
-        totalStockQuantity,
+        totalStock,
         id,
       ],
     );
 
     const [rows] = await db.query("SELECT * FROM products WHERE id = ?", [id]);
-
     res.json({ product: mapProductRow(rows[0]) });
   } catch (err) {
+    console.error("Update error:", err);
     res.status(500).json({ message: err.message });
   }
 });
 
-/**
- * DELETE
- */
+/** DELETE */
 router.delete("/:id", requireAdmin, async (req, res) => {
   try {
     await db.query("DELETE FROM products WHERE id = ?", [req.params.id]);
