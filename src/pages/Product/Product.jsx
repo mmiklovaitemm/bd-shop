@@ -70,7 +70,7 @@ function ProductView({ product }) {
   }, [product, selectedColor, selectedSize]);
 
   const currentStock = useMemo(() => {
-    // Check specific variant stock first
+    // Check specific variant stock first (from variants JSON)
     if (
       selectedVariant &&
       selectedVariant.stock !== undefined &&
@@ -78,7 +78,7 @@ function ProductView({ product }) {
     ) {
       return Number(selectedVariant.stock);
     }
-    // Fallback to various possible database column names
+    // Fallback to various possible database column names (Crucial for fix)
     return Number(product?.stock_quantity ?? product?.stockQuantity ?? 10);
   }, [product, selectedVariant]);
 
@@ -104,12 +104,11 @@ function ProductView({ product }) {
       );
       if (filtered.length > 0) return filtered;
 
-      // If gold is selected but no 'gold' in filename, return the whole array or first 2
       return product.images.slice(0, 2);
     }
 
     return [product?.thumbnail].filter(Boolean);
-  }, [product, selectedColor]); // Removed selectedVariant to fix warning
+  }, [product, selectedColor]); // FIXED: Removed selectedVariant to clear the warning
 
   // 5. Add to Bag Action
   const handleAddToBag = useCallback(
