@@ -28,7 +28,21 @@ import { useProduct } from "@/hooks/useProducts";
 import cn from "@/utils/cn";
 import preventDragHandler from "@/utils/preventDrag";
 
-// Helpers
+// --- HELPERS ---
+
+/**
+ * Safely parses JSON strings from DB
+ */
+function safeJsonParse(value, fallback) {
+  if (value === null || value === undefined) return fallback;
+  if (typeof value !== "string") return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
 function isVariantObject(value) {
   return (
     value &&
@@ -39,7 +53,8 @@ function isVariantObject(value) {
 }
 
 function hasVariantLevelStock(product) {
-  return Object.values(product?.variants || {}).some(
+  const variants = product?.variants || {};
+  return Object.values(variants).some(
     (value) =>
       Array.isArray(value) && value.length > 0 && isVariantObject(value[0]),
   );
@@ -102,17 +117,27 @@ function getFirstAvailableSize(product, color, usesVariantLevelStock) {
   return product?.sizes?.[0] ? String(product.sizes[0]) : null;
 }
 
-function ProductView({ product }) {
+function ProductView({ product: rawProduct }) {
   const { t } = useLanguage();
   const { addToCart } = useAddToCart();
   const openBag = useBagDrawer((s) => s.open);
 
+  // PREPARE DATA: Ensure objects are parsed even if they come as strings
+  const product = useMemo(() => {
+    if (!rawProduct) return null;
+    return {
+      ...rawProduct,
+      variants: safeJsonParse(rawProduct.variants, {}),
+      colors: safeJsonParse(rawProduct.colors, []),
+      sizes: safeJsonParse(rawProduct.sizes, []),
+      details: safeJsonParse(rawProduct.details, {}),
+    };
+  }, [rawProduct]);
+
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
-
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [activeImgIndex, setActiveImgIndex] = useState(0);
-
   const [quantity, setQuantity] = useState(1);
 
   const usesVariantLevelStock = useMemo(
@@ -147,13 +172,11 @@ function ProductView({ product }) {
     if (selectedColor && availableColors.includes(selectedColor)) {
       return selectedColor;
     }
-
     return getFirstAvailableColor(product, usesVariantLevelStock);
   }, [availableColors, product, selectedColor, usesVariantLevelStock]);
 
   const effectiveColorEntries = useMemo(() => {
     if (!usesVariantLevelStock || !effectiveSelectedColor) return [];
-
     return Array.isArray(product?.variants?.[effectiveSelectedColor])
       ? product.variants[effectiveSelectedColor]
       : [];
@@ -190,7 +213,6 @@ function ProductView({ product }) {
 
   const selectedVariant = useMemo(() => {
     if (!usesVariantLevelStock) return null;
-
     return (
       effectiveColorEntries.find(
         (variant) => String(variant?.size) === String(effectiveSelectedSize),
@@ -200,9 +222,11 @@ function ProductView({ product }) {
 
   const currentStock = useMemo(() => {
     if (!usesVariantLevelStock) {
-      return Math.max(0, Number(product?.stockQuantity) || 0);
+      return Math.max(
+        0,
+        Number(product?.stockQuantity || product?.stock_quantity) || 0,
+      );
     }
-
     return Math.max(0, Number(selectedVariant?.stock) || 0);
   }, [product, selectedVariant, usesVariantLevelStock]);
 
@@ -228,7 +252,6 @@ function ProductView({ product }) {
     }
 
     const fallbackColor = getFallbackColor(product);
-
     const base = (product?.variants?.[fallbackColor] || []).filter(Boolean);
     const selectedArr = (
       product?.variants?.[effectiveSelectedColor] || []
@@ -252,46 +275,27 @@ function ProductView({ product }) {
   const handleAddToBag = useCallback(
     (e) => {
       e?.preventDefault?.();
-      e?.stopPropagation?.();
-
       if (!product || isCurrentSelectionSoldOut) return;
 
-      const fallbackColor = getFallbackColor(product);
-
-      // 1. Resolve product image based on variants or thumbnail
       const img = usesVariantLevelStock
         ? selectedVariant?.images?.[0] || product?.thumbnail || ""
         : product?.variants?.[effectiveSelectedColor]?.[0] ||
-          product?.variants?.[fallbackColor]?.[0] ||
           product?.thumbnail ||
           "";
 
-      // 2. Validate service option for personalized items
-      if (product.category === "personal" && !selectedService) {
-        alert(t.pleaseChooseServiceOption || "Please choose a service option");
-        return;
-      }
-
-      // 3. Dispatch to cart with normalized data types
       addToCart({
         product,
         productId: String(product.id),
         name: product.name,
         price: product.price,
         category: product.category,
-        // Ensure color and size are strings to match Cart key logic
-        color: effectiveSelectedColor
-          ? String(effectiveSelectedColor)
-          : fallbackColor
-            ? String(fallbackColor)
-            : "silver",
+        color: String(effectiveSelectedColor || "silver"),
         size: effectiveSelectedSize ? String(effectiveSelectedSize) : null,
         quantity: Number(quantity) || 1,
         image: img,
         serviceOption: selectedService || null,
       });
 
-      // 4. Trigger UI response
       openBag();
     },
     [
@@ -304,21 +308,18 @@ function ProductView({ product }) {
       quantity,
       selectedService,
       selectedVariant,
-      t.pleaseChooseServiceOption,
       usesVariantLevelStock,
     ],
   );
 
   const handleSelectColor = useCallback(
     (color) => {
-      const nextColor = color;
+      setSelectedColor(color);
       const nextSize = getFirstAvailableSize(
         product,
-        nextColor,
+        color,
         usesVariantLevelStock,
       );
-
-      setSelectedColor(nextColor);
       setSelectedSize(nextSize);
       setQuantity(1);
     },
@@ -349,10 +350,7 @@ function ProductView({ product }) {
             <img
               src={backIcon}
               alt=""
-              aria-hidden="true"
-              draggable={false}
-              onDragStart={preventDragHandler}
-              className="h-3 w-3 select-none transition-transform duration-200 ease-out"
+              className="h-3 w-3 transition-transform duration-200 ease-out"
             />
             <span>{t.back}</span>
           </span>
@@ -366,7 +364,6 @@ function ProductView({ product }) {
           openLightbox={openLightbox}
           btnHover={HOVER_CLASSES.btn}
         />
-
         <ProductInfo
           product={product}
           selectedSize={effectiveSelectedSize}
@@ -396,14 +393,12 @@ function ProductView({ product }) {
         selectedColor={effectiveSelectedColor}
         selectedSize={effectiveSelectedSize}
       />
-
       {product?.category === "personal" && (
         <HowItWorksPanel
           isOpen={isHowItWorksOpen}
           onClose={() => setIsHowItWorksOpen(false)}
         />
       )}
-
       <Lightbox
         isOpen={isLightboxOpen}
         onClose={closeLightbox}
@@ -412,7 +407,6 @@ function ProductView({ product }) {
         setActiveImgIndex={setActiveImgIndex}
         product={product}
       />
-
       <FullWidthDivider />
       <YouMayAlsoLike currentProduct={product} />
     </main>
@@ -424,33 +418,18 @@ export default function Product() {
   const { id } = useParams();
   const { product, loading } = useProduct(id);
 
-  if (loading) {
+  if (loading)
     return (
-      <main className="mx-auto w-full max-w-[1200px] px-4 py-10 md:px-6">
-        <div className="flex min-h-[50vh] flex-col items-center justify-center">
-          <p className="font-ui text-[14px] text-black/60">{t.loading}</p>
-        </div>
+      <main className="mx-auto w-full max-w-[1200px] px-4 py-10 text-center">
+        <p>{t.loading}</p>
       </main>
     );
-  }
-
-  if (!product) {
+  if (!product)
     return (
-      <main className="mx-auto w-full max-w-[1200px] px-4 py-10 md:px-6">
-        <div className="flex min-h-[50vh] flex-col items-center justify-center">
-          <p className="font-ui text-[14px] text-black/60">
-            {id ? t.productNotFound : t.invalidProductUrl}
-          </p>
-          <Link
-            to="/collections"
-            className="mt-4 inline-block font-ui text-[14px] text-black underline transition-colors hover:text-black/70"
-          >
-            {t.backToCollections}
-          </Link>
-        </div>
+      <main className="mx-auto w-full max-w-[1200px] px-4 py-10 text-center">
+        <p>{t.productNotFound}</p>
       </main>
     );
-  }
 
   return <ProductView key={product.id} product={product} />;
 }
