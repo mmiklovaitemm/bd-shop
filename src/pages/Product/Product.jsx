@@ -25,6 +25,7 @@ function ProductView({ product }) {
   const [activeImgIndex, setActiveImgIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
 
+  // 1. Spalvų paruošimas
   const availableColors = useMemo(() => {
     const colors = Array.isArray(product?.colors) ? product.colors : [];
     return colors.length > 0 ? colors : Object.keys(product?.variants || {});
@@ -34,43 +35,64 @@ function ProductView({ product }) {
     availableColors[0] || "silver",
   );
 
-  const effectiveAvailableSizes = useMemo(() => {
-    const v = product?.variants?.[selectedColor];
-    if (Array.isArray(v) && v.length > 0 && typeof v[0] === "object") {
-      return v.map((item) => String(item.size));
-    }
-    if (Array.isArray(product?.sizes)) {
-      return product.sizes.map((s) => String(s));
-    }
-    return [];
-  }, [product, selectedColor]);
+  // 2. Pagalbinė funkcija dydžiams gauti pagal spalvą
+  const getSizesForColor = useCallback(
+    (color) => {
+      const v = product?.variants?.[color];
+      if (Array.isArray(v) && v.length > 0) {
+        return v.map((item) => String(item.size));
+      }
+      if (Array.isArray(product?.sizes)) {
+        return product.sizes.map((s) => String(s));
+      }
+      return [];
+    },
+    [product],
+  );
 
+  const effectiveAvailableSizes = useMemo(
+    () => getSizesForColor(selectedColor),
+    [selectedColor, getSizesForColor],
+  );
+
+  // Pradinio dydžio nustatymas
   const [selectedSize, setSelectedSize] = useState(() => {
-    const initialV = product?.variants?.[availableColors[0] || "silver"];
-    if (Array.isArray(initialV) && initialV.length > 0)
-      return String(initialV[0].size);
-    if (Array.isArray(product?.sizes) && product.sizes.length > 0)
-      return String(product.sizes[0]);
-    return null;
+    const sizes = getSizesForColor(availableColors[0] || "silver");
+    return sizes.length > 0 ? sizes[0] : null;
   });
 
-  const currentStock = useMemo(() => {
-    const variantData = product?.variants?.[selectedColor];
-    const selectedV = Array.isArray(variantData)
-      ? variantData.find((v) => String(v.size) === String(selectedSize))
-      : null;
+  // SPALVOS KEITIMO FUNKCIJA (Čia saugiai atnaujiname ir dydį)
+  const handleColorChange = useCallback(
+    (newColor) => {
+      setSelectedColor(newColor);
+      const newSizes = getSizesForColor(newColor);
+      if (newSizes.length > 0) {
+        setSelectedSize(newSizes[0]);
+      }
+    },
+    [getSizesForColor],
+  );
 
-    if (selectedV && selectedV.stock !== undefined) {
-      return Number(selectedV.stock);
+  // 3. LIKUČIO SKAIČIAVIMAS
+  const currentStock = useMemo(() => {
+    if (!product?.variants || Object.keys(product.variants).length === 0) {
+      return Number(product?.stockQuantity ?? product?.stock_quantity ?? 0);
     }
-    return Number(product?.stockQuantity ?? product?.stock_quantity ?? 10);
+
+    const variantData = product.variants[selectedColor];
+    if (!Array.isArray(variantData)) return 0;
+
+    const selectedV = variantData.find(
+      (v) => String(v.size) === String(selectedSize),
+    );
+    return selectedV ? Number(selectedV.stock) : 0;
   }, [product, selectedColor, selectedSize]);
 
   const isCurrentSelectionSoldOut = currentStock <= 0;
 
+  // 4. Nuotraukų filtravimas
   const images = useMemo(() => {
     if (!product) return [];
-
     const colorVariants = product?.variants?.[selectedColor];
     if (Array.isArray(colorVariants) && colorVariants.length > 0) {
       const variantWithImages = colorVariants.find(
@@ -83,21 +105,11 @@ function ProductView({ product }) {
       const filtered = product.images.filter((img) => {
         const url = img.toLowerCase();
         const color = selectedColor.toLowerCase();
-
-        if (color === "silver") {
-          return !url.includes("gold");
-        }
-
+        if (color === "silver") return !url.includes("gold");
         return url.includes(color);
       });
-
-      if (filtered.length > 0) return filtered;
-
-      return selectedColor === "silver"
-        ? product.images.slice(0, 2)
-        : product.images.filter((img) => img.toLowerCase().includes("gold"));
+      return filtered.length > 0 ? filtered : product.images.slice(0, 4);
     }
-
     return [product.thumbnail].filter(Boolean);
   }, [product, selectedColor]);
 
@@ -163,12 +175,11 @@ function ProductView({ product }) {
           availableColors={availableColors}
           currentStock={currentStock}
           setSelectedSize={setSelectedSize}
-          setSelectedColor={setSelectedColor}
+          setSelectedColor={handleColorChange}
           quantity={quantity}
           setQuantity={setQuantity}
           onAddToBag={handleAddToBag}
           onOpenDetails={() => setIsDetailsOpen(true)}
-          onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
         />
       </div>
 
