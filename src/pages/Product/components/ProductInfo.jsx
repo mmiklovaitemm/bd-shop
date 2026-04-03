@@ -41,86 +41,11 @@ const ProductBenefits = memo(() => {
   );
 });
 
-const SizeSelector = memo(
-  ({ sizes, availableSizes, selectedSize, onSelectSize }) => {
-    const { t } = useLanguage();
-    if (!sizes?.length)
-      return (
-        <p className="mt-2 font-ui text-[13px] text-black/50">{t.oneSize}</p>
-      );
-
-    return (
-      <div className="mt-2 flex flex-wrap gap-2">
-        {sizes.map((size) => {
-          const normalizedSize = String(size);
-          const isActive = String(selectedSize) === normalizedSize;
-          // Užtikriname, kad lyginame String su String masyvu
-          const isAvailable = availableSizes
-            .map(String)
-            .includes(normalizedSize);
-
-          return (
-            <button
-              key={normalizedSize}
-              type="button"
-              disabled={!isAvailable}
-              onClick={() => isAvailable && onSelectSize(normalizedSize)}
-              className={cn(
-                "h-10 min-w-12 border px-3 font-ui text-[13px] transition-colors",
-                isActive
-                  ? "bg-black text-white border-black"
-                  : "bg-white text-black border-black/40 hover:bg-black/5",
-                !isAvailable && "opacity-30 cursor-not-allowed",
-              )}
-            >
-              {size}
-            </button>
-          );
-        })}
-      </div>
-    );
-  },
-);
-
-const ColorSelector = memo(
-  ({ colors, availableColors, selectedColor, onSelectColor }) => {
-    const { t } = useLanguage();
-    const colorNames = { gold: t.gold, silver: t.silver, pearl: t.perlas };
-    return (
-      <div className="mt-2 flex flex-wrap gap-2">
-        {colors.map((color) => {
-          const isActive = selectedColor === color;
-          const isAvailable =
-            availableColors.length === 0 || availableColors.includes(color);
-          return (
-            <button
-              key={color}
-              type="button"
-              disabled={!isAvailable}
-              onClick={() => isAvailable && onSelectColor(color)}
-              className={cn(
-                "h-10 border px-4 font-ui text-[13px] transition-colors",
-                isActive
-                  ? "bg-black text-white border-black"
-                  : "bg-white text-black border-black/40 hover:bg-black/5",
-                !isAvailable && "opacity-30 cursor-not-allowed",
-              )}
-            >
-              {colorNames[color] || color}
-            </button>
-          );
-        })}
-      </div>
-    );
-  },
-);
-
 const ProductInfo = memo(function ProductInfo({
   product,
   selectedSize,
   selectedColor,
   availableSizes = [],
-  availableColors = [],
   currentStock = 0,
   setSelectedSize,
   setSelectedColor,
@@ -128,13 +53,12 @@ const ProductInfo = memo(function ProductInfo({
   setQuantity,
   onAddToBag,
   onOpenDetails,
-  onOpenHowItWorks,
 }) {
   const { t } = useLanguage();
   const { has, toggle } = useFavorites();
   const isWishlisted = has(product?.id);
 
-  // PRIORITETAS: Naudojame bendrą stockQuantity, jei currentStock (variantų) yra 0
+  // GRIEŽTAS TIKRINIMAS: Naudojame bendrą likutį (10), jei varianto stock yra 0
   const totalStock =
     Number(currentStock) || Number(product?.stockQuantity) || 0;
   const isSoldOut = totalStock <= 0;
@@ -150,24 +74,62 @@ const ProductInfo = memo(function ProductInfo({
         <p className="font-ui text-[16px] text-black/90">{product.price}</p>
       </div>
 
+      {/* DYDŽIŲ SELEKTORIUS */}
       <div className="mt-5">
         <p className="font-ui text-[13px] text-black/70">{t.size}:</p>
-        <SizeSelector
-          sizes={product.sizes}
-          availableSizes={availableSizes}
-          selectedSize={selectedSize}
-          onSelectSize={setSelectedSize}
-        />
+        <div className="mt-2 flex flex-wrap gap-2">
+          {product.sizes?.map((size) => {
+            const sText = String(size);
+            const isActive = String(selectedSize) === sText;
+
+            // Jei turime stock (pvz. 10), visi produkto dydžiai turi būti pasiekiami
+            const isAvailable =
+              availableSizes.map(String).includes(sText) || totalStock > 0;
+
+            return (
+              <button
+                key={sText}
+                type="button"
+                disabled={!isAvailable}
+                onClick={() => setSelectedSize(sText)}
+                className={cn(
+                  "h-10 min-w-12 border px-3 font-ui text-[13px] transition-colors",
+                  isActive
+                    ? "bg-black text-white border-black"
+                    : "bg-white text-black border-black/40 hover:bg-black/5",
+                  !isAvailable && "opacity-30 cursor-not-allowed",
+                )}
+              >
+                {size}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
+      {/* SPALVŲ SELEKTORIUS */}
       <div className="mt-5">
         <p className="font-ui text-[13px] text-black/70">{t.color}:</p>
-        <ColorSelector
-          colors={product.colors}
-          availableColors={availableColors}
-          selectedColor={selectedColor}
-          onSelectColor={setSelectedColor}
-        />
+        <div className="mt-2 flex flex-wrap gap-2">
+          {product.colors?.map((color) => {
+            const isActive = selectedColor === color;
+            return (
+              <button
+                key={color}
+                type="button"
+                onClick={() => setSelectedColor(color)}
+                className={cn(
+                  "h-10 border px-4 font-ui text-[13px] transition-colors",
+                  isActive
+                    ? "bg-black text-white border-black"
+                    : "bg-white text-black border-black/40 hover:bg-black/5",
+                )}
+              >
+                {t[color] || color}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="mt-3">
@@ -245,24 +207,6 @@ const ProductInfo = memo(function ProductInfo({
           />
         </div>
       </div>
-
-      {product.category === "personal" && (
-        <div
-          className="mt-2 bg-black/5 px-4 py-3 cursor-pointer group"
-          onClick={onOpenHowItWorks}
-        >
-          <div className="flex items-center justify-between font-ui text-[13px]">
-            <span className="underline underline-offset-4">
-              {t.personalJewelleryHowItWorks}
-            </span>
-            <img
-              src={arrowUpRightIcon}
-              alt=""
-              className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-            />
-          </div>
-        </div>
-      )}
       <ProductBenefits />
     </div>
   );

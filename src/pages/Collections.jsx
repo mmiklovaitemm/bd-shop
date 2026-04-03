@@ -111,8 +111,6 @@ export default function Collections() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { products, loading } = useProducts();
 
-  console.log("DEBUG - Visi produktai iš useProducts:", products);
-
   const CATEGORY_ITEMS = useMemo(
     () => [
       { label: t.rings, value: "rings" },

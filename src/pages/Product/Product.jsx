@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import useLanguage from "@/context/useLanguage";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
@@ -25,7 +25,7 @@ function ProductView({ product }) {
   const [activeImgIndex, setActiveImgIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
 
-  // 1. Spalvos
+  // 1. Spalvų paruošimas
   const availableColors = useMemo(() => {
     const colors = Array.isArray(product?.colors) ? product.colors : [];
     return colors.length > 0 ? colors : Object.keys(product?.variants || {});
@@ -35,73 +35,62 @@ function ProductView({ product }) {
     availableColors[0] || "silver",
   );
 
-  // 2. Dydžiai - SVARBU: užtikriname, kad jie būtų pasiekiami net jei variantai tušti
+  // 2. DYDŽIŲ PARUOŠIMAS (Visada paverčiame į String)
   const effectiveAvailableSizes = useMemo(() => {
     const v = product?.variants?.[selectedColor];
-    if (Array.isArray(v) && v.length > 0) {
-      return v.map((item) => String(item.size || item));
+    if (Array.isArray(v) && v.length > 0 && typeof v[0] === "object") {
+      return v.map((item) => String(item.size));
     }
-    // Jei variantuose nėra info, imame iš pagrindinio sizes masyvo
-    if (Array.isArray(product?.sizes) && product.sizes.length > 0) {
+    if (Array.isArray(product?.sizes)) {
       return product.sizes.map((s) => String(s));
     }
     return [];
   }, [product, selectedColor]);
 
-  // Pradinį dydį nustatome kaip String
-  const [selectedSize, setSelectedSize] = useState(
-    effectiveAvailableSizes[0] ? String(effectiveAvailableSizes[0]) : null,
-  );
+  // Saugus pradinio dydžio nustatymas
+  const [selectedSize, setSelectedSize] = useState(() => {
+    const initialV = product?.variants?.[availableColors[0] || "silver"];
+    if (Array.isArray(initialV) && initialV.length > 0)
+      return String(initialV[0].size);
+    if (Array.isArray(product?.sizes) && product.sizes.length > 0)
+      return String(product.sizes[0]);
+    return null;
+  });
 
-  // 3. Variantas
-  const selectedVariant = useMemo(() => {
-    const v = product?.variants?.[selectedColor];
-    if (!Array.isArray(v)) return null;
-    return v.find((item) => String(item.size) === String(selectedSize)) || v[0];
-  }, [product, selectedColor, selectedSize]);
-
-  // 4. --- GRIEŽTAS STOCK SKAIČIAVIMAS ---
+  // 3. Likučio skaičiavimas (Stock)
   const currentStock = useMemo(() => {
-    if (
-      selectedVariant &&
-      typeof selectedVariant.stock !== "undefined" &&
-      selectedVariant.stock !== null
-    ) {
-      return Number(selectedVariant.stock);
+    const variantData = product?.variants?.[selectedColor];
+    const selectedV = Array.isArray(variantData)
+      ? variantData.find((v) => String(v.size) === String(selectedSize))
+      : null;
+
+    if (selectedV && selectedV.stock !== undefined) {
+      return Number(selectedV.stock);
     }
-    const stock = product?.stockQuantity || product?.stock_quantity;
-    if (stock !== undefined && stock !== null) {
-      return Number(stock);
-    }
-    if (product?.name) return 10; // Saugiklis, jei duomenys yra, bet JS jų nemato
-    return 0;
-  }, [product, selectedVariant]);
+    // Jei variante stock nėra, paimame tą 10 iš stockQuantity
+    return Number(product?.stockQuantity ?? product?.stock_quantity ?? 10);
+  }, [product, selectedColor, selectedSize]);
 
   const isCurrentSelectionSoldOut = currentStock <= 0;
 
-  // 5. Nuotraukos
+  // 4. Nuotraukų parinkimas
   const images = useMemo(() => {
     if (!product) return [];
-    const colorEntries = product?.variants?.[selectedColor];
-    if (Array.isArray(colorEntries) && colorEntries.length > 0) {
-      const entryWithImages = colorEntries.find(
-        (e) => Array.isArray(e.images) && e.images.length > 0,
-      );
-      if (entryWithImages) return entryWithImages.images;
-    }
-    if (Array.isArray(product?.images) && product.images.length > 0) {
+    if (Array.isArray(product.images) && product.images.length > 0) {
       const filtered = product.images.filter((img) =>
         img.toLowerCase().includes(selectedColor.toLowerCase()),
       );
-      return filtered.length > 0 ? filtered : product.images.slice(0, 2);
+      if (filtered.length > 0) return filtered;
+      return product.images.slice(0, 4);
     }
-    return [product?.thumbnail].filter(Boolean);
+    return [product.thumbnail].filter(Boolean);
   }, [product, selectedColor]);
 
   const handleAddToBag = useCallback(
     (e) => {
       if (e && e.preventDefault) e.preventDefault();
       if (isCurrentSelectionSoldOut) return;
+
       addToCart({
         product,
         productId: String(product.id),
@@ -158,18 +147,8 @@ function ProductView({ product }) {
           availableSizes={effectiveAvailableSizes}
           availableColors={availableColors}
           currentStock={currentStock}
-          isCurrentSelectionSoldOut={isCurrentSelectionSoldOut}
           setSelectedSize={setSelectedSize}
-          setSelectedColor={(color) => {
-            setSelectedColor(color);
-            const v = product?.variants?.[color];
-            if (Array.isArray(v) && v.length > 0) {
-              const firstWithStock =
-                v.find((item) => Number(item.stock) > 0) || v[0];
-              if (firstWithStock?.size)
-                setSelectedSize(String(firstWithStock.size));
-            }
-          }}
+          setSelectedColor={setSelectedColor}
           quantity={quantity}
           setQuantity={setQuantity}
           onAddToBag={handleAddToBag}
