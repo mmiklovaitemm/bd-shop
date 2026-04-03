@@ -17,39 +17,6 @@ import FullWidthDivider from "@/components/ui/FullWidthDivider";
 
 const API_ORIGIN = "https://bd-shop-gfva.onrender.com";
 
-function isVariantObject(value) {
-  return (
-    value &&
-    typeof value === "object" &&
-    !Array.isArray(value) &&
-    Array.isArray(value.images)
-  );
-}
-
-function usesVariantLevelStock(product) {
-  return Object.values(product?.variants || {}).some(
-    (value) =>
-      Array.isArray(value) && value.length > 0 && isVariantObject(value[0]),
-  );
-}
-
-function getColorEntries(product, color) {
-  if (!product) return [];
-  return Array.isArray(product?.variants?.[color])
-    ? product.variants[color]
-    : [];
-}
-
-function getVariantStock(product, color, size) {
-  if (!product) return 0;
-  if (!usesVariantLevelStock(product)) {
-    return Math.max(0, Number(product?.stockQuantity) || 0);
-  }
-  const entries = getColorEntries(product, color);
-  const variant = entries.find((v) => String(v?.size) === String(size));
-  return Math.max(0, Number(variant?.stock) || 0);
-}
-
 export default function Checkout() {
   const navigate = useNavigate();
   const { t } = useLanguage();
@@ -108,7 +75,7 @@ export default function Checkout() {
 
   const subtotal = useMemo(() => {
     return items.reduce((sum, item) => {
-      const base = Number(item.price) || 0;
+      const base = Number(item.price?.toString().replace("€", "")) || 0;
       const qty = Number(item.quantity || 1);
       const service = String(item.serviceOption || "").toLowerCase();
       const fee = service.includes("shipping") ? SHIPPING_KIT_FEE : 0;
@@ -127,7 +94,7 @@ export default function Checkout() {
   );
 
   const calcLineTotal = (item) => {
-    const base = Number(item.price) || 0;
+    const base = Number(item.price?.toString().replace("€", "")) || 0;
     const qty = Number(item.quantity || 1);
     const fee = String(item.serviceOption || "")
       .toLowerCase()
@@ -175,55 +142,8 @@ export default function Checkout() {
     return Object.keys(next).length === 0;
   };
 
-  const validateCartStock = async () => {
-    try {
-      const res = await fetch(`${API_ORIGIN}/api/products`, {
-        credentials: "include",
-      });
-      const data = await res.json();
-      const list = Array.isArray(data) ? data : data?.products || [];
-
-      const productsById = new Map();
-      list.forEach((p) => {
-        if (p.id) productsById.set(String(p.id), p);
-        if (p.slug) productsById.set(String(p.slug), p);
-      });
-
-      const stockErrors = [];
-      const errText = t?.checkout?.errors || {};
-
-      for (const item of items) {
-        const pid = String(item.productId || item.id || "");
-        const product = productsById.get(pid);
-        if (!product) continue;
-
-        const qty = Number(item.quantity || 1);
-        const stockAvailable = getVariantStock(product, item.color, item.size);
-
-        if (stockAvailable <= 0) {
-          const msg = errText.productSoldOut || "{productName} is sold out";
-          stockErrors.push(msg.replace("{productName}", item.name));
-        } else if (qty > stockAvailable) {
-          const msg =
-            errText.notEnoughStock ||
-            "Only {stockQuantity} left for {productName}";
-          stockErrors.push(
-            msg
-              .replace("{stockQuantity}", stockAvailable)
-              .replace("{productName}", item.name)
-              .replace("{qty}", qty),
-          );
-        }
-      }
-      return stockErrors;
-    } catch (err) {
-      console.error("Stock validation error:", err);
-      return [];
-    }
-  };
-
   const handlePay = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (payStatus === "success" || isSubmitting) return;
 
     const ok = validate();
@@ -232,18 +152,11 @@ export default function Checkout() {
     setIsSubmitting(true);
 
     try {
-      const stockErrors = await validateCartStock();
-      if (stockErrors.length > 0) {
-        setErrors((prev) => ({ ...prev, submit: stockErrors[0] }));
-        setIsSubmitting(false);
-        return;
-      }
-
       const payload = {
         items: items.map((it) => ({
           productId: it.productId ?? it.id ?? null,
           title: it.name ?? "",
-          price: Number(it.price ?? 0),
+          price: Number(it.price?.toString().replace("€", "") ?? 0),
           qty: Number(it.quantity ?? 1),
           image: it.image ?? null,
           color: it.color ?? null,
@@ -274,6 +187,8 @@ export default function Checkout() {
             : null,
       };
 
+      console.log("DEBUG - Submitting order:", payload);
+
       const res = await fetch(`${API_ORIGIN}/api/orders`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -288,6 +203,8 @@ export default function Checkout() {
           data?.message || t?.somethingWentWrong || "Something went wrong",
         );
       }
+
+      console.log("DEBUG - Order success:", data);
 
       clearCart();
       setIsSubmitting(false);
@@ -345,6 +262,7 @@ export default function Checkout() {
                 clearError={clearError}
                 emailRef={emailRef}
               />
+
               <DeliveryToggle
                 deliveryType={deliveryType}
                 setDeliveryType={setDeliveryType}
