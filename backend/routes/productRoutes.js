@@ -208,12 +208,15 @@ function mapProductRowForListing(row) {
   const colors = safeJsonParse(row.colors, []);
   const sizes = safeJsonParse(row.sizes, []);
   const details = safeJsonParse(row.details, {});
+  const images = safeJsonParse(row.images, []);
 
   const normalizedGemstones = Array.isArray(details?.gemstones)
     ? details.gemstones
     : Array.isArray(row.gemstones)
       ? row.gemstones
       : [];
+
+  const stockQuantity = Math.max(0, Number(row.stock_quantity) || 0);
 
   return {
     id: row.id,
@@ -224,10 +227,11 @@ function mapProductRowForListing(row) {
     createdAt: row.created_at,
     isBestSeller: Boolean(row.is_best_seller),
     thumbnail: normalizeFrontendAssetUrl(row.thumbnail),
+    images: images.map(normalizeFrontendAssetUrl),
     colors,
     sizes,
-    stockQuantity: Math.max(0, Number(row.stock_quantity) || 0),
-    isSoldOut: Math.max(0, Number(row.stock_quantity) || 0) <= 0,
+    stockQuantity: stockQuantity,
+    isSoldOut: stockQuantity <= 0,
     hasGem: Boolean(details?.hasGem ?? row.has_gem ?? false),
     surface: String(details?.surface ?? row.surface ?? "")
       .trim()
@@ -241,21 +245,27 @@ function mapProductRow(row) {
   const variantsRaw = safeJsonParse(row.variants, {});
   const sizes = safeJsonParse(row.sizes, []);
   const details = safeJsonParse(row.details, {});
+  const images = safeJsonParse(row.images, []);
 
   const variants = Object.fromEntries(
-    Object.entries(variantsRaw || {}).map(([color, value]) => [
+    Object.entries(variantsRaw || {}).map(([color, colorData]) => [
       color,
-      value.map((variant) => ({
-        size: variant.size,
-        stock: variant.stock,
-        images: Array.isArray(variant.images)
-          ? variant.images.map(normalizeFrontendAssetUrl)
-          : [],
-      })),
+      Array.isArray(colorData)
+        ? colorData.map((variant) => ({
+            size: variant.size,
+            stock: Number(variant.stock) || 0,
+            images: Array.isArray(variant.images)
+              ? variant.images.map(normalizeFrontendAssetUrl)
+              : [],
+          }))
+        : [],
     ]),
   );
 
-  const totalStockQuantity = getTotalStockFromVariants(variants);
+  const dbStock = Number(row.stock_quantity);
+  const totalStockQuantity = !isNaN(dbStock)
+    ? dbStock
+    : getTotalStockFromVariants(variants);
 
   return {
     id: row.id,
@@ -268,6 +278,7 @@ function mapProductRow(row) {
     isSoldOut: totalStockQuantity <= 0,
     isBestSeller: Boolean(row.is_best_seller),
     thumbnail: normalizeFrontendAssetUrl(row.thumbnail),
+    images: images.map(normalizeFrontendAssetUrl),
     colors,
     variants,
     sizes,
@@ -359,15 +370,18 @@ router.post("/", requireAdmin, async (req, res) => {
     const totalStockQuantity = getTotalStockFromVariants(builtVariants);
     const firstVariant = Object.values(builtVariants)[0];
     const thumbnail = firstVariant?.[0]?.images?.[0] || "";
+    const allImages = Object.values(builtVariants).flatMap(
+      (colorArr) => colorArr[0]?.images || [],
+    );
 
     const details = sanitizeDetails(incomingDetails, description);
 
     await db.query(
       `INSERT INTO products (
         id, name, category, price_value, created_at,
-        is_best_seller, thumbnail, colors, variants,
+        is_best_seller, thumbnail, images, colors, variants,
         sizes, details, stock_quantity
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         name,
@@ -376,6 +390,7 @@ router.post("/", requireAdmin, async (req, res) => {
         createdAt,
         isBestSeller ? 1 : 0,
         thumbnail,
+        JSON.stringify(allImages),
         JSON.stringify(colors),
         JSON.stringify(builtVariants),
         JSON.stringify(sizes),
@@ -424,13 +439,16 @@ router.put("/:id", requireAdmin, async (req, res) => {
     const totalStockQuantity = getTotalStockFromVariants(builtVariants);
     const firstVariant = Object.values(builtVariants)[0];
     const thumbnail = firstVariant?.[0]?.images?.[0] || "";
+    const allImages = Object.values(builtVariants).flatMap(
+      (colorArr) => colorArr[0]?.images || [],
+    );
 
     const details = sanitizeDetails(incomingDetails, description);
 
     await db.query(
       `UPDATE products SET
         name = ?, category = ?, price_value = ?, created_at = ?,
-        is_best_seller = ?, thumbnail = ?, colors = ?, variants = ?,
+        is_best_seller = ?, thumbnail = ?, images = ?, colors = ?, variants = ?,
         sizes = ?, details = ?, stock_quantity = ?
       WHERE id = ?`,
       [
@@ -440,6 +458,7 @@ router.put("/:id", requireAdmin, async (req, res) => {
         createdAt,
         isBestSeller ? 1 : 0,
         thumbnail,
+        JSON.stringify(allImages),
         JSON.stringify(colors),
         JSON.stringify(builtVariants),
         JSON.stringify(sizes),
