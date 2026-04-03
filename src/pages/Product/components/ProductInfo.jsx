@@ -71,6 +71,7 @@ const SizeSelector = memo(function SizeSelector({
       {sizes.map((size) => {
         const normalizedSize = String(size);
         const isActive = String(selectedSize) === normalizedSize;
+        // Check if size exists in the availableSizes array provided by parent logic
         const isAvailable = availableSizes.includes(normalizedSize);
 
         return (
@@ -108,7 +109,7 @@ const ColorSelector = memo(function ColorSelector({
     <div className="mt-2 flex flex-wrap gap-2">
       {colors.map((color) => {
         const isActive = selectedColor === color;
-        // Check if color is available in stock
+        // Verify if color is in stock based on availableColors list
         const isAvailable =
           availableColors.length === 0 || availableColors.includes(color);
 
