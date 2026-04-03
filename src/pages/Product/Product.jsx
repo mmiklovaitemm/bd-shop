@@ -25,6 +25,7 @@ function ProductView({ product }) {
   const [activeImgIndex, setActiveImgIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
 
+  // 1. Spalvos
   const availableColors = useMemo(() => {
     const colors = Array.isArray(product?.colors) ? product.colors : [];
     return colors.length > 0 ? colors : Object.keys(product?.variants || {});
@@ -34,7 +35,7 @@ function ProductView({ product }) {
     availableColors[0] || "silver",
   );
 
-  // DYDŽIŲ LOGIKA: Jei variantuose nėra stock, leidžiame rinktis visus produkto dydžius
+  // 2. Dydžiai
   const effectiveAvailableSizes = useMemo(() => {
     const v = product?.variants?.[selectedColor];
     if (Array.isArray(v) && v.length > 0) {
@@ -47,27 +48,48 @@ function ProductView({ product }) {
     effectiveAvailableSizes[0] || null,
   );
 
+  // 3. Variantas
   const selectedVariant = useMemo(() => {
     const v = product?.variants?.[selectedColor];
     if (!Array.isArray(v)) return null;
     return v.find((item) => String(item.size) === String(selectedSize)) || v[0];
   }, [product, selectedColor, selectedSize]);
 
-  // ATSARGŲ LOGIKA: Imame 10 iš stockQuantity, jei variante nėra stock
+  // 4. --- GRIEŽTAS STOCK SKAIČIAVIMAS ---
   const currentStock = useMemo(() => {
+    // A. Tikriname konkretų variantą
     if (
       selectedVariant &&
-      selectedVariant.stock !== undefined &&
+      typeof selectedVariant.stock !== "undefined" &&
       selectedVariant.stock !== null
     ) {
-      return Number(selectedVariant.stock);
+      const vStock = Number(selectedVariant.stock);
+      if (!isNaN(vStock)) return vStock;
     }
-    // Svarbu: tavo konsolėje matosi 'stockQuantity'
-    return Number(product?.stockQuantity ?? product?.stock_quantity ?? 0);
+
+    // B. Tikriname pagrindinį stockQuantity lauką (tavo 10 vnt)
+    const mainStock = product?.stockQuantity;
+    if (typeof mainStock !== "undefined" && mainStock !== null) {
+      return Number(mainStock);
+    }
+
+    // C. Tikriname stock_quantity (atsargai)
+    const altStock = product?.stock_quantity;
+    if (typeof altStock !== "undefined" && altStock !== null) {
+      return Number(altStock);
+    }
+
+    // D. Jei isSoldOut: false, vadinasi prekių TURI BŪTI
+    if (product?.isSoldOut === false || product?.isSoldOut === 0) {
+      return 10; // Saugiklis
+    }
+
+    return 0;
   }, [product, selectedVariant]);
 
   const isCurrentSelectionSoldOut = currentStock <= 0;
 
+  // 5. Nuotraukos
   const images = useMemo(() => {
     if (!product) return [];
     const colorEntries = product?.variants?.[selectedColor];
@@ -138,9 +160,6 @@ function ProductView({ product }) {
             setIsLightboxOpen(true);
           }}
         />
-
-        {/* ČIA MATYSIME AR DUOMENYS TEISINGI */}
-        {console.log("DEBUG RENDER - currentStock:", currentStock)}
 
         <ProductInfo
           product={product}
