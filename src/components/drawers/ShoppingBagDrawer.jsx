@@ -135,12 +135,14 @@ export default function ShoppingBagDrawer() {
   );
 
   const handleVariantUpdate = (item, product, newColor, newSize) => {
+    console.log("--- DEBUG: ATNAUJINIMO STARTAS ---");
+
     const color = newColor || item.color;
     let size = newSize || item.size;
-    let image = item.image;
+    let image = item.image; // Pradinė nuotrauka
 
     if (product) {
-      // Svarbu: Jei keičiame spalvą, turime surasti būtent tos spalvos nuotrauką
+      // 1. Surandame visus variantus (objektas arba masyvas)
       const variantList = Array.isArray(product.variants)
         ? product.variants
         : product.variants
@@ -150,21 +152,38 @@ export default function ShoppingBagDrawer() {
             }))
           : [];
 
-      const variant = variantList.find((v) => v.name === color);
+      // 2. Ieškome varianto, kurio vardas sutampa su pasirinkta spalva
+      const variant = variantList.find(
+        (v) => String(v.name).toLowerCase() === String(color).toLowerCase(),
+      );
 
-      if (variant && variant.images && variant.images.length > 0) {
-        // Čia vyksta magija: išvalome localhost prieš siunčiant į Store
-        image = cleanImageUrl(variant.images[0]);
+      if (variant) {
+        console.log("Rastas variantas:", variant.name);
+
+        // 3. Tikriname ar variantas turi nuotraukų
+        // Svarbu: patikriname kelis galimus laukus (images arba image)
+        const variantImages = variant.images || variant.image;
+
+        if (variantImages) {
+          const imgUrl = Array.isArray(variantImages)
+            ? variantImages[0]
+            : variantImages;
+          if (imgUrl) {
+            image = cleanImageUrl(imgUrl);
+            console.log("Nauja nuotrauka parinkta:", image);
+          }
+        }
       }
 
+      // 4. Sutvarkome dydį
       const availableSizes = getAvailableSizes(product, color, item);
-      if (!availableSizes.includes(String(size))) {
+      if (newColor && !availableSizes.includes(String(size))) {
         size = availableSizes[0] || item.size;
       }
     }
 
-    // Siunčiame išvalytą image nuorodą
-    updateVariant(item.key, { color, size, image: cleanImageUrl(image) });
+    console.log("Galutinis siuntimas į Store:", { color, size, image });
+    updateVariant(item.key, { color, size, image });
   };
 
   return (
