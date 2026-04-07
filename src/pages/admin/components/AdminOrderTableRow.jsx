@@ -21,7 +21,6 @@ export default function AdminOrderTableRow({
         ? ["Completed", "Canceled"]
         : statusOptions;
 
-  // Get the first item's image as a preview for the row
   const previewImage = order.items?.[0]?.image_url;
 
   return (
@@ -30,9 +29,8 @@ export default function AdminOrderTableRow({
 
       <td className="px-4 py-3">{formatAdminOrderDate(order.created_at)} </td>
 
-      {/* Image Preview Column */}
       <td className="px-4 py-3">
-        <div className="h-10 w-10 border border-black/10 overflow-hidden bg-white">
+        <div className="relative h-12 w-12 border border-black/10 bg-white overflow-hidden">
           <ProductImage
             src={previewImage}
             alt="Order preview"
@@ -77,17 +75,13 @@ export default function AdminOrderTableRow({
           {savingId === order.id ? (
             <span className="text-[11px] text-black/50">Saving...</span>
           ) : null}
-
-          {currentStatus === "Canceled" ? (
-            <span className="text-[11px] text-red-600">Stock restored</span>
-          ) : null}
         </div>
       </td>
 
-      <td className="px-4 py-3">
+      <td className="px-4 py-3 text-right">
         <button
           type="button"
-          className="border border-black bg-white px-3 py-2 hover:bg-black hover:text-white transition-colors"
+          className="border border-black bg-white px-3 py-2 hover:bg-black hover:text-white transition-colors whitespace-nowrap"
           onClick={() => onViewDetails(order)}
         >
           View details

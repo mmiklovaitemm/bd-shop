@@ -3,6 +3,10 @@ import { getDeliveryLabel } from "@/pages/admin/helpers/orderHelpers";
 import Loader from "@/components/ui/Loader";
 import ProductImage from "@/components/ui/ProductCard/ProductImage";
 
+/**
+ * Modal component for displaying detailed information about a specific order.
+ * includes customer details, delivery info, and an itemized list with images.
+ */
 export default function AdminOrderDetailsModal({
   order,
   statusOptions,
@@ -12,6 +16,7 @@ export default function AdminOrderDetailsModal({
 }) {
   if (!order) return null;
 
+  // Format delivery type labels
   const deliveryTypeLabel =
     order.delivery_type === "pickup"
       ? "Pickup"
@@ -19,6 +24,7 @@ export default function AdminOrderDetailsModal({
         ? "Shipping"
         : "-";
 
+  // Format pickup location labels
   const pickupLocationLabel =
     order.delivery_method === "vilnius"
       ? "Vilnius salon"
@@ -28,6 +34,7 @@ export default function AdminOrderDetailsModal({
 
   const currentStatus = order.status || "Pending";
 
+  // Define logic for available status transitions
   const availableStatusOptions =
     currentStatus === "Canceled"
       ? ["Canceled"]
@@ -44,6 +51,7 @@ export default function AdminOrderDetailsModal({
         className="max-h-[90vh] w-full max-w-4xl overflow-y-auto border border-black bg-white"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-black px-4 py-4 md:px-6">
           <h2 className="font-display text-2xl leading-none">
             Order #{order.id}
@@ -58,7 +66,9 @@ export default function AdminOrderDetailsModal({
           </button>
         </div>
 
+        {/* Order Meta Information Grid */}
         <div className="grid grid-cols-1 gap-5 p-4 font-ui text-sm md:grid-cols-2 md:p-6 xl:grid-cols-3">
+          {/* Customer Details */}
           <div>
             <p className="font-semibold uppercase text-[11px] tracking-wider text-black/40">
               Customer
@@ -87,6 +97,7 @@ export default function AdminOrderDetailsModal({
             </div>
           </div>
 
+          {/* Delivery & Payment Details */}
           <div>
             <p className="font-semibold uppercase text-[11px] tracking-wider text-black/40">
               Delivery
@@ -118,12 +129,13 @@ export default function AdminOrderDetailsModal({
             </div>
           </div>
 
+          {/* Order Status Control */}
           <div>
             <p className="font-semibold uppercase text-[11px] tracking-wider text-black/40">
               Status Control
             </p>
             <div className="mt-2 space-y-3">
-              <StatusPill status={order.status || "Pending"} />
+              <StatusPill status={currentStatus} />
 
               <div className="relative">
                 <select
@@ -132,9 +144,7 @@ export default function AdminOrderDetailsModal({
                     savingId === order.id || currentStatus === "Canceled"
                   }
                   value={currentStatus}
-                  onChange={(e) => {
-                    onStatusChange(order.id, e.target.value);
-                  }}
+                  onChange={(e) => onStatusChange(order.id, e.target.value)}
                 >
                   {availableStatusOptions.map((status) => (
                     <option key={status} value={status}>
@@ -160,6 +170,7 @@ export default function AdminOrderDetailsModal({
           </div>
         </div>
 
+        {/* Purchased Items List */}
         <div className="border-t border-black px-4 py-4 md:px-6 md:py-6">
           <p className="font-semibold uppercase text-[11px] tracking-wider text-black/40">
             Order Items
@@ -171,9 +182,8 @@ export default function AdminOrderDetailsModal({
                 key={item.id}
                 className="border border-black/10 bg-black/5 px-4 py-4"
               >
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-[72px_1fr]">
-                  {/*  Using ProductImage here */}
-                  <div className="mx-auto h-[72px] w-[72px] overflow-hidden bg-white sm:mx-0 border border-black/5 relative">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-[80px_1fr]">
+                  <div className="relative mx-auto h-20 w-20 overflow-hidden bg-white sm:mx-0 border border-black/5">
                     <ProductImage
                       src={item.image_url}
                       alt={item.product_name || "Product"}
@@ -182,6 +192,7 @@ export default function AdminOrderDetailsModal({
                     />
                   </div>
 
+                  {/* Item Specifics */}
                   <div>
                     <div className="flex items-start justify-between gap-3">
                       <p className="font-medium text-black">
