@@ -14,6 +14,7 @@ export default function AdminOrdersTable({
           <tr className="border-b border-black bg-black/5 text-left">
             <th className="px-4 py-3">Order ID</th>
             <th className="px-4 py-3">Date</th>
+            <th className="px-4 py-3">Image</th>
             <th className="px-4 py-3">Email</th>
             <th className="px-4 py-3">Items</th>
             <th className="px-4 py-3">Delivery</th>

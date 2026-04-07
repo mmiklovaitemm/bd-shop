@@ -1,6 +1,7 @@
 import StatusPill from "@/pages/account/StatusPill";
 import { getDeliveryLabel } from "@/pages/admin/helpers/orderHelpers";
-import Loader from "@/components/ui/Loader"; // Pridėtas loaderis
+import Loader from "@/components/ui/Loader";
+import ProductImage from "@/components/ui/ProductCard/ProductImage";
 
 export default function AdminOrderDetailsModal({
   order,
@@ -171,19 +172,14 @@ export default function AdminOrderDetailsModal({
                 className="border border-black/10 bg-black/5 px-4 py-4"
               >
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-[72px_1fr]">
-                  <div className="mx-auto h-[72px] w-[72px] overflow-hidden bg-white sm:mx-0 border border-black/5">
-                    {item.image_url ? (
-                      <img
-                        src={item.image_url}
-                        alt={item.product_name || "Product"}
-                        className="h-full w-full object-cover"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-[11px] text-black/40 italic">
-                        No image
-                      </div>
-                    )}
+                  {/*  Using ProductImage here */}
+                  <div className="mx-auto h-[72px] w-[72px] overflow-hidden bg-white sm:mx-0 border border-black/5 relative">
+                    <ProductImage
+                      src={item.image_url}
+                      alt={item.product_name || "Product"}
+                      loaded={true}
+                      className="h-full w-full object-cover"
+                    />
                   </div>
 
                   <div>

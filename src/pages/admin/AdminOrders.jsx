@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 import Pagination from "@/components/ui/Pagination";
@@ -7,7 +7,7 @@ import AdminOrdersFilters from "@/pages/admin/components/AdminOrdersFilters";
 import AdminOrderDetailsModal from "@/pages/admin/components/AdminOrderDetailsModal";
 import AdminOrdersTable from "@/pages/admin/components/AdminOrdersTable";
 import AdminOrdersMobileList from "@/pages/admin/components/AdminOrdersMobileList";
-import Loader from "@/components/ui/Loader"; // IMPORTUOJAME LOADERĮ
+import Loader from "@/components/ui/Loader";
 import useAdminOrders from "@/pages/admin/hooks/useAdminOrders";
 import useOrderStatusUpdate from "@/pages/admin/hooks/useOrderStatusUpdate";
 import {
@@ -23,6 +23,26 @@ const STATUS_OPTIONS = [
   "Canceled",
 ];
 
+// --- IMAGE CLEANUP LOGIC ---
+const getCleanUrl = (rawPath) => {
+  if (!rawPath || typeof rawPath !== "string") return "";
+  const VERCEL_FRONTEND = "https://bd-shop-gray.vercel.app";
+  const RENDER_BACKEND = "https://bd-shop-gfva.onrender.com";
+
+  if (rawPath.startsWith("https://") && rawPath.includes("vercel.app"))
+    return rawPath;
+
+  let cleanPath = rawPath.replace(/http:\/\/localhost:\d+/, "");
+  const purePath = cleanPath.replace(/^\/+/, "");
+
+  if (purePath.includes("uploads/")) return `${RENDER_BACKEND}/${purePath}`;
+  if (purePath.startsWith("products/") || purePath.startsWith("assets/"))
+    return `${VERCEL_FRONTEND}/${purePath}`;
+
+  const fileName = purePath.split(/[\\/]/).pop();
+  return `${VERCEL_FRONTEND}/products/rings/${fileName}`;
+};
+
 export default function AdminOrders() {
   const [page, setPage] = useState(1);
   const pageSize = 10;
@@ -34,6 +54,18 @@ export default function AdminOrders() {
   const [statusFilter, setStatusFilter] = useState("all");
 
   const { orders, setOrders, loading, error, fetchOrders } = useAdminOrders();
+
+  // --- CLEAN ORDERS DATA ---
+  // We sanitize image URLs inside order items to prevent localhost errors
+  const sanitizedOrders = useMemo(() => {
+    return (orders || []).map((order) => ({
+      ...order,
+      items: (order.items || []).map((item) => ({
+        ...item,
+        image_url: getCleanUrl(item.image_url),
+      })),
+    }));
+  }, [orders]);
 
   useEffect(() => {
     if (!selectedOrder) return;
@@ -72,7 +104,7 @@ export default function AdminOrders() {
 
   const { filteredOrders, totalItems, safePage, pageItems } =
     getFilteredOrdersData({
-      orders,
+      orders: sanitizedOrders, // Use sanitized data here
       searchEmail,
       statusFilter,
       deliveryFilter,
@@ -96,7 +128,7 @@ export default function AdminOrders() {
     completedCount,
     canceledCount,
     totalRevenue,
-  } = getOrderStats(orders);
+  } = getOrderStats(sanitizedOrders); // Use sanitized data here
 
   const { savingId, handleStatusChange } = useOrderStatusUpdate({
     setOrders,

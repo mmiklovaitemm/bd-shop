@@ -1,4 +1,5 @@
 import StatusPill from "@/pages/account/StatusPill";
+import ProductImage from "@/components/ui/ProductCard/ProductImage";
 import {
   getDeliveryLabel,
   formatAdminOrderDate,
@@ -20,11 +21,26 @@ export default function AdminOrderTableRow({
         ? ["Completed", "Canceled"]
         : statusOptions;
 
+  // Get the first item's image as a preview for the row
+  const previewImage = order.items?.[0]?.image_url;
+
   return (
     <tr className="border-b border-black/20">
       <td className="px-4 py-3">{order.id}</td>
 
       <td className="px-4 py-3">{formatAdminOrderDate(order.created_at)} </td>
+
+      {/* Image Preview Column */}
+      <td className="px-4 py-3">
+        <div className="h-10 w-10 border border-black/10 overflow-hidden bg-white">
+          <ProductImage
+            src={previewImage}
+            alt="Order preview"
+            loaded={true}
+            className="h-full w-full object-cover"
+          />
+        </div>
+      </td>
 
       <td className="px-4 py-3">{order.contact_email || "-"}</td>
 
@@ -46,7 +62,7 @@ export default function AdminOrderTableRow({
           <StatusPill status={order.status || "Pending"} />
 
           <select
-            className="border border-black bg-white px-3 py-2 disabled:opacity-60"
+            className="border border-black bg-white px-3 py-2 disabled:opacity-60 text-xs"
             value={currentStatus}
             onChange={(e) => onStatusChange(order.id, e.target.value)}
             disabled={savingId === order.id || currentStatus === "Canceled"}
@@ -71,7 +87,7 @@ export default function AdminOrderTableRow({
       <td className="px-4 py-3">
         <button
           type="button"
-          className="border border-black bg-white px-3 py-2"
+          className="border border-black bg-white px-3 py-2 hover:bg-black hover:text-white transition-colors"
           onClick={() => onViewDetails(order)}
         >
           View details
