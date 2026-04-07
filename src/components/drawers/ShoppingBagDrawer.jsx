@@ -21,15 +21,17 @@ const fmtPrice = (n) =>
   }).format(Number(n || 0));
 
 /**
- * FIXED: Cleans legacy localhost URLs from database to force
- * loading from production server or Cloudinary.
+ * FIXED: Valo bet kokią nuorodą nuo localhost šiukšlių.
  */
 const cleanImageUrl = (url) => {
   if (!url) return "";
   if (url.includes("cloudinary.com")) return url;
-  // Pašaliname http://localhost:5173/ dalį, jei ji egzistuoja
-  const cleaned = url.replace(/^https?:\/\/localhost:\d+\//, "");
-  return cleaned;
+  // Jei nuoroda turi localhost, nukerpame viską iki kelio pradžios
+  if (url.includes("localhost:")) {
+    const parts = url.split("/products/");
+    if (parts.length > 1) return "products/" + parts[1];
+  }
+  return url.replace(/^https?:\/\/localhost:\d+\//, "");
 };
 
 // --- LOGIC HELPERS ---
@@ -98,11 +100,9 @@ export default function ShoppingBagDrawer() {
     const fetchLatestStock = async () => {
       try {
         setIsValidating(true);
-        console.log("DEBUG: Drawer fetching products...");
         const data = await apiGet("/products");
         if (isMounted) {
           const list = Array.isArray(data) ? data : data?.products || [];
-          console.log("DEBUG: Loaded products count:", list.length);
           setProducts(list);
         }
       } catch (err) {
@@ -120,8 +120,7 @@ export default function ShoppingBagDrawer() {
   const findProduct = useCallback(
     (item) => {
       const itemId = String(item.productId || item.id || "");
-      const found = products.find((p) => String(p.id) === itemId) || null;
-      return found;
+      return products.find((p) => String(p.id) === itemId) || null;
     },
     [products],
   );
@@ -135,50 +134,37 @@ export default function ShoppingBagDrawer() {
     [items],
   );
 
-  const hasInStockErrors = useMemo(() => {
-    if (products.length === 0) return false;
-    return items.some((item) => {
-      const product = findProduct(item);
-      if (!product) return false;
-      const stock = getVariantStock(product, item.color, item.size);
-      return stock < item.quantity;
-    });
-  }, [items, products, findProduct]);
-
-  // --- ATNAUJINTA FUNKCIJA SU CONSOLE LOG ---
   const handleVariantUpdate = (item, product, newColor, newSize) => {
-    console.log("--- DEBUG: ATNAUJINIMO STARTAS ---");
-    console.log("Esama prekė krepšelyje:", item);
-
     const color = newColor || item.color;
     let size = newSize || item.size;
     let image = item.image;
 
-    if (product && Array.isArray(product.variants)) {
-      const variant = product.variants.find((v) => v.name === color);
-      if (variant) {
-        console.log("Rastas variantas pagal spalvą:", variant.name);
-        if (variant.images && variant.images.length > 0) {
-          const rawImg = variant.images[0];
-          image = cleanImageUrl(rawImg);
-          console.log("Nauja nuotrauka (raw):", rawImg);
-          console.log("Nauja nuotrauka (cleaned):", image);
-        }
+    if (product) {
+      // Svarbu: Jei keičiame spalvą, turime surasti būtent tos spalvos nuotrauką
+      const variantList = Array.isArray(product.variants)
+        ? product.variants
+        : product.variants
+          ? Object.entries(product.variants).map(([name, data]) => ({
+              name,
+              ...data,
+            }))
+          : [];
 
-        if (newColor) {
-          const availableSizes = getAvailableSizes(product, newColor, item);
-          if (!availableSizes.includes(String(size))) {
-            size = availableSizes[0] || item.size;
-            console.log("Dydis pakeistas į pirmą prieinamą:", size);
-          }
-        }
-      } else {
-        console.warn("KLAIDA: Variantas su spalva " + color + " nerastas!");
+      const variant = variantList.find((v) => v.name === color);
+
+      if (variant && variant.images && variant.images.length > 0) {
+        // Čia vyksta magija: išvalome localhost prieš siunčiant į Store
+        image = cleanImageUrl(variant.images[0]);
+      }
+
+      const availableSizes = getAvailableSizes(product, color, item);
+      if (!availableSizes.includes(String(size))) {
+        size = availableSizes[0] || item.size;
       }
     }
 
-    console.log("Siunčiama į Store (updateVariant):", { color, size, image });
-    updateVariant(item.key, { color, size, image });
+    // Siunčiame išvalytą image nuorodą
+    updateVariant(item.key, { color, size, image: cleanImageUrl(image) });
   };
 
   return (
@@ -237,6 +223,7 @@ export default function ShoppingBagDrawer() {
                       <motion.div key={item.key} layout className="px-6 py-6">
                         <div className="grid grid-cols-[90px_1fr] gap-5">
                           <div className="h-[110px] w-[90px] relative overflow-hidden bg-black/5 border border-black/5">
+                            {/* Naudojame cleanImageUrl čia, kad krepšelyje visada rodytų nuotrauką iš serverio */}
                             <ProductImage
                               src={cleanImageUrl(item.image)}
                               alt={item.name}
@@ -353,10 +340,8 @@ export default function ShoppingBagDrawer() {
                   close();
                   navigate("/checkout");
                 }}
-                disabled={
-                  items.length === 0 || hasInStockErrors || isValidating
-                }
-                className="flex h-12 w-full items-center justify-center gap-4 bg-black font-ui text-[14px] text-white uppercase tracking-widest disabled:bg-black/20"
+                className="flex h-12 w-full items-center justify-center bg-black font-ui text-[14px] text-white uppercase tracking-widest disabled:bg-black/20"
+                disabled={items.length === 0 || isValidating}
               >
                 {isValidating
                   ? "Validating..."
