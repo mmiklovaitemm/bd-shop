@@ -1,4 +1,3 @@
-// src/pages/account/OrderHistory.jsx
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -11,6 +10,31 @@ import OrderInfoPanel from "@/pages/account/OrderInfoPanel";
 
 import useAuth from "@/store/useAuth";
 import { apiGet } from "@/lib/api";
+
+// --- NEW CLEANUP HELPER ---
+// This matches the logic from ProductImage.jsx to fix paths for Vercel
+const getCleanUrl = (rawPath) => {
+  if (!rawPath || typeof rawPath !== "string") return "";
+  const VERCEL_FRONTEND = "https://bd-shop-gray.vercel.app";
+  const RENDER_BACKEND = "https://bd-shop-gfva.onrender.com";
+
+  // If it's already a correct Vercel URL, return as is
+  if (rawPath.startsWith("https://") && rawPath.includes("vercel.app"))
+    return rawPath;
+
+  // Sanitize localhost
+  let cleanPath = rawPath.replace(/http:\/\/localhost:\d+/, "");
+  const purePath = cleanPath.replace(/^\/+/, "");
+
+  // Routing logic
+  if (purePath.includes("uploads/")) return `${RENDER_BACKEND}/${purePath}`;
+  if (purePath.startsWith("products/") || purePath.startsWith("assets/"))
+    return `${VERCEL_FRONTEND}/${purePath}`;
+
+  // Fallback: extract filename and point to Vercel products
+  const fileName = purePath.split(/[\\/]/).pop();
+  return `${VERCEL_FRONTEND}/products/rings/${fileName}`;
+};
 
 export default function OrderHistory() {
   const { t } = useLanguage();
@@ -78,7 +102,6 @@ export default function OrderHistory() {
     <>
       <main className="px-2 pt-3">
         <section className="mx-auto w-full max-w-6xl">
-          {/* ... Navigation and Header remains the same ... */}
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <h1 className="font-display text-4xl leading-none">
               {t.orderHistory}
@@ -154,13 +177,10 @@ export default function OrderHistory() {
                 );
                 const priceText = `€${(totalCentsFromItems / 100).toFixed(2)}`;
 
-                // --- IMPROVED IMAGE LOGIC ---
-                let images = [];
+                let rawImages = [];
                 if (productLines.length === 1) {
-                  // Single product type case: Show 1st and 2nd gallery images
                   const line = productLines[0];
                   const product = productsById?.[line.product_id];
-
                   let galleryImages = [];
                   if (product && line.color) {
                     const colorKey = String(line.color).toLowerCase().trim();
@@ -168,20 +188,17 @@ export default function OrderHistory() {
                       product.variants?.[colorKey]?.[0]?.images || [];
                   }
 
-                  // If we found gallery images, take up to 2.
-                  // If only 1 exists, use it twice.
-                  // If none exist, fallback to line.image_url
                   if (galleryImages.length >= 2) {
-                    images = [galleryImages[0], galleryImages[1]];
+                    rawImages = [galleryImages[0], galleryImages[1]];
                   } else if (galleryImages.length === 1) {
-                    images = [galleryImages[0], galleryImages[0]];
+                    rawImages = [galleryImages[0], galleryImages[0]];
                   } else {
-                    const fallback = line.image_url;
-                    images = [fallback, fallback].filter(Boolean);
+                    rawImages = [line.image_url, line.image_url].filter(
+                      Boolean,
+                    );
                   }
                 } else {
-                  // Multiple different products case: Show 1st image of each
-                  images = productLines
+                  rawImages = productLines
                     .slice(0, 2)
                     .map((line) => {
                       const product = productsById?.[line.product_id];
@@ -198,6 +215,9 @@ export default function OrderHistory() {
                     })
                     .filter(Boolean);
                 }
+
+                // Apply getCleanUrl to all images before passing to OrderCard
+                const cleanedImages = rawImages.map((img) => getCleanUrl(img));
 
                 return (
                   <div
@@ -216,12 +236,11 @@ export default function OrderHistory() {
                         status: order.status || "Pending",
                         productLines,
                         price: priceText,
-                        images,
+                        images: cleanedImages,
                         orderNo: String(order.id),
                       }}
                       onOpen={() => setOpenOrderId(isOpen ? null : order.id)}
                     />
-
                     {isOpen && (
                       <div className="bg-neutral-50 px-2 pb-6">
                         <OrderInfoPanel
