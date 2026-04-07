@@ -50,7 +50,6 @@ export default function AdminProductCreateModal({
   const [error, setError] = useState("");
   const [uploadingVariantIndex, setUploadingVariantIndex] = useState(null);
 
-  // Saugus URL generatorius (ištaiso 404 klaidą)
   const getSafeApiUrl = (path) => {
     const base = API_ORIGIN.replace(/\/api$/, "").replace(/\/$/, "");
     const cleanPath = path.startsWith("/api")
@@ -520,13 +519,15 @@ export default function AdminProductCreateModal({
             </div>
 
             {form.variants.map((variant, idx) => {
+              // Ištaisyta: Konvertuojame tekstą į masyvą peržiūrai
               const imageArray = String(variant.images || "")
                 .split("\n")
                 .map((img) => img.trim())
                 .filter(Boolean);
+
               const preview = makePreviewList({
                 category: form.category,
-                rawValue: imageArray,
+                rawValue: imageArray, // Perduodame masyvą
                 apiOrigin: API_ORIGIN,
                 frontendBasePath: FRONTEND_BASE_PATH,
               });
@@ -596,12 +597,14 @@ export default function AdminProductCreateModal({
                           key={imgIdx}
                           className="relative aspect-square border border-black p-2 bg-white overflow-hidden"
                         >
+                          {/* Pakeista: naudojame ProductImage su loaded={true} */}
                           <ProductImage
                             src={src}
                             loaded={true}
                             className="h-28 w-full object-cover"
                           />
                           <button
+                            type="button"
                             onClick={() => handleRemoveVariantImage(idx, src)}
                             className="absolute top-1 right-1 bg-red-600 text-white w-5 h-5 flex items-center justify-center rounded-full z-10"
                           >
