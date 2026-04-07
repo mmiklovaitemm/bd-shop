@@ -20,6 +20,8 @@ const fmtPrice = (n) =>
     minimumFractionDigits: 2,
   }).format(Number(n || 0));
 
+// --- LOGIC HELPERS ---
+
 function getAvailableColors(product, item) {
   if (!product) return [item?.color || "silver"];
   let colors = [];
@@ -78,16 +80,13 @@ export default function ShoppingBagDrawer() {
   const [products, setProducts] = useState([]);
   const [isValidating, setIsValidating] = useState(false);
 
-  const API_URL =
-    import.meta.env.VITE_API_URL || "https://bd-shop-gfva.onrender.com";
-
   useEffect(() => {
     if (!isOpen) return;
     let isMounted = true;
     const fetchLatestStock = async () => {
       try {
         setIsValidating(true);
-        const data = await apiGet(`/products`);
+        const data = await apiGet("/products");
         if (isMounted) {
           const list = Array.isArray(data) ? data : data?.products || [];
           setProducts(list);
@@ -124,29 +123,25 @@ export default function ShoppingBagDrawer() {
   const handleVariantUpdate = (item, product, newColor, newSize) => {
     const color = newColor || item.color;
     let size = newSize || item.size;
-    let newImage = item.image;
+    let image = item.image;
 
     if (product && Array.isArray(product.variants)) {
       const variant = product.variants.find((v) => v.name === color);
       if (variant) {
-        if (variant.images && variant.images.length > 0) {
-          newImage = variant.images[0];
+        // Jei keičiama spalva, paimame tą nuotrauką, kuri priklauso variantui
+        if (newColor && variant.images && variant.images.length > 0) {
+          image = variant.images[0];
         }
 
-        if (newColor) {
-          const availableSizes = getAvailableSizes(product, newColor, item);
-          if (!availableSizes.includes(String(size))) {
-            size = availableSizes[0] || item.size;
-          }
+        // Patikriname dydį
+        const availableSizes = getAvailableSizes(product, color, item);
+        if (!availableSizes.includes(String(size))) {
+          size = availableSizes[0] || item.size;
         }
       }
     }
 
-    updateVariant(item.key, {
-      color,
-      size,
-      image: newImage,
-    });
+    updateVariant(item.key, { color, size, image });
   };
 
   return (
@@ -198,7 +193,6 @@ export default function ShoppingBagDrawer() {
                     const colors = getAvailableColors(product, item);
                     const sizes = getAvailableSizes(product, item.color, item);
 
-                    // FIXED: stock kintamasis dabar naudojamas mygtukų blokavimui žemiau
                     const stockLimit = product
                       ? getVariantStock(product, item.color, item.size)
                       : 99;
@@ -281,7 +275,7 @@ export default function ShoppingBagDrawer() {
                               <div className="flex border border-black h-8 items-stretch">
                                 <button
                                   onClick={() => dec(item.key)}
-                                  className="w-8 bg-black/5 disabled:opacity-30"
+                                  className="w-8 bg-black/5 active:scale-95 transition-transform"
                                   disabled={item.quantity <= 1}
                                 >
                                   –
@@ -291,8 +285,8 @@ export default function ShoppingBagDrawer() {
                                 </div>
                                 <button
                                   onClick={() => inc(item.key)}
-                                  className="w-8 bg-black/5 disabled:opacity-30"
-                                  disabled={stockLimit <= item.quantity} // Naudojamas stockLimit
+                                  className="w-8 bg-black/5 active:scale-95 transition-transform"
+                                  disabled={stockLimit <= item.quantity}
                                 >
                                   +
                                 </button>
@@ -328,7 +322,7 @@ export default function ShoppingBagDrawer() {
               >
                 {isValidating
                   ? "Validating..."
-                  : `Check out — ${fmtPrice(subtotal)}`}
+                  : `${t.checkout} — ${fmtPrice(subtotal)}`}
               </button>
             </div>
           </motion.aside>
