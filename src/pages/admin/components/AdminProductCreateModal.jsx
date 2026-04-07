@@ -173,7 +173,12 @@ export default function AdminProductCreateModal({
       formData.append("image", file);
       formData.append("category", form.category);
 
-      const res = await fetch(`${API_ORIGIN}/api/uploads/product-image`, {
+      const base = API_ORIGIN.replace(/\/api$/, "");
+      const uploadUrl = `${base}/api/uploads/product-image`;
+
+      console.log("Uploading to:", uploadUrl); // Debugging tikslais
+
+      const res = await fetch(uploadUrl, {
         method: "POST",
         body: formData,
         credentials: "include",
@@ -205,7 +210,7 @@ export default function AdminProductCreateModal({
         }),
       }));
     } catch (err) {
-      console.error(err);
+      console.error("Upload error:", err);
       setError(err.message || "Image upload failed.");
     } finally {
       setUploadingVariantIndex(null);
