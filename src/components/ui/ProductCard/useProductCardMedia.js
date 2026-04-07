@@ -2,8 +2,28 @@
 import { useMemo } from "react";
 
 /**
- * Checks if the value is a variant object containing an images array
+ * Išvalo localhost ir sutvarko Mixed Content problemas.
  */
+function sanitizeImageUrl(path) {
+  if (!path || typeof path !== "string") return "";
+
+  if (path.startsWith("http")) {
+    if (path.includes("localhost")) {
+      const parts = path.split("/uploads/");
+      path = parts.length > 1 ? `uploads/${parts[1]}` : path;
+    } else {
+      return path.replace("http://", "https://");
+    }
+  }
+
+  const BASE =
+    import.meta.env.VITE_API_URL || "https://bd-shop-gfva.onrender.com";
+  const cleanBase = BASE.replace(/\/+$/, "").replace("http://", "https://");
+  const cleanPath = path.replace(/^\/+/, "");
+
+  return `${cleanBase}/${cleanPath}`;
+}
+
 function isVariantObject(value) {
   return (
     value &&
@@ -13,9 +33,6 @@ function isVariantObject(value) {
   );
 }
 
-/**
- * Extracts images from a variant array
- */
 function getImagesFromVariantArray(variantArray) {
   if (!Array.isArray(variantArray) || !variantArray.length) return [];
 
@@ -39,7 +56,6 @@ function getImagesFromVariantArray(variantArray) {
 }
 
 export default function useProductCardMedia(product) {
-  // 1. Create a safe product object with default values
   const safeProduct = useMemo(
     () => ({
       variants: {},
@@ -55,7 +71,6 @@ export default function useProductCardMedia(product) {
     [product],
   );
 
-  // 2. Determine the initial/base color
   const baseColor = useMemo(() => {
     const variants = safeProduct.variants || {};
     const colorsFromProduct = safeProduct.colors || [];
@@ -78,12 +93,10 @@ export default function useProductCardMedia(product) {
     return "silver";
   }, [safeProduct.colors, safeProduct.variants]);
 
-  // 3. Determine Main and Hover images
-  const { mainSrc, hoverSrc } = useMemo(() => {
+  const { rawMain, rawHover } = useMemo(() => {
     const variants = safeProduct.variants || {};
     const variantImages = getImagesFromVariantArray(variants?.[baseColor]);
 
-    // COLLECT ALL UNIQUE IMAGES FROM ALL VARIANTS AS FALLBACK
     const allImagesFromVariants = Object.values(variants)
       .flatMap((v) => getImagesFromVariantArray(v))
       .filter(Boolean);
@@ -96,13 +109,8 @@ export default function useProductCardMedia(product) {
           ? imageValue.src || imageValue.url || ""
           : "";
 
-    // Priority: Current variant image > thumbnail > main image src
     const main = variantImages[0] || safeProduct.thumbnail || imageSrc || "";
 
-    // HOVER LOGIC:
-    // 1. Try second image of current variant
-    // 2. Try second image of general images array
-    // 3. Try ANY other image from any other variant (that isn't the main one)
     let hover = variantImages[1] || null;
 
     if (
@@ -120,7 +128,7 @@ export default function useProductCardMedia(product) {
       hover = allImagesFromVariants.find((img) => img !== main) || null;
     }
 
-    return { mainSrc: main, hoverSrc: hover };
+    return { rawMain: main, rawHover: hover };
   }, [
     safeProduct.variants,
     safeProduct.thumbnail,
@@ -129,7 +137,9 @@ export default function useProductCardMedia(product) {
     baseColor,
   ]);
 
-  // 4. Prepare metadata (srcSet, sizes) for responsive images
+  const mainSrc = useMemo(() => sanitizeImageUrl(rawMain), [rawMain]);
+  const hoverSrc = useMemo(() => sanitizeImageUrl(rawHover), [rawHover]);
+
   const imageMeta = useMemo(() => {
     if (typeof safeProduct.image === "string") {
       return { srcSet: undefined, sizes: undefined };
