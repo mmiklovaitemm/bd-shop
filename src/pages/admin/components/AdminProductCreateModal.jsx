@@ -6,10 +6,6 @@ import {
 import Loader from "@/components/ui/Loader";
 import ProductImage from "@/components/ui/ProductCard/ProductImage";
 
-/**
- * Modal component for creating or editing a product.
- * Handles category-specific fields, variant management, and secure image uploads.
- */
 export default function AdminProductCreateModal({
   onClose,
   onCreate,
@@ -20,7 +16,6 @@ export default function AdminProductCreateModal({
     import.meta.env.VITE_API_URL || "https://bd-shop-gfva.onrender.com";
   const FRONTEND_BASE_PATH = import.meta.env.BASE_URL || "/";
 
-  // Initialize form state with existing data (if editing) or defaults
   const [form, setForm] = useState({
     id: initialData?.id || "",
     name: initialData?.name || "",
@@ -33,9 +28,12 @@ export default function AdminProductCreateModal({
     sizes: initialData?.sizes?.join(", ") || "",
     stockQuantity: initialData?.stockQuantity ?? "",
     isBestSeller: initialData?.isBestSeller || false,
-    variants: initialData?.variants || [createEmptyVariant()],
+    variants: initialData?.variants?.map((v) => ({
+      ...v,
+      images: Array.isArray(v.images) ? v.images.join("\n") : v.images || "",
+    })) || [createEmptyVariant()],
 
-    // Metadata / details fields
+    // Metadata fields
     length: initialData?.details?.totalLengthCm ?? "",
     weight: initialData?.details?.weightG ?? "",
     bandWidth: initialData?.details?.bandWidthMm ?? "",
@@ -53,9 +51,7 @@ export default function AdminProductCreateModal({
   const [error, setError] = useState("");
   const [uploadingVariantIndex, setUploadingVariantIndex] = useState(null);
 
-  /**
-   * Helper to ensure API URLs are correctly formatted without double slashes or prefixes
-   */
+  // FIXED: Sanitized URL generator for API requests
   const getSafeApiUrl = (path) => {
     const base = API_ORIGIN.replace(/\/api$/, "").replace(/\/$/, "");
     const cleanPath = path.startsWith("/api")
@@ -67,11 +63,11 @@ export default function AdminProductCreateModal({
   const handleChange = (key, value) => {
     setForm((prev) => {
       const next = { ...prev, [key]: value };
-
-      // Reset specific fields when switching categories to maintain data integrity
       if (key === "category") {
-        if (!["rings", "bracelets", "personal"].includes(value))
-          next.sizes = "";
+        const shouldKeepSizes = ["rings", "bracelets", "personal"].includes(
+          value,
+        );
+        if (!shouldKeepSizes) next.sizes = "";
         if (value !== "necklaces") {
           next.length =
             next.chainType =
@@ -103,6 +99,7 @@ export default function AdminProductCreateModal({
       ...prev,
       variants: [...prev.variants, createEmptyVariant()],
     }));
+    setError("");
   };
 
   const handleRemoveVariant = (index) => {
@@ -113,6 +110,7 @@ export default function AdminProductCreateModal({
           ? [createEmptyVariant()]
           : prev.variants.filter((_, i) => i !== index),
     }));
+    setError("");
   };
 
   const handleRemoveVariantImage = (variantIndex, imageToRemove) => {
@@ -120,19 +118,18 @@ export default function AdminProductCreateModal({
       ...prev,
       variants: prev.variants.map((v, i) => {
         if (i !== variantIndex) return v;
-        const nextImages = String(v.images || "")
+        const currentImages = String(v.images || "")
           .split("\n")
           .map((img) => img.trim())
-          .filter((img) => img && img !== imageToRemove)
+          .filter(Boolean);
+        const nextImages = currentImages
+          .filter((img) => img !== imageToRemove)
           .join("\n");
         return { ...v, images: nextImages };
       }),
     }));
   };
 
-  /**
-   * Uploads image to server and appends the returned URL to the variants image list
-   */
   const handleUploadImage = async (event, variantIndex) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -140,7 +137,6 @@ export default function AdminProductCreateModal({
     try {
       setError("");
       setUploadingVariantIndex(variantIndex);
-
       const formData = new FormData();
       formData.append("image", file);
       formData.append("category", form.category);
@@ -155,9 +151,7 @@ export default function AdminProductCreateModal({
 
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || "Upload failed");
-
       const imageUrl = data?.file?.url || "";
-      if (!imageUrl) throw new Error("Image URL missing from server response");
 
       setForm((prev) => ({
         ...prev,
@@ -171,7 +165,6 @@ export default function AdminProductCreateModal({
         }),
       }));
     } catch (err) {
-      console.error("Upload error:", err);
       setError(err.message || "Failed to upload image.");
     } finally {
       setUploadingVariantIndex(null);
@@ -180,7 +173,6 @@ export default function AdminProductCreateModal({
   };
 
   const handleSubmit = () => {
-    // Construct cleaned variants for payload
     const normalizedVariants = form.variants
       .map((v) => ({
         name: String(v.name || "")
@@ -193,20 +185,12 @@ export default function AdminProductCreateModal({
       }))
       .filter((v) => v.name && v.images.length > 0);
 
-    // Prepare metadata details object
-    const details = {
-      detailsText: form.description.trim(),
-      metal: form.metal.trim() || undefined,
-      weightG: Number(form.weight) || undefined,
-      totalLengthCm: Number(form.length) || undefined,
-      adjustableFromCm: Number(form.adjustableFrom) || undefined,
-      adjustableToCm: Number(form.adjustableTo) || undefined,
-      chain: form.chainType.trim() || undefined,
-      bandWidthMm: Number(form.bandWidth) || undefined,
-      braceletLengthCm: Number(form.braceletLength) || undefined,
-      personalType:
-        form.category === "personal" ? form.personalType : undefined,
-    };
+    if (!form.id || !form.name || normalizedVariants.length === 0) {
+      setError(
+        "Please ensure ID, Name, and at least one variant with images are provided.",
+      );
+      return;
+    }
 
     const payload = {
       id: form.id.trim(),
@@ -222,16 +206,20 @@ export default function AdminProductCreateModal({
       stockQuantity: Math.max(0, Number(form.stockQuantity)),
       variants: normalizedVariants,
       isBestSeller: form.isBestSeller,
-      details,
+      details: {
+        detailsText: form.description.trim(),
+        metal: form.metal,
+        weightG: Number(form.weight) || undefined,
+        totalLengthCm: Number(form.length) || undefined,
+        adjustableFromCm: Number(form.adjustableFrom) || undefined,
+        adjustableToCm: Number(form.adjustableTo) || undefined,
+        chain: form.chainType,
+        bandWidthMm: Number(form.bandWidth) || undefined,
+        braceletLengthCm: Number(form.braceletLength) || undefined,
+        personalType:
+          form.category === "personal" ? form.personalType : undefined,
+      },
     };
-
-    // Final validation
-    if (!payload.id || !payload.name || payload.variants.length === 0) {
-      setError(
-        "Please ensure ID, Name, and at least one variant with images are provided.",
-      );
-      return;
-    }
 
     onCreate?.(payload);
   };
@@ -248,7 +236,7 @@ export default function AdminProductCreateModal({
         {isSaving && (
           <div className="absolute inset-0 z-[20] flex items-center justify-center bg-white/70 backdrop-blur-[1px]">
             <div className="flex flex-col items-center gap-3 border border-black bg-white px-6 py-5">
-              <div className="h-7 w-7 animate-spin rounded-full border-2 border-black/20 border-t-black" />
+              <Loader className="h-7 w-7" />
               <p className="font-ui text-sm text-black">
                 Processing product...
               </p>
@@ -262,7 +250,7 @@ export default function AdminProductCreateModal({
           </h2>
           <button
             type="button"
-            className="border border-black px-3 py-2 text-sm"
+            className="border border-black bg-white px-3 py-2 text-sm"
             onClick={onClose}
             disabled={isSaving}
           >
@@ -274,9 +262,7 @@ export default function AdminProductCreateModal({
           {/* Main Attributes */}
           <div className="grid gap-4 md:grid-cols-2">
             <div className="md:col-span-2">
-              <label className="mb-1 block text-black/50">
-                Product ID (Unique Slug)
-              </label>
+              <label className="mb-1 block text-black/50">Product ID</label>
               <input
                 type="text"
                 value={form.id}
@@ -318,25 +304,80 @@ export default function AdminProductCreateModal({
                 className="h-12 w-full border border-black px-4 outline-none"
               />
             </div>
+            <div>
+              <label className="mb-1 block text-black/50">Stock Quantity</label>
+              <input
+                type="number"
+                value={form.stockQuantity}
+                onChange={(e) => handleChange("stockQuantity", e.target.value)}
+                className="h-12 w-full border border-black px-4 outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-black/50">Created Date</label>
+              <input
+                type="date"
+                value={form.createdAt}
+                onChange={(e) => handleChange("createdAt", e.target.value)}
+                className="h-12 w-full border border-black px-4 outline-none"
+              />
+            </div>
           </div>
 
-          {/* Variants and Dynamic Previews */}
+          <div>
+            <label className="mb-1 block text-black/50">Description</label>
+            <textarea
+              value={form.description}
+              onChange={(e) => handleChange("description", e.target.value)}
+              rows={4}
+              className="w-full border border-black p-4 outline-none resize-none"
+            />
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-black/50">Metal</label>
+              <input
+                type="text"
+                value={form.metal}
+                onChange={(e) => handleChange("metal", e.target.value)}
+                className="h-12 w-full border border-black px-4 outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-black/50">Weight (g)</label>
+              <input
+                type="number"
+                step="0.1"
+                value={form.weight}
+                onChange={(e) => handleChange("weight", e.target.value)}
+                className="h-12 w-full border border-black px-4 outline-none"
+              />
+            </div>
+          </div>
+
+          {/* Variants section */}
           <div className="mt-4 border-t border-black pt-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-display text-lg">Product Variants</h3>
               <button
                 type="button"
                 onClick={handleAddVariant}
-                className="border border-black px-3 py-1 text-xs"
+                className="border border-black px-3 py-1 text-xs hover:bg-black hover:text-white transition-colors"
               >
                 Add Variant
               </button>
             </div>
 
             {form.variants.map((variant, idx) => {
+              // Convert text to array for the preview helper correctly
+              const imageArray = String(variant.images || "")
+                .split("\n")
+                .map((img) => img.trim())
+                .filter(Boolean);
               const preview = makePreviewList({
                 category: form.category,
-                rawValue: variant.images,
+                rawValue: imageArray, // We pass the array, not the string
                 apiOrigin: API_ORIGIN,
                 frontendBasePath: FRONTEND_BASE_PATH,
               });
@@ -362,7 +403,7 @@ export default function AdminProductCreateModal({
                     onChange={(e) =>
                       handleVariantChange(idx, "images", e.target.value)
                     }
-                    className="w-full border border-black p-3 outline-none resize-none"
+                    className="w-full border border-black p-3 outline-none resize-none bg-white"
                   />
 
                   <div className="mt-2 flex gap-3">
@@ -371,6 +412,7 @@ export default function AdminProductCreateModal({
                         type="file"
                         className="hidden"
                         onChange={(e) => handleUploadImage(e, idx)}
+                        disabled={uploadingVariantIndex !== null}
                       />
                       {uploadingVariantIndex === idx
                         ? "Uploading..."
@@ -380,7 +422,7 @@ export default function AdminProductCreateModal({
                       <button
                         type="button"
                         onClick={() => handleRemoveVariant(idx)}
-                        className="text-red-600 text-xs"
+                        className="text-red-600 text-xs border border-red-600 px-3 py-2"
                       >
                         Remove Variant
                       </button>
@@ -392,7 +434,7 @@ export default function AdminProductCreateModal({
                       {preview.map((src, imgIdx) => (
                         <div
                           key={imgIdx}
-                          className="relative aspect-square border border-black/10 bg-white"
+                          className="relative aspect-square border border-black/10 bg-white overflow-hidden"
                         >
                           <ProductImage
                             src={src}
@@ -401,7 +443,7 @@ export default function AdminProductCreateModal({
                           />
                           <button
                             onClick={() => handleRemoveVariantImage(idx, src)}
-                            className="absolute -top-1 -right-1 bg-red-600 text-white w-4 h-4 text-[10px] flex items-center justify-center rounded-full"
+                            className="absolute top-1 right-1 bg-red-600 text-white w-5 h-5 flex items-center justify-center rounded-full z-10"
                           >
                             ×
                           </button>
@@ -420,7 +462,7 @@ export default function AdminProductCreateModal({
             </div>
           )}
 
-          <div className="flex gap-3 mt-2">
+          <div className="flex gap-3 mt-4">
             <button
               type="button"
               onClick={handleSubmit}
