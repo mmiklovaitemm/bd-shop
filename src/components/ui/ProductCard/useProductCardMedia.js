@@ -2,28 +2,8 @@
 import { useMemo } from "react";
 
 /**
- * Išvalo localhost ir sutvarko Mixed Content problemas.
+ * Checks if the value is a variant object containing an images array
  */
-function sanitizeImageUrl(path) {
-  if (!path || typeof path !== "string") return "";
-
-  if (path.startsWith("http")) {
-    if (path.includes("localhost")) {
-      const parts = path.split("/uploads/");
-      path = parts.length > 1 ? `uploads/${parts[1]}` : path;
-    } else {
-      return path.replace("http://", "https://");
-    }
-  }
-
-  const BASE =
-    import.meta.env.VITE_API_URL || "https://bd-shop-gfva.onrender.com";
-  const cleanBase = BASE.replace(/\/+$/, "").replace("http://", "https://");
-  const cleanPath = path.replace(/^\/+/, "");
-
-  return `${cleanBase}/${cleanPath}`;
-}
-
 function isVariantObject(value) {
   return (
     value &&
@@ -33,15 +13,20 @@ function isVariantObject(value) {
   );
 }
 
+/**
+ * Extracts images from a variant array
+ */
 function getImagesFromVariantArray(variantArray) {
   if (!Array.isArray(variantArray) || !variantArray.length) return [];
 
   const firstItem = variantArray[0];
 
+  // If items are plain strings (URLs)
   if (typeof firstItem === "string") {
     return variantArray.filter(Boolean);
   }
 
+  // If items are objects (with stock and images)
   if (isVariantObject(firstItem)) {
     const firstAvailableVariant =
       variantArray.find((item) => Number(item?.stock || 0) > 0) ||
@@ -56,6 +41,7 @@ function getImagesFromVariantArray(variantArray) {
 }
 
 export default function useProductCardMedia(product) {
+  // 1. Create a safe product object with default values to avoid null pointer errors
   const safeProduct = useMemo(
     () => ({
       variants: {},
@@ -71,6 +57,7 @@ export default function useProductCardMedia(product) {
     [product],
   );
 
+  // 2. Determine the initial/base color for the card display
   const baseColor = useMemo(() => {
     const variants = safeProduct.variants || {};
     const colorsFromProduct = safeProduct.colors || [];
@@ -93,7 +80,8 @@ export default function useProductCardMedia(product) {
     return "silver";
   }, [safeProduct.colors, safeProduct.variants]);
 
-  const { rawMain, rawHover } = useMemo(() => {
+  // 3. Determine Main and Hover image paths
+  const { mainSrc, hoverSrc } = useMemo(() => {
     const variants = safeProduct.variants || {};
     const variantImages = getImagesFromVariantArray(variants?.[baseColor]);
 
@@ -109,8 +97,10 @@ export default function useProductCardMedia(product) {
           ? imageValue.src || imageValue.url || ""
           : "";
 
+    // Primary source logic
     const main = variantImages[0] || safeProduct.thumbnail || imageSrc || "";
 
+    // Hover logic: Find a different image than the main one
     let hover = variantImages[1] || null;
 
     if (
@@ -128,7 +118,9 @@ export default function useProductCardMedia(product) {
       hover = allImagesFromVariants.find((img) => img !== main) || null;
     }
 
-    return { rawMain: main, rawHover: hover };
+    // NOTE: We return raw paths here.
+    // Full URL construction is handled by the ProductImage component.
+    return { mainSrc: main, hoverSrc: hover };
   }, [
     safeProduct.variants,
     safeProduct.thumbnail,
@@ -137,9 +129,7 @@ export default function useProductCardMedia(product) {
     baseColor,
   ]);
 
-  const mainSrc = useMemo(() => sanitizeImageUrl(rawMain), [rawMain]);
-  const hoverSrc = useMemo(() => sanitizeImageUrl(rawHover), [rawHover]);
-
+  // 4. Prepare metadata for responsive image loading if available
   const imageMeta = useMemo(() => {
     if (typeof safeProduct.image === "string") {
       return { srcSet: undefined, sizes: undefined };

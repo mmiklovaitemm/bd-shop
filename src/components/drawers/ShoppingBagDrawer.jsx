@@ -8,6 +8,8 @@ import useCart from "@/store/useCart";
 import useLanguage from "@/context/useLanguage";
 import preventDragHandler from "@/utils/preventDrag";
 
+import ProductImage from "@/components/ui/ProductCard/ProductImage";
+
 import arrowUpRightIcon from "@/assets/ui/arrow-up-right.svg";
 import trashIcon from "@/assets/ui/trash.svg";
 
@@ -71,7 +73,6 @@ export default function ShoppingBagDrawer() {
   const [products, setProducts] = useState([]);
   const [isValidating, setIsValidating] = useState(false);
 
-  // Saugi URL funkcija
   const getCleanApiUrl = () => {
     let url =
       import.meta.env.VITE_API_URL || "https://bd-shop-gfva.onrender.com";
@@ -82,13 +83,11 @@ export default function ShoppingBagDrawer() {
 
   useEffect(() => {
     if (!isOpen) return;
-
     let isMounted = true;
 
     const fetchLatestStock = async () => {
       try {
         setIsValidating(true);
-        // Naudojame išvalytą API_URL
         const data = await apiGet(`${API_URL}/api/products`);
         if (isMounted) {
           const list = Array.isArray(data) ? data : data?.products || [];
@@ -97,14 +96,11 @@ export default function ShoppingBagDrawer() {
       } catch (err) {
         console.error("Drawer API Error:", err);
       } finally {
-        if (isMounted) {
-          setIsValidating(false);
-        }
+        if (isMounted) setIsValidating(false);
       }
     };
 
     fetchLatestStock();
-
     return () => {
       isMounted = false;
     };
@@ -187,7 +183,6 @@ export default function ShoppingBagDrawer() {
                     const product = findProduct(item);
                     const colors = getAvailableColors(product, item);
                     const sizes = getAvailableSizes(product, item.color, item);
-
                     const stock = product
                       ? getVariantStock(product, item.color, item.size)
                       : 99;
@@ -201,11 +196,15 @@ export default function ShoppingBagDrawer() {
                         className={`px-6 py-6 transition-colors ${isOutOfStock || hasLowStock ? "bg-red-50/50" : ""}`}
                       >
                         <div className="grid grid-cols-[90px_1fr] gap-5">
-                          <img
-                            src={item.image}
-                            alt=""
-                            className="h-[110px] w-[90px] object-cover bg-black/5"
-                          />
+                          {/* PAKEISTA: Naudojame ProductImage vietoj paprasto img krovimui iš Render */}
+                          <div className="h-[110px] w-[90px] relative overflow-hidden bg-black/5">
+                            <ProductImage
+                              src={item.image}
+                              alt={item.name}
+                              loaded={true}
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
 
                           <div className="min-w-0">
                             <div className="flex justify-between items-start">
@@ -275,7 +274,7 @@ export default function ShoppingBagDrawer() {
                               <div className="flex border border-black h-8 items-stretch">
                                 <button
                                   onClick={() => dec(item.key)}
-                                  className="w-8 bg-black/5"
+                                  className="w-8 bg-black/5 disabled:opacity-30"
                                   disabled={item.quantity <= 1}
                                 >
                                   –
@@ -285,7 +284,7 @@ export default function ShoppingBagDrawer() {
                                 </div>
                                 <button
                                   onClick={() => inc(item.key)}
-                                  className="w-8 bg-black/5"
+                                  className="w-8 bg-black/5 disabled:opacity-30"
                                   disabled={stock <= item.quantity}
                                 >
                                   +
