@@ -3,16 +3,24 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { fileURLToPath, URL } from "node:url";
 
-const repoName = "bd-shop"; // <-- jei repo pavadinimas kitoks, pakeisk čia
+const repoName = "bd-shop";
 
 export default defineConfig(() => ({
   plugins: [react()],
-  // GitHub Pages: https://username.github.io/bd-shop/
-  // Netlify: https://site.netlify.app/
+  // GitHub Pages or Vercel base path logic
   base: process.env.DEPLOY_TARGET === "gh" ? `/${repoName}/` : "/",
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
+    },
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        assetFileNames: "assets/[name][extname]",
+        chunkFileNames: "assets/[name].js",
+        entryFileNames: "assets/[name].js",
+      },
     },
   },
 }));

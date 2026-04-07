@@ -2,27 +2,24 @@ import { useMemo, useState } from "react";
 import cn from "@/utils/cn";
 import useLanguage from "@/context/useLanguage";
 
-const getCleanRenderUrl = (rawPath) => {
+const getCleanAssetUrl = (rawPath) => {
   if (!rawPath || typeof rawPath !== "string") return "";
 
-  const RENDER_BASE = "https://bd-shop-gfva.onrender.com";
+  // The images are hosted on your frontend server (Vercel)
+  const VERCEL_BASE = "https://bd-shop-gray.vercel.app/assets";
 
-  // 1. If it contains localhost, remove the local part completely
-  let pathOnly = rawPath.replace(/http:\/\/localhost:\d+/, "");
+  // Extract just the filename (e.g., "bond-bracelet-2.webp")
+  // This removes "http://localhost:5173/products/rings/" part from DB
+  const fileName = rawPath.split("/").pop();
 
-  // 2. Ensure it starts with a single slash
-  if (!pathOnly.startsWith("/")) {
-    pathOnly = "/" + pathOnly;
-  }
-
-  // 3. Combine with Render base
-  return `${RENDER_BASE}${pathOnly}`;
+  // Combine to create: https://bd-shop-gray.vercel.app/assets/bond-bracelet-2.webp
+  return `${VERCEL_BASE}/${fileName}`;
 };
 
 export default function ProductImage({
   src,
-  srcSet, // We now use these in the img tag below
-  sizes, // We now use these in the img tag below
+  srcSet,
+  sizes,
   alt,
   loaded,
   onLoad,
@@ -35,13 +32,13 @@ export default function ProductImage({
   const { t } = useLanguage();
   const [status, setStatus] = useState({ currentSrc: src, errored: false });
 
-  // Synchronize state if src changes
+  // Sync state if src changes
   if (src !== status.currentSrc) {
     setStatus({ currentSrc: src, errored: false });
   }
 
   const finalSrc = useMemo(() => {
-    return getCleanRenderUrl(src);
+    return getCleanAssetUrl(src);
   }, [src]);
 
   const showLoader = !loaded && !status.errored;
@@ -88,7 +85,7 @@ export default function ProductImage({
         )}
         onLoad={onLoad}
         onError={(e) => {
-          console.error("Failed to load image from Render:", finalSrc);
+          console.warn("Failed to load image from Vercel assets:", finalSrc);
           setStatus((prev) => ({ ...prev, errored: true }));
           if (onError) onError(e);
         }}
