@@ -28,7 +28,8 @@ const cleanImageUrl = (url) => {
   if (!url) return "";
   if (url.includes("cloudinary.com")) return url;
   // Pašaliname http://localhost:5173/ dalį, jei ji egzistuoja
-  return url.replace(/^https?:\/\/localhost:\d+\//, "");
+  const cleaned = url.replace(/^https?:\/\/localhost:\d+\//, "");
+  return cleaned;
 };
 
 // --- LOGIC HELPERS ---
@@ -97,10 +98,11 @@ export default function ShoppingBagDrawer() {
     const fetchLatestStock = async () => {
       try {
         setIsValidating(true);
-        // Naudojame santykinį kelią, kad apiGet pridėtų teisingą bazinį URL
+        console.log("DEBUG: Drawer fetching products...");
         const data = await apiGet("/products");
         if (isMounted) {
           const list = Array.isArray(data) ? data : data?.products || [];
+          console.log("DEBUG: Loaded products count:", list.length);
           setProducts(list);
         }
       } catch (err) {
@@ -118,7 +120,8 @@ export default function ShoppingBagDrawer() {
   const findProduct = useCallback(
     (item) => {
       const itemId = String(item.productId || item.id || "");
-      return products.find((p) => String(p.id) === itemId) || null;
+      const found = products.find((p) => String(p.id) === itemId) || null;
+      return found;
     },
     [products],
   );
@@ -142,8 +145,11 @@ export default function ShoppingBagDrawer() {
     });
   }, [items, products, findProduct]);
 
-  // --- FIXED: UPDATES BOTH VARIANT AND IMAGE ---
+  // --- ATNAUJINTA FUNKCIJA SU CONSOLE LOG ---
   const handleVariantUpdate = (item, product, newColor, newSize) => {
+    console.log("--- DEBUG: ATNAUJINIMO STARTAS ---");
+    console.log("Esama prekė krepšelyje:", item);
+
     const color = newColor || item.color;
     let size = newSize || item.size;
     let image = item.image;
@@ -151,24 +157,28 @@ export default function ShoppingBagDrawer() {
     if (product && Array.isArray(product.variants)) {
       const variant = product.variants.find((v) => v.name === color);
       if (variant) {
-        // Jei keičiama spalva, atnaujiname nuotrauką į tą, kuri priklauso variantui
-        if (newColor && variant.images && variant.images.length > 0) {
-          image = cleanImageUrl(variant.images[0]);
+        console.log("Rastas variantas pagal spalvą:", variant.name);
+        if (variant.images && variant.images.length > 0) {
+          const rawImg = variant.images[0];
+          image = cleanImageUrl(rawImg);
+          console.log("Nauja nuotrauka (raw):", rawImg);
+          console.log("Nauja nuotrauka (cleaned):", image);
         }
 
-        // Patikriname ar dydis egzistuoja naujoje spalvoje
-        const availableSizes = getAvailableSizes(product, color, item);
-        if (!availableSizes.includes(String(size))) {
-          size = availableSizes[0] || item.size;
+        if (newColor) {
+          const availableSizes = getAvailableSizes(product, newColor, item);
+          if (!availableSizes.includes(String(size))) {
+            size = availableSizes[0] || item.size;
+            console.log("Dydis pakeistas į pirmą prieinamą:", size);
+          }
         }
+      } else {
+        console.warn("KLAIDA: Variantas su spalva " + color + " nerastas!");
       }
     }
 
-    updateVariant(item.key, {
-      color,
-      size,
-      image,
-    });
+    console.log("Siunčiama į Store (updateVariant):", { color, size, image });
+    updateVariant(item.key, { color, size, image });
   };
 
   return (
@@ -219,8 +229,6 @@ export default function ShoppingBagDrawer() {
                     const product = findProduct(item);
                     const colors = getAvailableColors(product, item);
                     const sizes = getAvailableSizes(product, item.color, item);
-
-                    // FIXED: stock kintamasis dabar naudojamas
                     const stockLimit = product
                       ? getVariantStock(product, item.color, item.size)
                       : 99;
