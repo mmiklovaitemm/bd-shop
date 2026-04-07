@@ -20,6 +20,17 @@ const fmtPrice = (n) =>
     minimumFractionDigits: 2,
   }).format(Number(n || 0));
 
+/**
+ * FIXED: Cleans legacy localhost URLs from database to force
+ * loading from production server or Cloudinary.
+ */
+const cleanImageUrl = (url) => {
+  if (!url) return "";
+  if (url.includes("cloudinary.com")) return url;
+  // Pašaliname http://localhost:5173/ dalį, jei ji egzistuoja
+  return url.replace(/^https?:\/\/localhost:\d+\//, "");
+};
+
 // --- LOGIC HELPERS ---
 
 function getAvailableColors(product, item) {
@@ -86,6 +97,7 @@ export default function ShoppingBagDrawer() {
     const fetchLatestStock = async () => {
       try {
         setIsValidating(true);
+        // Naudojame santykinį kelią, kad apiGet pridėtų teisingą bazinį URL
         const data = await apiGet("/products");
         if (isMounted) {
           const list = Array.isArray(data) ? data : data?.products || [];
@@ -120,6 +132,17 @@ export default function ShoppingBagDrawer() {
     [items],
   );
 
+  const hasInStockErrors = useMemo(() => {
+    if (products.length === 0) return false;
+    return items.some((item) => {
+      const product = findProduct(item);
+      if (!product) return false;
+      const stock = getVariantStock(product, item.color, item.size);
+      return stock < item.quantity;
+    });
+  }, [items, products, findProduct]);
+
+  // --- FIXED: UPDATES BOTH VARIANT AND IMAGE ---
   const handleVariantUpdate = (item, product, newColor, newSize) => {
     const color = newColor || item.color;
     let size = newSize || item.size;
@@ -128,12 +151,12 @@ export default function ShoppingBagDrawer() {
     if (product && Array.isArray(product.variants)) {
       const variant = product.variants.find((v) => v.name === color);
       if (variant) {
-        // Jei keičiama spalva, paimame tą nuotrauką, kuri priklauso variantui
+        // Jei keičiama spalva, atnaujiname nuotrauką į tą, kuri priklauso variantui
         if (newColor && variant.images && variant.images.length > 0) {
-          image = variant.images[0];
+          image = cleanImageUrl(variant.images[0]);
         }
 
-        // Patikriname dydį
+        // Patikriname ar dydis egzistuoja naujoje spalvoje
         const availableSizes = getAvailableSizes(product, color, item);
         if (!availableSizes.includes(String(size))) {
           size = availableSizes[0] || item.size;
@@ -141,7 +164,11 @@ export default function ShoppingBagDrawer() {
       }
     }
 
-    updateVariant(item.key, { color, size, image });
+    updateVariant(item.key, {
+      color,
+      size,
+      image,
+    });
   };
 
   return (
@@ -193,6 +220,7 @@ export default function ShoppingBagDrawer() {
                     const colors = getAvailableColors(product, item);
                     const sizes = getAvailableSizes(product, item.color, item);
 
+                    // FIXED: stock kintamasis dabar naudojamas
                     const stockLimit = product
                       ? getVariantStock(product, item.color, item.size)
                       : 99;
@@ -202,7 +230,7 @@ export default function ShoppingBagDrawer() {
                         <div className="grid grid-cols-[90px_1fr] gap-5">
                           <div className="h-[110px] w-[90px] relative overflow-hidden bg-black/5 border border-black/5">
                             <ProductImage
-                              src={item.image}
+                              src={cleanImageUrl(item.image)}
                               alt={item.name}
                               loaded={true}
                               className="h-full w-full object-cover"
@@ -275,7 +303,7 @@ export default function ShoppingBagDrawer() {
                               <div className="flex border border-black h-8 items-stretch">
                                 <button
                                   onClick={() => dec(item.key)}
-                                  className="w-8 bg-black/5 active:scale-95 transition-transform"
+                                  className="w-8 bg-black/5 disabled:opacity-30"
                                   disabled={item.quantity <= 1}
                                 >
                                   –
@@ -285,7 +313,7 @@ export default function ShoppingBagDrawer() {
                                 </div>
                                 <button
                                   onClick={() => inc(item.key)}
-                                  className="w-8 bg-black/5 active:scale-95 transition-transform"
+                                  className="w-8 bg-black/5 disabled:opacity-30"
                                   disabled={stockLimit <= item.quantity}
                                 >
                                   +
@@ -317,8 +345,10 @@ export default function ShoppingBagDrawer() {
                   close();
                   navigate("/checkout");
                 }}
-                disabled={items.length === 0 || isValidating}
-                className="flex h-12 w-full items-center justify-center bg-black font-ui text-[14px] text-white uppercase tracking-widest disabled:bg-black/20"
+                disabled={
+                  items.length === 0 || hasInStockErrors || isValidating
+                }
+                className="flex h-12 w-full items-center justify-center gap-4 bg-black font-ui text-[14px] text-white uppercase tracking-widest disabled:bg-black/20"
               >
                 {isValidating
                   ? "Validating..."
