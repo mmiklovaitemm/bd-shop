@@ -22,31 +22,69 @@ const fmtPrice = (n) =>
 
 // --- Logic Helpers ---
 function getAvailableColors(product, item) {
-  if (product?.colors?.length > 0) return product.colors;
-  if (product?.variants) {
-    const variantColors = Object.keys(product.variants);
-    if (variantColors.length > 0) return variantColors;
+  if (!product) return item?.color ? [item.color] : ["silver"];
+
+  // Jei variants yra masyvas
+  if (Array.isArray(product.variants)) {
+    return product.variants.map((v) => v.name);
   }
+
+  // Jei variants yra objektas
+  if (product.variants && typeof product.variants === "object") {
+    return Object.keys(product.variants);
+  }
+
   return item?.color ? [item.color] : ["silver"];
 }
 
-function getAvailableSizes(product, color, item) {
-  if (product?.variants?.[color]) {
-    const sizes = product.variants[color]
-      .map((v) => (v.size ? String(v.size) : null))
-      .filter(Boolean);
-    if (sizes.length > 0) return sizes;
+function getAvailableSizes(product, colorName, item) {
+  if (!product) return item?.size ? [String(item.size)] : [];
+
+  // Jei variants yra masyvas, ieškome varianto pagal pavadinimą
+  if (Array.isArray(product.variants)) {
+    const variant = product.variants.find((v) => v.name === colorName);
+    if (variant && variant.sizes) return variant.sizes.map(String);
   }
-  if (product?.sizes?.length > 0) return product.sizes.map(String);
+
+  // Jei variants yra objektas
+  if (product.variants && product.variants[colorName]) {
+    // Jei tai senas formatas su stock:
+    if (Array.isArray(product.variants[colorName])) {
+      return product.variants[colorName]
+        .map((v) => String(v.size))
+        .filter(Boolean);
+    }
+  }
+
+  // Fallback į pagrindinį produkto dydžių masyvą
+  if (Array.isArray(product.sizes) && product.sizes.length > 0) {
+    return product.sizes.map(String);
+  }
+
   return item?.size ? [String(item.size)] : [];
 }
 
-function getVariantStock(product, color, size) {
-  if (!product?.variants || !product.variants[color]) return 0;
-  const variant = product.variants[color].find(
-    (v) => String(v.size) === String(size),
-  );
-  return variant ? Number(variant.stock) : 0;
+function getVariantStock(product, colorName, size) {
+  if (!product) return 0;
+
+  // Masyvo formatas
+  if (Array.isArray(product.variants)) {
+    const variant = product.variants.find((v) => v.name === colorName);
+    if (!variant) return 0;
+
+    // Jei stock yra bendras variantui
+    if (typeof variant.stock !== "undefined") return Number(variant.stock);
+
+    // Jei stock yra per variantStock objektą
+    if (product.variantStock?.[colorName]?.[size] !== undefined) {
+      return Number(product.variantStock[colorName][size]);
+    }
+
+    // Jei produkto stockQuantity yra bendras
+    return Number(product.stockQuantity || 0);
+  }
+
+  return 0;
 }
 
 const drawerVariants = {
@@ -133,6 +171,19 @@ export default function ShoppingBagDrawer() {
     });
   }, [items, products, findProduct]);
 
+  // Spalvos keitimo funkcija
+  const handleColorChange = (item, product, newColor) => {
+    const availableSizes = getAvailableSizes(product, newColor, item);
+    const newSize = availableSizes.includes(String(item.size))
+      ? item.size
+      : availableSizes[0] || item.size;
+
+    updateVariant(item.key, {
+      color: newColor,
+      size: newSize,
+    });
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -193,11 +244,12 @@ export default function ShoppingBagDrawer() {
                       <motion.div
                         key={item.key}
                         layout
-                        className={`px-6 py-6 transition-colors ${isOutOfStock || hasLowStock ? "bg-red-50/50" : ""}`}
+                        className={`px-6 py-6 transition-colors ${
+                          isOutOfStock || hasLowStock ? "bg-red-50/50" : ""
+                        }`}
                       >
                         <div className="grid grid-cols-[90px_1fr] gap-5">
-                          {/* PAKEISTA: Naudojame ProductImage vietoj paprasto img krovimui iš Render */}
-                          <div className="h-[110px] w-[90px] relative overflow-hidden bg-black/5">
+                          <div className="h-[110px] w-[90px] relative overflow-hidden bg-black/5 border border-black/5">
                             <ProductImage
                               src={item.image}
                               alt={item.name}
@@ -208,26 +260,29 @@ export default function ShoppingBagDrawer() {
 
                           <div className="min-w-0">
                             <div className="flex justify-between items-start">
-                              <p className="font-display text-[18px] leading-tight">
+                              <p className="font-display text-[17px] leading-tight pr-2">
                                 {item.name}
                               </p>
-                              <p className="font-ui text-[14px]">
+                              <p className="font-ui text-[14px] whitespace-nowrap">
                                 {fmtPrice(item.price)}
                               </p>
                             </div>
 
                             <div className="mt-3 grid grid-cols-2 gap-2">
+                              {/* COLOR SELECT */}
                               <div className="bg-black/5 px-2 py-1.5 rounded-sm relative">
-                                <p className="text-[10px] uppercase text-black/40 font-ui mb-1">
+                                <p className="text-[9px] uppercase text-black/40 font-ui mb-0.5">
                                   Color
                                 </p>
                                 <select
                                   value={item.color}
-                                  className="w-full bg-transparent font-ui text-[12px] outline-none capitalize cursor-pointer pr-4"
+                                  className="w-full bg-transparent font-ui text-[12px] outline-none capitalize cursor-pointer"
                                   onChange={(e) =>
-                                    updateVariant(item.key, {
-                                      color: e.target.value,
-                                    })
+                                    handleColorChange(
+                                      item,
+                                      product,
+                                      e.target.value,
+                                    )
                                   }
                                 >
                                   {colors.map((c) => (
@@ -238,14 +293,15 @@ export default function ShoppingBagDrawer() {
                                 </select>
                               </div>
 
+                              {/* SIZE SELECT */}
                               {sizes.length > 0 && (
                                 <div className="bg-black/5 px-2 py-1.5 rounded-sm relative">
-                                  <p className="text-[10px] uppercase text-black/40 font-ui mb-1">
+                                  <p className="text-[9px] uppercase text-black/40 font-ui mb-0.5">
                                     Size
                                   </p>
                                   <select
                                     value={item.size}
-                                    className="w-full bg-transparent font-ui text-[12px] outline-none cursor-pointer pr-4"
+                                    className="w-full bg-transparent font-ui text-[12px] outline-none cursor-pointer"
                                     onChange={(e) =>
                                       updateVariant(item.key, {
                                         size: e.target.value,
@@ -263,10 +319,10 @@ export default function ShoppingBagDrawer() {
                             </div>
 
                             {(isOutOfStock || hasLowStock) && (
-                              <p className="mt-2 text-[11px] font-ui text-red-600 uppercase tracking-wider">
+                              <p className="mt-2 text-[10px] font-ui text-red-600 uppercase tracking-wider">
                                 {isOutOfStock
                                   ? "Out of stock"
-                                  : `Only ${stock} left in stock`}
+                                  : `Only ${stock} left`}
                               </p>
                             )}
 
@@ -274,17 +330,17 @@ export default function ShoppingBagDrawer() {
                               <div className="flex border border-black h-8 items-stretch">
                                 <button
                                   onClick={() => dec(item.key)}
-                                  className="w-8 bg-black/5 disabled:opacity-30"
+                                  className="w-8 bg-black/5 active:bg-black/10 disabled:opacity-30"
                                   disabled={item.quantity <= 1}
                                 >
                                   –
                                 </button>
-                                <div className="px-3 flex items-center font-ui text-[12px] border-x border-black">
+                                <div className="px-3 flex items-center font-ui text-[12px] border-x border-black bg-white">
                                   {item.quantity}
                                 </div>
                                 <button
                                   onClick={() => inc(item.key)}
-                                  className="w-8 bg-black/5 disabled:opacity-30"
+                                  className="w-8 bg-black/5 active:bg-black/10 disabled:opacity-30"
                                   disabled={stock <= item.quantity}
                                 >
                                   +
@@ -292,11 +348,11 @@ export default function ShoppingBagDrawer() {
                               </div>
                               <button
                                 onClick={() => removeItem(item.key)}
-                                className="p-1 opacity-40 hover:opacity-100 transition-opacity"
+                                className="p-1.5 opacity-40 hover:opacity-100 hover:bg-red-50 rounded-full transition-all"
                               >
                                 <img
                                   src={trashIcon}
-                                  alt=""
+                                  alt="Remove"
                                   className="h-4 w-4"
                                 />
                               </button>
@@ -313,7 +369,8 @@ export default function ShoppingBagDrawer() {
             <div className="border-t border-black p-6 bg-white shrink-0">
               {hasInStockErrors && (
                 <p className="mb-4 text-center text-[12px] font-ui text-red-600 italic">
-                  Please update quantities or remove out-of-stock items.
+                  {t.stockError ||
+                    "Please update quantities or remove out-of-stock items."}
                 </p>
               )}
               <button
@@ -324,11 +381,11 @@ export default function ShoppingBagDrawer() {
                 disabled={
                   items.length === 0 || hasInStockErrors || isValidating
                 }
-                className="flex h-12 w-full items-center justify-center gap-4 bg-black font-ui text-[14px] text-white active:scale-[0.98] transition-all disabled:bg-black/20 disabled:cursor-not-allowed"
+                className="flex h-12 w-full items-center justify-center gap-4 bg-black font-ui text-[14px] text-white active:scale-[0.98] transition-all disabled:bg-black/20 disabled:cursor-not-allowed uppercase tracking-widest"
               >
                 {isValidating
                   ? "Validating..."
-                  : `Check out — ${fmtPrice(subtotal)}`}
+                  : `${t.checkout} — ${fmtPrice(subtotal)}`}
               </button>
             </div>
           </motion.aside>
