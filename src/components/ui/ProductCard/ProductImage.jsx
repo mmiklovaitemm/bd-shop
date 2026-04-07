@@ -3,9 +3,9 @@ import cn from "@/utils/cn";
 import useLanguage from "@/context/useLanguage";
 
 /**
- * 1. If path has "uploads" -> it's from Admin panel (Render server).
- * 2. If path has "products/" -> it's static (Vercel server).
- * 3. We clean any "localhost" remains.
+ * SMART FILTER:
+ * Distinguishes between database data (which may contain localhost)
+ * and static imports (which contain Vite-generated hashes).
  */
 const getFinalUrl = (rawPath) => {
   if (!rawPath || typeof rawPath !== "string") return "";
@@ -13,20 +13,31 @@ const getFinalUrl = (rawPath) => {
   const RENDER_BACKEND = "https://bd-shop-gfva.onrender.com";
   const VERCEL_FRONTEND = "https://bd-shop-gray.vercel.app";
 
-  let cleanPath = rawPath.replace(/http:\/\/localhost:\d+/, "");
+  // 1. If the path is already a full Vercel URL (e.g., from Best Sellers static import),
+  // we return it as-is to preserve Vite-generated hashes (-CwBIXg4R.webp).
+  if (rawPath.startsWith("https://") && rawPath.includes("vercel.app")) {
+    return rawPath;
+  }
 
+  // 2. Sanitize localhost remains from the development environment
+  let cleanPath = rawPath.replace(/http:\/\/localhost:\d+/, "");
   const purePath = cleanPath.replace(/^\/+/, "");
 
+  // 3. ROUTING LOGIC BASED ON DIRECTORY:
+
+  // A. Admin-uploaded images (hosted on Render backend)
   if (purePath.includes("uploads/")) {
     return `${RENDER_BACKEND}/${purePath}`;
   }
 
-  if (purePath.startsWith("products/")) {
+  // B. Static images from the DB or developer imports
+  // Checks if the path includes /products/ or starts with /assets/
+  if (purePath.startsWith("products/") || purePath.startsWith("assets/")) {
     return `${VERCEL_FRONTEND}/${purePath}`;
   }
 
+  // C. Fallback: If only the filename is provided (e.g., "ring.webp")
   const fileName = purePath.split("/").pop();
-
   return `${VERCEL_FRONTEND}/products/rings/${fileName}`;
 };
 
@@ -46,6 +57,7 @@ export default function ProductImage({
   const { t } = useLanguage();
   const [status, setStatus] = useState({ currentSrc: src, errored: false });
 
+  // Sync internal state if the src prop changes
   if (src !== status.currentSrc) {
     setStatus({ currentSrc: src, errored: false });
   }
@@ -54,6 +66,7 @@ export default function ProductImage({
 
   const showLoader = !loaded && !status.errored;
 
+  // Render fallback placeholder if an error occurs or src is missing
   if (status.errored || !finalSrc) {
     return (
       <div
@@ -95,7 +108,8 @@ export default function ProductImage({
         )}
         onLoad={onLoad}
         onError={(e) => {
-          console.warn("Failed at:", finalSrc);
+          // Log error and update state to show "No Image" placeholder
+          console.warn("Image load failed. Tried to get it from:", finalSrc);
           setStatus((prev) => ({ ...prev, errored: true }));
           if (onError) onError(e);
         }}
