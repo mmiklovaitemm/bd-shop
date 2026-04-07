@@ -20,31 +20,19 @@ const fmtPrice = (n) =>
     minimumFractionDigits: 2,
   }).format(Number(n || 0));
 
-// --- LOGIKOS HELPERIAI ---
-
 function getAvailableColors(product, item) {
-  if (!product) {
-    console.warn(
-      "getAvailableColors: Product not found, using item color",
-      item?.color,
-    );
-    return [item?.color || "silver"];
-  }
-
+  if (!product) return [item?.color || "silver"];
   let colors = [];
   if (Array.isArray(product.variants)) {
     colors = product.variants.map((v) => v.name);
   } else if (product.variants && typeof product.variants === "object") {
     colors = Object.keys(product.variants);
   }
-
-  console.log(`getAvailableColors for ${product.id}:`, colors);
   return colors.length > 0 ? colors : [item?.color || "silver"];
 }
 
 function getAvailableSizes(product, colorName, item) {
   if (!product) return [String(item?.size || "")].filter(Boolean);
-
   let sizes = [];
   if (Array.isArray(product.variants)) {
     const variant = product.variants.find((v) => v.name === colorName);
@@ -52,12 +40,9 @@ function getAvailableSizes(product, colorName, item) {
       sizes = variant.sizes.map(String);
     }
   }
-
   if (sizes.length === 0 && Array.isArray(product.sizes)) {
     sizes = product.sizes.map(String);
   }
-
-  console.log(`getAvailableSizes for ${product.id} (${colorName}):`, sizes);
   return sizes.filter(Boolean);
 }
 
@@ -102,11 +87,9 @@ export default function ShoppingBagDrawer() {
     const fetchLatestStock = async () => {
       try {
         setIsValidating(true);
-        console.log("Drawer: Fetching products from API...");
-        const data = await apiGet(`/products`); // Pakeista į santykinį kelią
+        const data = await apiGet(`/products`);
         if (isMounted) {
           const list = Array.isArray(data) ? data : data?.products || [];
-          console.log("Drawer: Products loaded, count:", list.length);
           setProducts(list);
         }
       } catch (err) {
@@ -124,14 +107,7 @@ export default function ShoppingBagDrawer() {
   const findProduct = useCallback(
     (item) => {
       const itemId = String(item.productId || item.id || "");
-      const found = products.find((p) => String(p.id) === itemId) || null;
-      if (!found && products.length > 0) {
-        console.warn(
-          "Drawer: Could not find product in list for item:",
-          itemId,
-        );
-      }
-      return found;
+      return products.find((p) => String(p.id) === itemId) || null;
     },
     [products],
   );
@@ -146,28 +122,31 @@ export default function ShoppingBagDrawer() {
   );
 
   const handleVariantUpdate = (item, product, newColor, newSize) => {
-    console.log("--- ATNAUJINIMO STARTAS ---");
-    console.log("Prekė:", item.name, "Raktas (key):", item.key);
-
     const color = newColor || item.color;
     let size = newSize || item.size;
+    let newImage = item.image;
 
-    if (newColor) {
-      const availableSizes = getAvailableSizes(product, newColor, item);
-      if (!availableSizes.includes(String(size))) {
-        size = availableSizes[0] || item.size;
-        console.log("Dydis pakeistas į pirmą prieinamą:", size);
+    if (product && Array.isArray(product.variants)) {
+      const variant = product.variants.find((v) => v.name === color);
+      if (variant) {
+        if (variant.images && variant.images.length > 0) {
+          newImage = variant.images[0];
+        }
+
+        if (newColor) {
+          const availableSizes = getAvailableSizes(product, newColor, item);
+          if (!availableSizes.includes(String(size))) {
+            size = availableSizes[0] || item.size;
+          }
+        }
       }
     }
 
-    console.log("Siunčiama į Store:", { color, size });
-
-    if (typeof updateVariant === "function") {
-      updateVariant(item.key, { color, size });
-      console.log("Store funkcija updateVariant iškviesta sėkmingai.");
-    } else {
-      console.error("KLAIDA: updateVariant funkcija nerasta useCart store!");
-    }
+    updateVariant(item.key, {
+      color,
+      size,
+      image: newImage,
+    });
   };
 
   return (
@@ -218,7 +197,9 @@ export default function ShoppingBagDrawer() {
                     const product = findProduct(item);
                     const colors = getAvailableColors(product, item);
                     const sizes = getAvailableSizes(product, item.color, item);
-                    const stock = product
+
+                    // FIXED: stock kintamasis dabar naudojamas mygtukų blokavimui žemiau
+                    const stockLimit = product
                       ? getVariantStock(product, item.color, item.size)
                       : 99;
 
@@ -300,7 +281,8 @@ export default function ShoppingBagDrawer() {
                               <div className="flex border border-black h-8 items-stretch">
                                 <button
                                   onClick={() => dec(item.key)}
-                                  className="w-8 bg-black/5"
+                                  className="w-8 bg-black/5 disabled:opacity-30"
+                                  disabled={item.quantity <= 1}
                                 >
                                   –
                                 </button>
@@ -309,7 +291,8 @@ export default function ShoppingBagDrawer() {
                                 </div>
                                 <button
                                   onClick={() => inc(item.key)}
-                                  className="w-8 bg-black/5"
+                                  className="w-8 bg-black/5 disabled:opacity-30"
+                                  disabled={stockLimit <= item.quantity} // Naudojamas stockLimit
                                 >
                                   +
                                 </button>
@@ -345,7 +328,7 @@ export default function ShoppingBagDrawer() {
               >
                 {isValidating
                   ? "Validating..."
-                  : `${t.checkout} — ${fmtPrice(subtotal)}`}
+                  : `Check out — ${fmtPrice(subtotal)}`}
               </button>
             </div>
           </motion.aside>
