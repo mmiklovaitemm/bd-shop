@@ -5,14 +5,17 @@ import useLanguage from "@/context/useLanguage";
 const getCleanAssetUrl = (rawPath) => {
   if (!rawPath || typeof rawPath !== "string") return "";
 
-  // The images are hosted on your frontend server (Vercel)
+  // The base where your built images actually live
   const VERCEL_BASE = "https://bd-shop-gray.vercel.app/assets";
 
-  // Extract just the filename (e.g., "bond-bracelet-2.webp")
-  // This removes "http://localhost:5173/products/rings/" part from DB
-  const fileName = rawPath.split("/").pop();
+  // 1. First, handle potential array or object cases (safety)
+  const pathString = String(rawPath);
 
-  // Combine to create: https://bd-shop-gray.vercel.app/assets/bond-bracelet-2.webp
+  // 2. Extract ONLY the last part of the URL/path (e.g., "ring-1.webp")
+  // We split by both forward and backward slashes to be 100% sure.
+  const fileName = pathString.split(/[\\/]/).pop();
+
+  // 3. Return the direct link to Vercel assets
   return `${VERCEL_BASE}/${fileName}`;
 };
 
@@ -32,7 +35,6 @@ export default function ProductImage({
   const { t } = useLanguage();
   const [status, setStatus] = useState({ currentSrc: src, errored: false });
 
-  // Sync state if src changes
   if (src !== status.currentSrc) {
     setStatus({ currentSrc: src, errored: false });
   }
@@ -85,7 +87,8 @@ export default function ProductImage({
         )}
         onLoad={onLoad}
         onError={(e) => {
-          console.warn("Failed to load image from Vercel assets:", finalSrc);
+          // Log exactly what failed so we can see it in Console
+          console.warn("Image load failed. Tried to get it from:", finalSrc);
           setStatus((prev) => ({ ...prev, errored: true }));
           if (onError) onError(e);
         }}
