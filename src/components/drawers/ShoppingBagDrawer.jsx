@@ -20,53 +20,33 @@ const fmtPrice = (n) =>
     minimumFractionDigits: 2,
   }).format(Number(n || 0));
 
-// --- ATNAUJINTI LOGIKOS HELPERIAI ---
+// --- LOGIKOS HELPERIAI ---
 
 function getAvailableColors(product, item) {
   if (!product) return [item?.color || "silver"];
-
-  // Jei variants yra masyvas (nauja struktūra)
-  if (Array.isArray(product.variants)) {
+  if (Array.isArray(product.variants))
     return product.variants.map((v) => v.name);
-  }
-
-  // Jei variants yra objektas (senesnė struktūra)
-  if (product.variants && typeof product.variants === "object") {
+  if (product.variants && typeof product.variants === "object")
     return Object.keys(product.variants);
-  }
-
   return [item?.color || "silver"];
 }
 
 function getAvailableSizes(product, colorName, item) {
   if (!product) return [String(item?.size || "")].filter(Boolean);
-
-  // 1. Ieškome dydžių konkrečiame variante (pagal pasirinktą spalvą)
   if (Array.isArray(product.variants)) {
     const variant = product.variants.find((v) => v.name === colorName);
-    // Jei variantas turi savo sizes masyvą
-    if (variant && Array.isArray(variant.sizes)) {
+    if (variant && Array.isArray(variant.sizes))
       return variant.sizes.map(String);
-    }
   }
-
-  // 2. Jei variantai neturi specifinių dydžių, žiūrime bendrą produkto sizes masyvą
-  if (Array.isArray(product.sizes) && product.sizes.length > 0) {
+  if (Array.isArray(product.sizes) && product.sizes.length > 0)
     return product.sizes.map(String);
-  }
-
   return [String(item?.size || "")].filter(Boolean);
 }
 
 function getVariantStock(product, colorName, size) {
   if (!product) return 0;
-
-  // Tikriname per variantStock objektą (dažniausia tavo projektų struktūra)
-  if (product.variantStock?.[colorName]?.[size] !== undefined) {
+  if (product.variantStock?.[colorName]?.[size] !== undefined)
     return Number(product.variantStock[colorName][size]);
-  }
-
-  // Tikriname bendrą kiekį
   return Number(product.stockQuantity || 0);
 }
 
@@ -100,7 +80,6 @@ export default function ShoppingBagDrawer() {
   useEffect(() => {
     if (!isOpen) return;
     let isMounted = true;
-
     const fetchLatestStock = async () => {
       try {
         setIsValidating(true);
@@ -115,7 +94,6 @@ export default function ShoppingBagDrawer() {
         if (isMounted) setIsValidating(false);
       }
     };
-
     fetchLatestStock();
     return () => {
       isMounted = false;
@@ -125,7 +103,8 @@ export default function ShoppingBagDrawer() {
   const findProduct = useCallback(
     (item) => {
       const itemId = String(item.productId || item.id || "");
-      return products.find((p) => String(p.id) === itemId) || null;
+      const found = products.find((p) => String(p.id) === itemId) || null;
+      return found;
     },
     [products],
   );
@@ -139,21 +118,35 @@ export default function ShoppingBagDrawer() {
     [items],
   );
 
-  // --- SVARBI FUNKCIJA: VARIANTŲ ATNAUJINIMUI ---
+  // --- DIAGNOSTINĖ FUNKCIJA ---
   const handleVariantUpdate = (item, product, newColor, newSize) => {
+    console.log("--- DEBUG: ShoppingBag Update ---");
+    console.log("Item Key:", item.key);
+    console.log("Current State:", { color: item.color, size: item.size });
+    console.log("Requested Update:", { newColor, newSize });
+
     const color = newColor || item.color;
     let size = newSize || item.size;
 
-    // Jei pasikeitė spalva, patikriname ar senas dydis vis dar egzistuoja naujoje spalvoje
     if (newColor) {
       const availableSizes = getAvailableSizes(product, newColor, item);
+      console.log("Available sizes for new color:", availableSizes);
       if (!availableSizes.includes(String(size))) {
-        size = availableSizes[0] || item.size; // Imam pirmą prieinamą
+        size = availableSizes[0] || item.size;
+        console.log("Size not available in new color, picking fallback:", size);
       }
     }
 
-    // Kviečiame useCart updateVariant
-    updateVariant(item.key, { color, size });
+    console.log("Final payload to store:", { color, size });
+
+    if (typeof updateVariant === "function") {
+      updateVariant(item.key, { color, size });
+      console.log("Store update function called.");
+    } else {
+      console.error(
+        "ERROR: updateVariant is not a function! Check useCart store.",
+      );
+    }
   };
 
   return (
@@ -335,7 +328,7 @@ export default function ShoppingBagDrawer() {
               >
                 {isValidating
                   ? "Validating..."
-                  : `${t.checkout} — ${fmtPrice(subtotal)}`}
+                  : `Check out — ${fmtPrice(subtotal)}`}
               </button>
             </div>
           </motion.aside>
