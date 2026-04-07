@@ -23,30 +23,49 @@ const fmtPrice = (n) =>
 // --- LOGIKOS HELPERIAI ---
 
 function getAvailableColors(product, item) {
-  if (!product) return [item?.color || "silver"];
-  if (Array.isArray(product.variants))
-    return product.variants.map((v) => v.name);
-  if (product.variants && typeof product.variants === "object")
-    return Object.keys(product.variants);
-  return [item?.color || "silver"];
+  if (!product) {
+    console.warn(
+      "getAvailableColors: Product not found, using item color",
+      item?.color,
+    );
+    return [item?.color || "silver"];
+  }
+
+  let colors = [];
+  if (Array.isArray(product.variants)) {
+    colors = product.variants.map((v) => v.name);
+  } else if (product.variants && typeof product.variants === "object") {
+    colors = Object.keys(product.variants);
+  }
+
+  console.log(`getAvailableColors for ${product.id}:`, colors);
+  return colors.length > 0 ? colors : [item?.color || "silver"];
 }
 
 function getAvailableSizes(product, colorName, item) {
   if (!product) return [String(item?.size || "")].filter(Boolean);
+
+  let sizes = [];
   if (Array.isArray(product.variants)) {
     const variant = product.variants.find((v) => v.name === colorName);
-    if (variant && Array.isArray(variant.sizes))
-      return variant.sizes.map(String);
+    if (variant && Array.isArray(variant.sizes)) {
+      sizes = variant.sizes.map(String);
+    }
   }
-  if (Array.isArray(product.sizes) && product.sizes.length > 0)
-    return product.sizes.map(String);
-  return [String(item?.size || "")].filter(Boolean);
+
+  if (sizes.length === 0 && Array.isArray(product.sizes)) {
+    sizes = product.sizes.map(String);
+  }
+
+  console.log(`getAvailableSizes for ${product.id} (${colorName}):`, sizes);
+  return sizes.filter(Boolean);
 }
 
 function getVariantStock(product, colorName, size) {
   if (!product) return 0;
-  if (product.variantStock?.[colorName]?.[size] !== undefined)
+  if (product.variantStock?.[colorName]?.[size] !== undefined) {
     return Number(product.variantStock[colorName][size]);
+  }
   return Number(product.stockQuantity || 0);
 }
 
@@ -83,9 +102,11 @@ export default function ShoppingBagDrawer() {
     const fetchLatestStock = async () => {
       try {
         setIsValidating(true);
-        const data = await apiGet(`${API_URL}/api/products`);
+        console.log("Drawer: Fetching products from API...");
+        const data = await apiGet(`/products`); // Pakeista į santykinį kelią
         if (isMounted) {
           const list = Array.isArray(data) ? data : data?.products || [];
+          console.log("Drawer: Products loaded, count:", list.length);
           setProducts(list);
         }
       } catch (err) {
@@ -98,12 +119,18 @@ export default function ShoppingBagDrawer() {
     return () => {
       isMounted = false;
     };
-  }, [isOpen, API_URL]);
+  }, [isOpen]);
 
   const findProduct = useCallback(
     (item) => {
       const itemId = String(item.productId || item.id || "");
       const found = products.find((p) => String(p.id) === itemId) || null;
+      if (!found && products.length > 0) {
+        console.warn(
+          "Drawer: Could not find product in list for item:",
+          itemId,
+        );
+      }
       return found;
     },
     [products],
@@ -118,34 +145,28 @@ export default function ShoppingBagDrawer() {
     [items],
   );
 
-  // --- DIAGNOSTINĖ FUNKCIJA ---
   const handleVariantUpdate = (item, product, newColor, newSize) => {
-    console.log("--- DEBUG: ShoppingBag Update ---");
-    console.log("Item Key:", item.key);
-    console.log("Current State:", { color: item.color, size: item.size });
-    console.log("Requested Update:", { newColor, newSize });
+    console.log("--- ATNAUJINIMO STARTAS ---");
+    console.log("Prekė:", item.name, "Raktas (key):", item.key);
 
     const color = newColor || item.color;
     let size = newSize || item.size;
 
     if (newColor) {
       const availableSizes = getAvailableSizes(product, newColor, item);
-      console.log("Available sizes for new color:", availableSizes);
       if (!availableSizes.includes(String(size))) {
         size = availableSizes[0] || item.size;
-        console.log("Size not available in new color, picking fallback:", size);
+        console.log("Dydis pakeistas į pirmą prieinamą:", size);
       }
     }
 
-    console.log("Final payload to store:", { color, size });
+    console.log("Siunčiama į Store:", { color, size });
 
     if (typeof updateVariant === "function") {
       updateVariant(item.key, { color, size });
-      console.log("Store update function called.");
+      console.log("Store funkcija updateVariant iškviesta sėkmingai.");
     } else {
-      console.error(
-        "ERROR: updateVariant is not a function! Check useCart store.",
-      );
+      console.error("KLAIDA: updateVariant funkcija nerasta useCart store!");
     }
   };
 
@@ -204,7 +225,7 @@ export default function ShoppingBagDrawer() {
                     return (
                       <motion.div key={item.key} layout className="px-6 py-6">
                         <div className="grid grid-cols-[90px_1fr] gap-5">
-                          <div className="h-[110px] w-[90px] relative overflow-hidden bg-black/5">
+                          <div className="h-[110px] w-[90px] relative overflow-hidden bg-black/5 border border-black/5">
                             <ProductImage
                               src={item.image}
                               alt={item.name}
@@ -224,8 +245,7 @@ export default function ShoppingBagDrawer() {
                             </div>
 
                             <div className="mt-3 grid grid-cols-2 gap-2">
-                              {/* COLOR SELECT */}
-                              <div className="bg-black/5 px-2 py-1.5 rounded-sm">
+                              <div className="bg-black/5 px-2 py-1.5 rounded-sm relative">
                                 <p className="text-[9px] uppercase text-black/40 font-ui mb-0.5">
                                   Color
                                 </p>
@@ -249,9 +269,8 @@ export default function ShoppingBagDrawer() {
                                 </select>
                               </div>
 
-                              {/* SIZE SELECT */}
                               {sizes.length > 0 && (
-                                <div className="bg-black/5 px-2 py-1.5 rounded-sm">
+                                <div className="bg-black/5 px-2 py-1.5 rounded-sm relative">
                                   <p className="text-[9px] uppercase text-black/40 font-ui mb-0.5">
                                     Size
                                   </p>
@@ -282,7 +301,6 @@ export default function ShoppingBagDrawer() {
                                 <button
                                   onClick={() => dec(item.key)}
                                   className="w-8 bg-black/5"
-                                  disabled={item.quantity <= 1}
                                 >
                                   –
                                 </button>
@@ -292,7 +310,6 @@ export default function ShoppingBagDrawer() {
                                 <button
                                   onClick={() => inc(item.key)}
                                   className="w-8 bg-black/5"
-                                  disabled={stock <= item.quantity}
                                 >
                                   +
                                 </button>
@@ -328,7 +345,7 @@ export default function ShoppingBagDrawer() {
               >
                 {isValidating
                   ? "Validating..."
-                  : `Check out — ${fmtPrice(subtotal)}`}
+                  : `${t.checkout} — ${fmtPrice(subtotal)}`}
               </button>
             </div>
           </motion.aside>
