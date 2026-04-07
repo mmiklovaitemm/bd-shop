@@ -33,7 +33,6 @@ export default function AdminProductCreateModal({
       images: Array.isArray(v.images) ? v.images.join("\n") : v.images || "",
     })) || [createEmptyVariant()],
 
-    // Metadata fields
     length: initialData?.details?.totalLengthCm ?? "",
     weight: initialData?.details?.weightG ?? "",
     bandWidth: initialData?.details?.bandWidthMm ?? "",
@@ -51,7 +50,7 @@ export default function AdminProductCreateModal({
   const [error, setError] = useState("");
   const [uploadingVariantIndex, setUploadingVariantIndex] = useState(null);
 
-  // FIXED: Sanitized URL generator for API requests
+  // Saugus URL generatorius (ištaiso 404 klaidą)
   const getSafeApiUrl = (path) => {
     const base = API_ORIGIN.replace(/\/api$/, "").replace(/\/$/, "");
     const cleanPath = path.startsWith("/api")
@@ -133,7 +132,6 @@ export default function AdminProductCreateModal({
   const handleUploadImage = async (event, variantIndex) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
     try {
       setError("");
       setUploadingVariantIndex(variantIndex);
@@ -141,9 +139,7 @@ export default function AdminProductCreateModal({
       formData.append("image", file);
       formData.append("category", form.category);
 
-      const uploadUrl = getSafeApiUrl("/uploads/product-image");
-
-      const res = await fetch(uploadUrl, {
+      const res = await fetch(getSafeApiUrl("/uploads/product-image"), {
         method: "POST",
         body: formData,
         credentials: "include",
@@ -171,6 +167,21 @@ export default function AdminProductCreateModal({
       event.target.value = "";
     }
   };
+
+  const isRingCategory = form.category === "rings";
+  const isNecklaceCategory = form.category === "necklaces";
+  const isBraceletCategory = form.category === "bracelets";
+  const isPersonalCategory = form.category === "personal";
+  const isPersonalNecklace =
+    isPersonalCategory && form.personalType === "necklace";
+  const isPersonalBracelet =
+    isPersonalCategory && form.personalType === "bracelet";
+  const shouldShowNecklaceFields = isNecklaceCategory || isPersonalNecklace;
+  const shouldShowBraceletFields = isBraceletCategory || isPersonalBracelet;
+  const shouldShowRingBandWidth = isRingCategory;
+  const shouldShowSizes = ["rings", "bracelets", "personal"].includes(
+    form.category,
+  );
 
   const handleSubmit = () => {
     const normalizedVariants = form.variants
@@ -216,11 +227,9 @@ export default function AdminProductCreateModal({
         chain: form.chainType,
         bandWidthMm: Number(form.bandWidth) || undefined,
         braceletLengthCm: Number(form.braceletLength) || undefined,
-        personalType:
-          form.category === "personal" ? form.personalType : undefined,
+        personalType: isPersonalCategory ? form.personalType : undefined,
       },
     };
-
     onCreate?.(payload);
   };
 
@@ -259,10 +268,9 @@ export default function AdminProductCreateModal({
         </div>
 
         <div className="grid gap-4 p-6 font-ui text-sm">
-          {/* Main Attributes */}
           <div className="grid gap-4 md:grid-cols-2">
             <div className="md:col-span-2">
-              <label className="mb-1 block text-black/50">Product ID</label>
+              <label className="mb-2 block text-black/70">Product id</label>
               <input
                 type="text"
                 value={form.id}
@@ -272,16 +280,17 @@ export default function AdminProductCreateModal({
               />
             </div>
             <div className="md:col-span-2">
-              <label className="mb-1 block text-black/50">Name</label>
+              <label className="mb-2 block text-black/70">Product name</label>
               <input
                 type="text"
                 value={form.name}
+                placeholder="Example Ring"
                 onChange={(e) => handleChange("name", e.target.value)}
                 className="h-12 w-full border border-black px-4 outline-none"
               />
             </div>
             <div>
-              <label className="mb-1 block text-black/50">Category</label>
+              <label className="mb-2 block text-black/70">Category</label>
               <select
                 value={form.category}
                 onChange={(e) => handleChange("category", e.target.value)}
@@ -295,26 +304,33 @@ export default function AdminProductCreateModal({
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-black/50">Price (€)</label>
+              <label className="mb-2 block text-black/70">Price</label>
               <input
                 type="number"
                 step="0.01"
                 value={form.priceValue}
+                placeholder="95"
                 onChange={(e) => handleChange("priceValue", e.target.value)}
                 className="h-12 w-full border border-black px-4 outline-none"
               />
             </div>
             <div>
-              <label className="mb-1 block text-black/50">Stock Quantity</label>
+              <label className="mb-2 block text-black/70">
+                {initialData
+                  ? "Stock quantity (edit disabled)"
+                  : "Stock quantity"}
+              </label>
               <input
                 type="number"
                 value={form.stockQuantity}
+                placeholder="3"
                 onChange={(e) => handleChange("stockQuantity", e.target.value)}
-                className="h-12 w-full border border-black px-4 outline-none"
+                disabled={!!initialData}
+                className="h-12 w-full border border-black px-4 outline-none disabled:bg-black/5"
               />
             </div>
             <div>
-              <label className="mb-1 block text-black/50">Created Date</label>
+              <label className="mb-2 block text-black/70">Created date</label>
               <input
                 type="date"
                 value={form.createdAt}
@@ -325,59 +341,192 @@ export default function AdminProductCreateModal({
           </div>
 
           <div>
-            <label className="mb-1 block text-black/50">Description</label>
+            <label className="mb-2 block text-black/70">Description</label>
             <textarea
               value={form.description}
+              placeholder="Write product description..."
               onChange={(e) => handleChange("description", e.target.value)}
-              rows={4}
-              className="w-full border border-black p-4 outline-none resize-none"
+              rows={5}
+              className="w-full resize-none border border-black px-4 py-3 outline-none"
             />
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="mb-2 block text-black/70">Metal</label>
+            <input
+              type="text"
+              value={form.metal}
+              placeholder="Silver / Gold / Pearl"
+              onChange={(e) => handleChange("metal", e.target.value)}
+              className="h-12 w-full border border-black px-4 outline-none"
+            />
+          </div>
+
+          {isPersonalCategory && (
             <div>
-              <label className="mb-1 block text-black/50">Metal</label>
-              <input
-                type="text"
-                value={form.metal}
-                onChange={(e) => handleChange("metal", e.target.value)}
-                className="h-12 w-full border border-black px-4 outline-none"
-              />
+              <label className="mb-2 block text-black/70">Personal type</label>
+              <select
+                value={form.personalType}
+                onChange={(e) => handleChange("personalType", e.target.value)}
+                className="h-12 w-full border border-black bg-white px-4 outline-none"
+              >
+                <option value="ring">Ring</option>
+                <option value="necklace">Necklace</option>
+                <option value="bracelet">Bracelet</option>
+              </select>
             </div>
+          )}
+
+          <div>
+            <label className="mb-2 block text-black/70">Weight (g)</label>
+            <input
+              type="number"
+              step="0.1"
+              value={form.weight}
+              placeholder="4.5"
+              onChange={(e) => handleChange("weight", e.target.value)}
+              className="h-12 w-full border border-black px-4 outline-none"
+            />
+          </div>
+
+          {shouldShowRingBandWidth && (
             <div>
-              <label className="mb-1 block text-black/50">Weight (g)</label>
+              <label className="mb-2 block text-black/70">
+                Band width (mm)
+              </label>
               <input
                 type="number"
                 step="0.1"
-                value={form.weight}
-                onChange={(e) => handleChange("weight", e.target.value)}
+                value={form.bandWidth}
+                placeholder="2.5"
+                onChange={(e) => handleChange("bandWidth", e.target.value)}
                 className="h-12 w-full border border-black px-4 outline-none"
               />
             </div>
-          </div>
+          )}
 
-          {/* Variants section */}
+          {shouldShowNecklaceFields && (
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="mb-2 block text-black/70">
+                  Necklace length (cm)
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={form.length}
+                  placeholder="45"
+                  onChange={(e) => handleChange("length", e.target.value)}
+                  className="h-12 w-full border border-black px-4 outline-none"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-black/70">Chain type</label>
+                <input
+                  type="text"
+                  value={form.chainType}
+                  placeholder="Curb"
+                  onChange={(e) => handleChange("chainType", e.target.value)}
+                  className="h-12 w-full border border-black px-4 outline-none"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-black/70">
+                  Adjustable from (cm)
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={form.adjustableFrom}
+                  placeholder="41"
+                  onChange={(e) =>
+                    handleChange("adjustableFrom", e.target.value)
+                  }
+                  className="h-12 w-full border border-black px-4 outline-none"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-black/70">
+                  Adjustable to (cm)
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={form.adjustableTo}
+                  placeholder="45"
+                  onChange={(e) => handleChange("adjustableTo", e.target.value)}
+                  className="h-12 w-full border border-black px-4 outline-none"
+                />
+              </div>
+            </div>
+          )}
+
+          {shouldShowBraceletFields && (
+            <div>
+              <label className="mb-2 block text-black/70">
+                Bracelet length (cm)
+              </label>
+              <input
+                type="number"
+                step="0.1"
+                value={form.braceletLength}
+                placeholder="18.5"
+                onChange={(e) => handleChange("braceletLength", e.target.value)}
+                className="h-12 w-full border border-black px-4 outline-none"
+              />
+            </div>
+          )}
+
+          {shouldShowSizes && (
+            <div>
+              <label className="mb-2 block text-black/70">
+                Sizes (comma separated)
+              </label>
+              <input
+                type="text"
+                value={form.sizes}
+                placeholder={
+                  form.category === "bracelets"
+                    ? "S/M, M/L"
+                    : "15.5, 16, 17.5, 18"
+                }
+                onChange={(e) => handleChange("sizes", e.target.value)}
+                className="h-12 w-full border border-black px-4 outline-none"
+              />
+            </div>
+          )}
+
+          <label className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              checked={form.isBestSeller}
+              onChange={(e) => handleChange("isBestSeller", e.target.checked)}
+              className="h-4 w-4"
+            />
+            <span>Best seller</span>
+          </label>
+
           <div className="mt-4 border-t border-black pt-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-display text-lg">Product Variants</h3>
+            <div className="mb-3 flex items-center justify-between">
+              <label className="block text-black/70">Variants</label>
               <button
                 type="button"
+                className="border border-black bg-white px-4 py-2 text-sm"
                 onClick={handleAddVariant}
-                className="border border-black px-3 py-1 text-xs hover:bg-black hover:text-white transition-colors"
+                disabled={isSaving}
               >
-                Add Variant
+                Add variant
               </button>
             </div>
 
             {form.variants.map((variant, idx) => {
-              // Convert text to array for the preview helper correctly
               const imageArray = String(variant.images || "")
                 .split("\n")
                 .map((img) => img.trim())
                 .filter(Boolean);
               const preview = makePreviewList({
                 category: form.category,
-                rawValue: imageArray, // We pass the array, not the string
+                rawValue: imageArray,
                 apiOrigin: API_ORIGIN,
                 frontendBasePath: FRONTEND_BASE_PATH,
               });
@@ -385,29 +534,40 @@ export default function AdminProductCreateModal({
               return (
                 <div
                   key={idx}
-                  className="mb-6 border border-black/10 p-4 bg-gray-50/50"
+                  className="mb-6 border border-black p-4 space-y-4"
                 >
-                  <input
-                    type="text"
-                    value={variant.name}
-                    placeholder="Variant name (e.g., Pearl)"
-                    onChange={(e) =>
-                      handleVariantChange(idx, "name", e.target.value)
-                    }
-                    className="mb-2 h-10 w-full border border-black px-3 outline-none"
-                  />
-                  <textarea
-                    value={variant.images}
-                    rows={3}
-                    placeholder="Image filenames or URLs..."
-                    onChange={(e) =>
-                      handleVariantChange(idx, "images", e.target.value)
-                    }
-                    className="w-full border border-black p-3 outline-none resize-none bg-white"
-                  />
-
-                  <div className="mt-2 flex gap-3">
-                    <label className="cursor-pointer border border-black bg-black text-white px-4 py-2 text-xs">
+                  <div>
+                    <label className="mb-2 block text-black/70">
+                      Variant name
+                    </label>
+                    <input
+                      type="text"
+                      value={variant.name}
+                      placeholder="pearl / silver / soft blue"
+                      onChange={(e) =>
+                        handleVariantChange(idx, "name", e.target.value)
+                      }
+                      className="h-12 w-full border border-black px-4 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-black/70">
+                      Images filenames / URLs
+                    </label>
+                    <textarea
+                      value={variant.images}
+                      rows={4}
+                      placeholder={
+                        "example:\npearl-necklace-1.webp\npearl-necklace-2.webp"
+                      }
+                      onChange={(e) =>
+                        handleVariantChange(idx, "images", e.target.value)
+                      }
+                      className="w-full resize-none border border-black px-4 py-3 outline-none"
+                    />
+                  </div>
+                  <div className="flex gap-3">
+                    <label className="cursor-pointer border border-black bg-white px-4 py-3 text-sm">
                       <input
                         type="file"
                         className="hidden"
@@ -416,30 +576,30 @@ export default function AdminProductCreateModal({
                       />
                       {uploadingVariantIndex === idx
                         ? "Uploading..."
-                        : "Upload Image"}
+                        : "Upload image"}
                     </label>
                     {form.variants.length > 1 && (
                       <button
                         type="button"
                         onClick={() => handleRemoveVariant(idx)}
-                        className="text-red-600 text-xs border border-red-600 px-3 py-2"
+                        className="border border-red-600 bg-white px-4 py-3 text-sm text-red-600"
                       >
-                        Remove Variant
+                        Remove variant
                       </button>
                     )}
                   </div>
 
                   {preview.length > 0 && (
-                    <div className="mt-4 grid grid-cols-4 gap-2">
+                    <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3">
                       {preview.map((src, imgIdx) => (
                         <div
                           key={imgIdx}
-                          className="relative aspect-square border border-black/10 bg-white overflow-hidden"
+                          className="relative aspect-square border border-black p-2 bg-white overflow-hidden"
                         >
                           <ProductImage
                             src={src}
                             loaded={true}
-                            className="object-cover"
+                            className="h-28 w-full object-cover"
                           />
                           <button
                             onClick={() => handleRemoveVariantImage(idx, src)}
@@ -462,19 +622,23 @@ export default function AdminProductCreateModal({
             </div>
           )}
 
-          <div className="flex gap-3 mt-4">
+          <div className="flex gap-3 pt-2">
             <button
               type="button"
               onClick={handleSubmit}
               disabled={isSaving}
-              className="flex-1 bg-black text-white py-4 font-display text-lg uppercase tracking-widest disabled:opacity-50"
+              className="border border-black bg-black px-4 py-3 text-white disabled:opacity-60"
             >
-              {initialData ? "Update Product" : "Save Product"}
+              {isSaving
+                ? "Saving..."
+                : initialData
+                  ? "Update product"
+                  : "Save product"}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="border border-black px-8 py-4 uppercase tracking-widest"
+              className="border border-black bg-white px-4 py-3 disabled:opacity-60"
             >
               Cancel
             </button>

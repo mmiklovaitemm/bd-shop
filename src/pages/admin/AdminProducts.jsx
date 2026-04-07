@@ -9,6 +9,7 @@ import AdminProductDeleteModal from "@/pages/admin/components/AdminProductDelete
 import AdminProductBulkDeleteModal from "@/pages/admin/components/AdminProductBulkDeleteModal";
 import AdminProductEditModal from "@/pages/admin/components/AdminProductEditModal";
 import Loader from "@/components/ui/Loader";
+import ProductImage from "@/components/ui/ProductCard/ProductImage"; // PRIDĖTA
 
 import { getStockBadge } from "@/pages/admin/helpers/productHelpers";
 
@@ -328,7 +329,6 @@ export default function AdminProducts() {
           </div>
         )}
 
-        {/* PANAUDOTA: useAdminProducts grąžintas error čia atvaizduojamas */}
         {error && (
           <div className="mt-6 border border-red-600 bg-red-50 px-4 py-3 font-ui text-sm text-red-700">
             {error}
@@ -349,15 +349,43 @@ export default function AdminProducts() {
                   className={`border bg-white p-4 ${selectedProductIds.includes(product.id) ? "border-black" : "border-black/30"}`}
                 >
                   <div className="flex items-start gap-4">
+                    <div className="relative h-20 w-20 shrink-0 border border-black/10 overflow-hidden bg-gray-50">
+                      <ProductImage
+                        src={product.thumbnail}
+                        alt={product.name}
+                        loaded={true}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+
                     <div className="min-w-0 flex-1">
-                      <p className="font-ui text-sm">{product.name}</p>
-                      <p className="mt-1 text-xs text-black/50">{product.id}</p>
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="font-ui text-sm font-medium leading-tight">
+                            {product.name}
+                          </p>
+                          <p className="mt-1 text-[11px] text-black/40">
+                            {product.id}
+                          </p>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={selectedProductIds.includes(product.id)}
+                          onChange={() => toggleSelectProduct(product.id)}
+                          className="h-5 w-5 shrink-0"
+                        />
+                      </div>
+
+                      <p className="mt-2 font-ui text-sm font-semibold text-black">
+                        €{product.priceValue}
+                      </p>
+
                       <div className="mt-2">
                         {(() => {
                           const stock = getStockBadge(product);
                           return (
                             <span
-                              className={`border px-2 py-1 text-[10px] ${stock.className}`}
+                              className={`border px-2 py-1 text-[10px] uppercase tracking-wider ${stock.className}`}
                             >
                               {stock.label}
                             </span>
@@ -369,14 +397,14 @@ export default function AdminProducts() {
                   <div className="mt-4 flex gap-2">
                     <button
                       type="button"
-                      className="flex-1 border border-black bg-white py-3 text-xs"
+                      className="flex-1 border border-black bg-white py-3 font-ui text-xs uppercase tracking-widest transition-colors hover:bg-black hover:text-white"
                       onClick={() => handleEditProduct(product)}
                     >
                       Edit
                     </button>
                     <button
                       type="button"
-                      className="flex-1 border border-red-600 text-red-600 py-3 text-xs"
+                      className="flex-1 border border-red-600 text-red-600 py-3 font-ui text-xs uppercase tracking-widest transition-colors hover:bg-red-600 hover:text-white"
                       onClick={() => handleDeleteProduct(product)}
                     >
                       Delete
@@ -386,6 +414,7 @@ export default function AdminProducts() {
               ))}
             </div>
 
+            {/* DESKTOP VIEW */}
             <AdminProductsTable
               products={paginatedProducts}
               onDelete={handleDeleteProduct}

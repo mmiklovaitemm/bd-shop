@@ -1,5 +1,6 @@
 import { memo, useCallback, useEffect } from "react";
 import preventDragHandler from "@/utils/preventDrag";
+import ProductImage from "@/components/ui/ProductCard/ProductImage";
 
 import arrowUpRightIcon from "@/assets/ui/arrow-up-right.svg";
 import arrowLeftIcon from "@/assets/ui/arrow-left.svg";
@@ -117,7 +118,7 @@ const Lightbox = memo(function Lightbox({
                 goPrev();
               }}
               aria-label="Previous image"
-              className="absolute left-6 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center border border-black/30 bg-black backdrop-blur-sm transition-all duration-100 ease-out active:scale-95 md:left-10 md:h-12 md:w-12 lg:hover:scale-105 lg:hover:border-white/40 lg:hover:bg-white/20"
+              className="absolute left-6 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center border border-white/10 bg-black backdrop-blur-sm transition-all duration-100 ease-out active:scale-95 md:left-10 md:h-12 md:w-12 lg:hover:scale-105 lg:hover:border-white/40 lg:hover:bg-white/20"
             >
               <img
                 src={arrowLeftIcon}
@@ -130,14 +131,14 @@ const Lightbox = memo(function Lightbox({
             </button>
           ) : null}
 
-          <img
-            src={currentImage}
-            alt={`${product?.name || "Product"} - zoom`}
-            className="max-h-[78vh] max-w-[92vw] select-none object-contain md:max-h-[82vh]"
-            draggable={false}
-            onDragStart={preventDragHandler}
-            onClick={(e) => e.stopPropagation()}
-          />
+          <div className="relative max-h-[78vh] max-w-[92vw] md:max-h-[82vh] w-full h-full">
+            <ProductImage
+              src={currentImage}
+              alt={`${product?.name || "Product"} - zoom`}
+              loaded={true} // Rodome iškart, nes tai padidintas vaizdas
+              className="object-contain w-full h-full pointer-events-none"
+            />
+          </div>
 
           {hasManyImages ? (
             <button
@@ -147,7 +148,7 @@ const Lightbox = memo(function Lightbox({
                 goNext();
               }}
               aria-label="Next image"
-              className="absolute right-6 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center border border-black/30 bg-black backdrop-blur-sm transition-all duration-100 ease-out active:scale-95 md:right-10 md:h-12 md:w-12 lg:hover:scale-105 lg:hover:border-white/40 lg:hover:bg-white/20"
+              className="absolute right-6 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center border border-white/10 bg-black backdrop-blur-sm transition-all duration-100 ease-out active:scale-95 md:right-10 md:h-12 md:w-12 lg:hover:scale-105 lg:hover:border-white/40 lg:hover:bg-white/20"
             >
               <img
                 src={arrowRightIcon}
