@@ -2,35 +2,27 @@ import { useMemo, useState } from "react";
 import cn from "@/utils/cn";
 import useLanguage from "@/context/useLanguage";
 
-/**
- * STRATEGY:
- * We force all images to point to the Render backend explicitly.
- */
-const getFinalImageUrl = (path) => {
-  if (!path || typeof path !== "string") return "";
+const getCleanRenderUrl = (rawPath) => {
+  if (!rawPath || typeof rawPath !== "string") return "";
 
   const RENDER_BASE = "https://bd-shop-gfva.onrender.com";
 
-  // 1. Handle development localhost paths
-  if (path.includes("localhost")) {
-    const filename = path.split("/").pop();
-    return `${RENDER_BASE}/products/rings/${filename}`;
+  // 1. If it contains localhost, remove the local part completely
+  let pathOnly = rawPath.replace(/http:\/\/localhost:\d+/, "");
+
+  // 2. Ensure it starts with a single slash
+  if (!pathOnly.startsWith("/")) {
+    pathOnly = "/" + pathOnly;
   }
 
-  // 2. Upgrade to HTTPS
-  if (path.startsWith("http")) {
-    return path.replace("http://", "https://");
-  }
-
-  // 3. Absolute path construction
-  const cleanPath = path.replace(/^\/+/, "");
-  return `${RENDER_BASE}/${cleanPath}`;
+  // 3. Combine with Render base
+  return `${RENDER_BASE}${pathOnly}`;
 };
 
 export default function ProductImage({
   src,
-  srcSet,
-  sizes,
+  srcSet, // We now use these in the img tag below
+  sizes, // We now use these in the img tag below
   alt,
   loaded,
   onLoad,
@@ -41,25 +33,19 @@ export default function ProductImage({
   ...rest
 }) {
   const { t } = useLanguage();
-
-  // We store the LAST source we tried to load.
-  // This replaces the problematic useEffect.
   const [status, setStatus] = useState({ currentSrc: src, errored: false });
 
-  // If the 'src' prop changes, we update our internal status immediately during render.
-  // This is a standard React pattern for resetting state based on props.
+  // Synchronize state if src changes
   if (src !== status.currentSrc) {
     setStatus({ currentSrc: src, errored: false });
   }
 
   const finalSrc = useMemo(() => {
-    if (!src) return "";
-    return getFinalImageUrl(src);
+    return getCleanRenderUrl(src);
   }, [src]);
 
   const showLoader = !loaded && !status.errored;
 
-  // Render fallback if errored
   if (status.errored || !finalSrc) {
     return (
       <div
@@ -87,11 +73,11 @@ export default function ProductImage({
       )}
 
       <img
-        key={src} // Forcing a fresh element when src changes
+        key={finalSrc}
         src={finalSrc}
-        srcSet={status.errored ? undefined : srcSet}
-        sizes={status.errored ? undefined : sizes}
-        alt={alt || t.productImage || "Product"}
+        srcSet={srcSet}
+        sizes={sizes}
+        alt={alt || "Product image"}
         loading={priority ? "eager" : "lazy"}
         decoding="async"
         draggable={false}
@@ -102,7 +88,7 @@ export default function ProductImage({
         )}
         onLoad={onLoad}
         onError={(e) => {
-          console.error("Image failed to load at:", finalSrc);
+          console.error("Failed to load image from Render:", finalSrc);
           setStatus((prev) => ({ ...prev, errored: true }));
           if (onError) onError(e);
         }}
