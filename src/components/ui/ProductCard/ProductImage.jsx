@@ -2,21 +2,32 @@ import { useMemo, useState } from "react";
 import cn from "@/utils/cn";
 import useLanguage from "@/context/useLanguage";
 
-const getCleanAssetUrl = (rawPath) => {
+/**
+ * 1. If path has "uploads" -> it's from Admin panel (Render server).
+ * 2. If path has "products/" -> it's static (Vercel server).
+ * 3. We clean any "localhost" remains.
+ */
+const getFinalUrl = (rawPath) => {
   if (!rawPath || typeof rawPath !== "string") return "";
 
-  // The base where your built images actually live
-  const VERCEL_BASE = "https://bd-shop-gray.vercel.app/assets";
+  const RENDER_BACKEND = "https://bd-shop-gfva.onrender.com";
+  const VERCEL_FRONTEND = "https://bd-shop-gray.vercel.app";
 
-  // 1. First, handle potential array or object cases (safety)
-  const pathString = String(rawPath);
+  let cleanPath = rawPath.replace(/http:\/\/localhost:\d+/, "");
 
-  // 2. Extract ONLY the last part of the URL/path (e.g., "ring-1.webp")
-  // We split by both forward and backward slashes to be 100% sure.
-  const fileName = pathString.split(/[\\/]/).pop();
+  const purePath = cleanPath.replace(/^\/+/, "");
 
-  // 3. Return the direct link to Vercel assets
-  return `${VERCEL_BASE}/${fileName}`;
+  if (purePath.includes("uploads/")) {
+    return `${RENDER_BACKEND}/${purePath}`;
+  }
+
+  if (purePath.startsWith("products/")) {
+    return `${VERCEL_FRONTEND}/${purePath}`;
+  }
+
+  const fileName = purePath.split("/").pop();
+
+  return `${VERCEL_FRONTEND}/products/rings/${fileName}`;
 };
 
 export default function ProductImage({
@@ -39,9 +50,7 @@ export default function ProductImage({
     setStatus({ currentSrc: src, errored: false });
   }
 
-  const finalSrc = useMemo(() => {
-    return getCleanAssetUrl(src);
-  }, [src]);
+  const finalSrc = useMemo(() => getFinalUrl(src), [src]);
 
   const showLoader = !loaded && !status.errored;
 
@@ -76,19 +85,17 @@ export default function ProductImage({
         src={finalSrc}
         srcSet={srcSet}
         sizes={sizes}
-        alt={alt || "Product image"}
+        alt={alt || "Product"}
         loading={priority ? "eager" : "lazy"}
         decoding="async"
-        draggable={false}
         className={cn(
-          "h-full w-full object-cover select-none transition-all duration-500",
+          "h-full w-full object-cover transition-all duration-500",
           !loaded ? "opacity-0 blur-lg" : "opacity-100 blur-0",
           className,
         )}
         onLoad={onLoad}
         onError={(e) => {
-          // Log exactly what failed so we can see it in Console
-          console.warn("Image load failed. Tried to get it from:", finalSrc);
+          console.warn("Failed at:", finalSrc);
           setStatus((prev) => ({ ...prev, errored: true }));
           if (onError) onError(e);
         }}

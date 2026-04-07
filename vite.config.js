@@ -7,20 +7,10 @@ const repoName = "bd-shop";
 
 export default defineConfig(() => ({
   plugins: [react()],
-  // GitHub Pages or Vercel base path logic
   base: process.env.DEPLOY_TARGET === "gh" ? `/${repoName}/` : "/",
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
-    },
-  },
-  build: {
-    rollupOptions: {
-      output: {
-        assetFileNames: "assets/[name][extname]",
-        chunkFileNames: "assets/[name].js",
-        entryFileNames: "assets/[name].js",
-      },
     },
   },
 }));
