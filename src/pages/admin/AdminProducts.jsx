@@ -8,7 +8,7 @@ import AdminProductsTable from "@/pages/admin/components/AdminProductsTable";
 import AdminProductDeleteModal from "@/pages/admin/components/AdminProductDeleteModal";
 import AdminProductBulkDeleteModal from "@/pages/admin/components/AdminProductBulkDeleteModal";
 import AdminProductEditModal from "@/pages/admin/components/AdminProductEditModal";
-import Loader from "@/components/ui/Loader"; // IMPORTUOJAME LOADERĮ
+import Loader from "@/components/ui/Loader";
 
 import { getStockBadge } from "@/pages/admin/helpers/productHelpers";
 
@@ -176,6 +176,33 @@ export default function AdminProducts() {
     }
   };
 
+  const handleDeleteSelectedProducts = async () => {
+    if (selectedProductIds.length === 0) return;
+    try {
+      setIsDeleting(true);
+      await Promise.all(
+        selectedProductIds.map(async (productId) => {
+          const res = await fetch(
+            getAdminApiUrl(`/api/products/${productId}`),
+            {
+              method: "DELETE",
+              credentials: "include",
+            },
+          );
+          if (!res.ok) throw new Error(`Failed to delete ${productId}`);
+        }),
+      );
+      setSuccessMessage(`${selectedProductIds.length} product(s) deleted.`);
+      setSelectedProductIds([]);
+      setIsBulkDeleteOpen(false);
+      await fetchProducts();
+    } catch (err) {
+      setErrorMessage(err.message);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const handleEditProduct = (product) => {
     setErrorMessage("");
     setSuccessMessage("");
@@ -199,33 +226,6 @@ export default function AdminProducts() {
       setSuccessMessage(`Product deleted: ${product.name}`);
       setDeleteProduct(null);
       setSelectedProductIds((prev) => prev.filter((id) => id !== product.id));
-      await fetchProducts();
-    } catch (err) {
-      setErrorMessage(err.message);
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  const handleDeleteSelectedProducts = async () => {
-    if (selectedProductIds.length === 0) return;
-    try {
-      setIsDeleting(true);
-      await Promise.all(
-        selectedProductIds.map(async (productId) => {
-          const res = await fetch(
-            getAdminApiUrl(`/api/products/${productId}`),
-            {
-              method: "DELETE",
-              credentials: "include",
-            },
-          );
-          if (!res.ok) throw new Error(`Failed to delete ${productId}`);
-        }),
-      );
-      setSuccessMessage(`${selectedProductIds.length} product(s) deleted.`);
-      setSelectedProductIds([]);
-      setIsBulkDeleteOpen(false);
       await fetchProducts();
     } catch (err) {
       setErrorMessage(err.message);
@@ -390,24 +390,9 @@ export default function AdminProducts() {
                       />
                       <span>Select</span>
                     </label>
-                    {selectedProductIds.includes(product.id) && (
-                      <span className="border border-black bg-black px-2 py-1 text-[10px] text-white">
-                        Selected
-                      </span>
-                    )}
                   </div>
                   <div className="flex items-start gap-4">
-                    {product.thumbnail ? (
-                      <img
-                        src={product.thumbnail}
-                        alt={product.name}
-                        className="h-16 w-16 shrink-0 border border-black object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-16 w-16 items-center justify-center border border-black text-xs text-black/40">
-                        No img
-                      </div>
-                    )}
+                    {/* Čia bus nuotrauka, kai sutvarkysime Table failą */}
                     <div className="min-w-0 flex-1">
                       <p className="font-ui text-sm">{product.name}</p>
                       <p className="mt-1 text-xs text-black/50">{product.id}</p>
@@ -431,26 +416,6 @@ export default function AdminProducts() {
                     </div>
                     <div className="shrink-0 text-right">
                       <p className="font-ui text-sm">€{product.priceValue}</p>
-                    </div>
-                  </div>
-                  <div className="mt-4 grid grid-cols-2 gap-4 font-ui text-sm">
-                    <div>
-                      <p className="text-black/50">Category</p>
-                      <p className="mt-1">{product.category || "-"}</p>
-                    </div>
-                    <div>
-                      <p className="text-black/50">Created</p>
-                      <p className="mt-1">
-                        {product.createdAt
-                          ? String(product.createdAt).slice(0, 10)
-                          : "-"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-black/50">Stock</p>
-                      <p className="mt-1">
-                        {Math.max(0, Number(product.stockQuantity) || 0)}
-                      </p>
                     </div>
                   </div>
                   <div className="mt-4 flex gap-2">
@@ -483,9 +448,6 @@ export default function AdminProducts() {
             />
 
             <div className="mt-8 flex flex-col items-center gap-3">
-              <p className="font-ui text-sm text-black/60">
-                Showing {showingCount} of {totalItems} products
-              </p>
               <Pagination
                 totalItems={totalItems}
                 page={safePage}

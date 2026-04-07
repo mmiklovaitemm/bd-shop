@@ -1,4 +1,5 @@
 import { getStockBadge } from "@/pages/admin/helpers/productHelpers";
+import ProductImage from "@/components/ui/ProductCard/ProductImage";
 
 function formatAdminDate(value) {
   if (!value) return "-";
@@ -69,17 +70,15 @@ export default function AdminProductsTable({
                 </td>
 
                 <td className="px-4 py-3 align-middle">
-                  {product.thumbnail ? (
-                    <img
+                  {/* PAKEISTA: Naudojame ProductImage vietoj img */}
+                  <div className="relative h-14 w-14 border border-black overflow-hidden">
+                    <ProductImage
                       src={product.thumbnail}
-                      alt={product.name || "Product image"}
-                      className="h-14 w-14 border border-black object-cover"
+                      alt={product.name}
+                      loaded={true} // Admin panelėje rodome iškart be blur efekto
+                      className="h-full w-full object-cover"
                     />
-                  ) : (
-                    <div className="flex h-14 w-14 items-center justify-center border border-black text-xs text-black/40">
-                      No img
-                    </div>
-                  )}
+                  </div>
                 </td>
 
                 <td className="px-4 py-3 align-middle">
