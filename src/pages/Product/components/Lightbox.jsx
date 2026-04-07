@@ -43,13 +43,8 @@ const Lightbox = memo(function Lightbox({
 
       if (!hasManyImages) return;
 
-      if (e.key === "ArrowLeft") {
-        goPrev();
-      }
-
-      if (e.key === "ArrowRight") {
-        goNext();
-      }
+      if (e.key === "ArrowLeft") goPrev();
+      if (e.key === "ArrowRight") goNext();
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -58,10 +53,8 @@ const Lightbox = memo(function Lightbox({
 
   useEffect(() => {
     if (!isOpen) return;
-
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-
     return () => {
       document.body.style.overflow = prevOverflow;
     };
@@ -76,90 +69,81 @@ const Lightbox = memo(function Lightbox({
       className="fixed inset-0 z-[80] select-none"
       onDragStart={preventDragHandler}
     >
-      <div className="absolute inset-0 bg-black/70" aria-hidden="true" />
+      {/* Overlay - semi-transparent background */}
+      <div
+        className="absolute inset-0 bg-black/85 backdrop-blur-sm"
+        aria-hidden="true"
+        onClick={requestClose}
+      />
 
-      <div className="absolute inset-0 flex flex-col">
+      <div className="absolute inset-0 flex flex-col pointer-events-none">
+        {/* Header - UI remains clickable */}
         <div
-          className="flex h-14 items-center justify-between border-b border-white/15 bg-black px-4 text-white md:px-6"
+          className="flex h-14 shrink-0 items-center justify-between border-b border-white/10 bg-black px-4 text-white md:px-6 pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="font-ui text-[13px] text-white/80">
+          <div className="font-ui text-[12px] uppercase tracking-widest text-white/60">
             {Math.min(activeImgIndex + 1, imagesCount)} / {imagesCount}
           </div>
 
           <button
             type="button"
             onClick={requestClose}
-            className="group inline-flex cursor-pointer select-none items-center gap-2 font-ui text-[14px]"
+            className="group inline-flex items-center gap-2 font-ui text-[13px] uppercase tracking-widest"
           >
-            <span className="inline-flex items-center gap-2 transition-transform duration-200 ease-out lg:group-hover:translate-x-[1px] lg:group-hover:-translate-y-[1px]">
-              <span>Close</span>
-              <img
-                src={arrowUpRightIcon}
-                alt=""
-                aria-hidden="true"
-                draggable={false}
-                onDragStart={preventDragHandler}
-                className="h-3 w-3 select-none invert"
-              />
-            </span>
+            <span>Close</span>
+            <img
+              src={arrowUpRightIcon}
+              alt=""
+              className="h-3 w-3 invert transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+            />
           </button>
         </div>
 
-        <div
-          className="relative flex flex-1 items-center justify-center p-4 md:p-6"
-          onClick={requestClose}
-        >
-          {hasManyImages ? (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                goPrev();
-              }}
-              aria-label="Previous image"
-              className="absolute left-6 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center border border-white/10 bg-black backdrop-blur-sm transition-all duration-100 ease-out active:scale-95 md:left-10 md:h-12 md:w-12 lg:hover:scale-105 lg:hover:border-white/40 lg:hover:bg-white/20"
-            >
-              <img
-                src={arrowLeftIcon}
-                alt=""
-                aria-hidden="true"
-                draggable={false}
-                onDragStart={preventDragHandler}
-                className="h-4 w-4 select-none invert"
-              />
-            </button>
-          ) : null}
+        {/* Image Container Area */}
+        <div className="relative flex flex-1 items-center justify-center p-4 md:p-8 lg:p-12">
+          {/* Navigation Buttons - Clickable */}
+          {hasManyImages && (
+            <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  goPrev();
+                }}
+                className="absolute left-4 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center border border-white/10 bg-black/40 text-white backdrop-blur-md transition-all active:scale-95 pointer-events-auto md:left-8 lg:hover:bg-white lg:hover:invert"
+              >
+                <img
+                  src={arrowLeftIcon}
+                  alt="Prev"
+                  className="h-5 w-5 invert lg:group-hover:invert-0"
+                />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  goNext();
+                }}
+                className="absolute right-4 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center border border-white/10 bg-black/40 text-white backdrop-blur-md transition-all active:scale-95 pointer-events-auto md:right-8 lg:hover:bg-white lg:hover:invert"
+              >
+                <img
+                  src={arrowRightIcon}
+                  alt="Next"
+                  className="h-5 w-5 invert lg:group-hover:invert-0"
+                />
+              </button>
+            </>
+          )}
 
-          <div className="relative max-h-[78vh] max-w-[92vw] md:max-h-[82vh] w-full h-full">
+          <div className="relative w-full max-w-[90vw] h-full max-h-[75vh] md:max-w-[70vw] md:max-h-[70vh] lg:max-w-[800px] lg:max-h-[80vh] pointer-events-auto">
             <ProductImage
               src={currentImage}
               alt={`${product?.name || "Product"} - zoom`}
-              loaded={true} // Rodome iškart, nes tai padidintas vaizdas
-              className="object-contain w-full h-full pointer-events-none"
+              loaded={true}
+              className="object-contain w-full h-full"
             />
           </div>
-
-          {hasManyImages ? (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                goNext();
-              }}
-              aria-label="Next image"
-              className="absolute right-6 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center border border-white/10 bg-black backdrop-blur-sm transition-all duration-100 ease-out active:scale-95 md:right-10 md:h-12 md:w-12 lg:hover:scale-105 lg:hover:border-white/40 lg:hover:bg-white/20"
-            >
-              <img
-                src={arrowRightIcon}
-                alt=""
-                aria-hidden="true"
-                draggable={false}
-                onDragStart={preventDragHandler}
-                className="h-4 w-4 select-none invert"
-              />
-            </button>
-          ) : null}
         </div>
       </div>
     </div>
