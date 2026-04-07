@@ -20,18 +20,17 @@ const fmtPrice = (n) =>
     minimumFractionDigits: 2,
   }).format(Number(n || 0));
 
-/**
- * FIXED: Valo bet kokią nuorodą nuo localhost šiukšlių.
- */
 const cleanImageUrl = (url) => {
-  if (!url) return "";
+  if (!url || typeof url !== "string") return "";
   if (url.includes("cloudinary.com")) return url;
-  // Jei nuoroda turi localhost, nukerpame viską iki kelio pradžios
+
   if (url.includes("localhost:")) {
     const parts = url.split("/products/");
     if (parts.length > 1) return "products/" + parts[1];
+
+    return url.replace(/^https?:\/\/localhost:\d+\//, "");
   }
-  return url.replace(/^https?:\/\/localhost:\d+\//, "");
+  return url;
 };
 
 // --- LOGIC HELPERS ---
@@ -135,14 +134,13 @@ export default function ShoppingBagDrawer() {
   );
 
   const handleVariantUpdate = (item, product, newColor, newSize) => {
-    console.log("--- DEBUG: ATNAUJINIMO STARTAS ---");
+    console.log("--- ATNAUJINIMO ANALIZĖ ---");
 
     const color = newColor || item.color;
     let size = newSize || item.size;
-    let image = item.image; // Pradinė nuotrauka
+    let image = item.image;
 
     if (product) {
-      // 1. Surandame visus variantus (objektas arba masyvas)
       const variantList = Array.isArray(product.variants)
         ? product.variants
         : product.variants
@@ -152,37 +150,34 @@ export default function ShoppingBagDrawer() {
             }))
           : [];
 
-      // 2. Ieškome varianto, kurio vardas sutampa su pasirinkta spalva
       const variant = variantList.find(
         (v) => String(v.name).toLowerCase() === String(color).toLowerCase(),
       );
 
       if (variant) {
-        console.log("Rastas variantas:", variant.name);
-
-        // 3. Tikriname ar variantas turi nuotraukų
-        // Svarbu: patikriname kelis galimus laukus (images arba image)
         const variantImages = variant.images || variant.image;
-
         if (variantImages) {
           const imgUrl = Array.isArray(variantImages)
             ? variantImages[0]
             : variantImages;
           if (imgUrl) {
-            image = cleanImageUrl(imgUrl);
-            console.log("Nauja nuotrauka parinkta:", image);
+            image = cleanImageUrl(imgUrl); // Išvalome localhost nuorodą čia
+            console.log("Parinkta nauja išvalyta nuotrauka:", image);
           }
         }
       }
 
-      // 4. Sutvarkome dydį
       const availableSizes = getAvailableSizes(product, color, item);
       if (newColor && !availableSizes.includes(String(size))) {
         size = availableSizes[0] || item.size;
       }
     }
 
-    console.log("Galutinis siuntimas į Store:", { color, size, image });
+    console.log("Siunčiama į krepšelį (updateVariant):", {
+      color,
+      size,
+      image,
+    });
     updateVariant(item.key, { color, size, image });
   };
 
@@ -242,7 +237,7 @@ export default function ShoppingBagDrawer() {
                       <motion.div key={item.key} layout className="px-6 py-6">
                         <div className="grid grid-cols-[90px_1fr] gap-5">
                           <div className="h-[110px] w-[90px] relative overflow-hidden bg-black/5 border border-black/5">
-                            {/* Naudojame cleanImageUrl čia, kad krepšelyje visada rodytų nuotrauką iš serverio */}
+                            {/* VALOMEitem.image PRIES PADUODANT I KOMPONENTA */}
                             <ProductImage
                               src={cleanImageUrl(item.image)}
                               alt={item.name}
@@ -317,7 +312,7 @@ export default function ShoppingBagDrawer() {
                               <div className="flex border border-black h-8 items-stretch">
                                 <button
                                   onClick={() => dec(item.key)}
-                                  className="w-8 bg-black/5 disabled:opacity-30"
+                                  className="w-8 bg-black/5"
                                   disabled={item.quantity <= 1}
                                 >
                                   –
@@ -327,7 +322,7 @@ export default function ShoppingBagDrawer() {
                                 </div>
                                 <button
                                   onClick={() => inc(item.key)}
-                                  className="w-8 bg-black/5 disabled:opacity-30"
+                                  className="w-8 bg-black/5"
                                   disabled={stockLimit <= item.quantity}
                                 >
                                   +
