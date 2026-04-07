@@ -3,36 +3,29 @@ import cn from "@/utils/cn";
 import useLanguage from "@/context/useLanguage";
 
 /**
- * Ensures the URL is absolute, secure (HTTPS), and points to the production server.
- * Replaces localhost or relative paths with the Render backend URL.
+ * STRATEGY:
+ * We force all images to point to the Render backend explicitly.
  */
-const getCleanUrl = (path) => {
+const getFinalImageUrl = (path) => {
   if (!path || typeof path !== "string") return "";
 
-  // 1. Handle cases where the path contains localhost (common in development DB)
+  const RENDER_BASE = "https://bd-shop-gfva.onrender.com";
+
+  // 1. Handle development localhost paths
   if (path.includes("localhost")) {
-    const parts = path.split("/products/");
-    const fileName = parts.length > 1 ? parts[1] : path.split("/").pop();
-    return `https://bd-shop-gfva.onrender.com/products/${fileName}`;
+    const filename = path.split("/").pop();
+    return `${RENDER_BASE}/products/rings/${filename}`;
   }
 
-  // 2. Handle relative paths starting with /products
-  if (path.startsWith("/products")) {
-    return `https://bd-shop-gfva.onrender.com${path}`;
-  }
-
-  // 3. Ensure HTTPS for external URLs
+  // 2. Upgrade to HTTPS
   if (path.startsWith("http")) {
     return path.replace("http://", "https://");
   }
 
-  // 4. Default case: append base URL to the path
-  const BASE = "https://bd-shop-gfva.onrender.com";
-  return `${BASE}/${path.replace(/^\/+/, "")}`;
+  // 3. Absolute path construction
+  const cleanPath = path.replace(/^\/+/, "");
+  return `${RENDER_BASE}/${cleanPath}`;
 };
-
-const withLocalBase = (path) =>
-  `${import.meta.env.BASE_URL}${String(path || "").replace(/^\/+/, "")}`;
 
 export default function ProductImage({
   src,
@@ -48,22 +41,40 @@ export default function ProductImage({
   ...rest
 }) {
   const { t } = useLanguage();
-  const [errored, setErrored] = useState(false);
 
-  // Memoize the cleaned URL
+  // We store the LAST source we tried to load.
+  // This replaces the problematic useEffect.
+  const [status, setStatus] = useState({ currentSrc: src, errored: false });
+
+  // If the 'src' prop changes, we update our internal status immediately during render.
+  // This is a standard React pattern for resetting state based on props.
+  if (src !== status.currentSrc) {
+    setStatus({ currentSrc: src, errored: false });
+  }
+
   const finalSrc = useMemo(() => {
-    if (errored || !src) return withLocalBase("products/fallback.png");
-    return getCleanUrl(src);
-  }, [src, errored]);
+    if (!src) return "";
+    return getFinalImageUrl(src);
+  }, [src]);
 
-  // Using 'src' as a key ensures the image component resets state
-  // when the source changes, avoiding the need for a reset useEffect.
-  const imgKey = src || "no-src";
+  const showLoader = !loaded && !status.errored;
 
-  const showLoader = !loaded && !errored;
+  // Render fallback if errored
+  if (status.errored || !finalSrc) {
+    return (
+      <div
+        className={cn(
+          "absolute inset-0 flex items-center justify-center bg-[#F5F5F5] text-[10px] text-black/20 uppercase tracking-widest",
+          className,
+        )}
+      >
+        {t.noImage || "No image"}
+      </div>
+    );
+  }
 
   return (
-    <div className="absolute inset-0 bg-neutral-100">
+    <div className="absolute inset-0 overflow-hidden bg-[#F5F5F5]">
       {showLoader && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-white">
           <div
@@ -76,10 +87,10 @@ export default function ProductImage({
       )}
 
       <img
-        key={imgKey}
+        key={src} // Forcing a fresh element when src changes
         src={finalSrc}
-        srcSet={errored ? undefined : srcSet}
-        sizes={errored ? undefined : sizes}
+        srcSet={status.errored ? undefined : srcSet}
+        sizes={status.errored ? undefined : sizes}
         alt={alt || t.productImage || "Product"}
         loading={priority ? "eager" : "lazy"}
         decoding="async"
@@ -91,20 +102,12 @@ export default function ProductImage({
         )}
         onLoad={onLoad}
         onError={(e) => {
-          // Prevent infinite loops if fallback image also fails
-          if (!errored) {
-            setErrored(true);
-          }
+          console.error("Image failed to load at:", finalSrc);
+          setStatus((prev) => ({ ...prev, errored: true }));
           if (onError) onError(e);
         }}
         {...rest}
       />
-
-      {errored && (
-        <div className="absolute inset-0 flex items-center justify-center bg-neutral-100 text-[10px] text-black/40 italic">
-          {t.noImage || "No image"}
-        </div>
-      )}
     </div>
   );
 }
