@@ -40,15 +40,11 @@ export default function AdminProducts() {
   });
 
   const getAdminApiUrl = (path) => {
-    const cleanBase = API_ORIGIN.endsWith("/")
-      ? API_ORIGIN.slice(0, -1)
-      : API_ORIGIN;
-    let cleanPath = path.startsWith("/") ? path : `/${path}`;
-
-    if (cleanBase.endsWith("/api") && cleanPath.startsWith("/api/")) {
-      cleanPath = cleanPath.replace("/api", "");
-    }
-    return `${cleanBase}${cleanPath}`;
+    const base = API_ORIGIN.replace(/\/api$/, "").replace(/\/$/, "");
+    const cleanPath = path.startsWith("/api")
+      ? path
+      : `/api${path.startsWith("/") ? path : `/${path}`}`;
+    return `${base}${cleanPath}`;
   };
 
   useEffect(() => {
@@ -98,6 +94,7 @@ export default function AdminProducts() {
   const totalItems = filteredProducts.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
   const safePage = Math.min(page, totalPages);
+
   const showingCount = Math.min(safePage * pageSize, totalItems);
 
   const paginatedProducts = useMemo(() => {
@@ -132,7 +129,9 @@ export default function AdminProducts() {
   const handleCreateProduct = async (newProduct) => {
     try {
       setIsSaving(true);
-      const res = await fetch(getAdminApiUrl("/api/products"), {
+      setErrorMessage("");
+      const url = getAdminApiUrl("/products");
+      const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -154,15 +153,14 @@ export default function AdminProducts() {
   const handleUpdateProduct = async (updatedProduct) => {
     try {
       setIsSaving(true);
-      const res = await fetch(
-        getAdminApiUrl(`/api/products/${updatedProduct.id}`),
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(updatedProduct),
-        },
-      );
+      setErrorMessage("");
+      const url = getAdminApiUrl(`/products/${updatedProduct.id}`);
+      const res = await fetch(url, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(updatedProduct),
+      });
       const data = await res.json();
       if (!res.ok)
         throw new Error(data?.message || "Failed to update product.");
@@ -182,13 +180,11 @@ export default function AdminProducts() {
       setIsDeleting(true);
       await Promise.all(
         selectedProductIds.map(async (productId) => {
-          const res = await fetch(
-            getAdminApiUrl(`/api/products/${productId}`),
-            {
-              method: "DELETE",
-              credentials: "include",
-            },
-          );
+          const url = getAdminApiUrl(`/products/${productId}`);
+          const res = await fetch(url, {
+            method: "DELETE",
+            credentials: "include",
+          });
           if (!res.ok) throw new Error(`Failed to delete ${productId}`);
         }),
       );
@@ -218,7 +214,8 @@ export default function AdminProducts() {
   const confirmDeleteProduct = async (product) => {
     try {
       setIsDeleting(true);
-      const res = await fetch(getAdminApiUrl(`/api/products/${product.id}`), {
+      const url = getAdminApiUrl(`/products/${product.id}`);
+      const res = await fetch(url, {
         method: "DELETE",
         credentials: "include",
       });
@@ -320,28 +317,21 @@ export default function AdminProducts() {
         </div>
 
         {successMessage && (
-          <div className="mt-6 flex items-center justify-between border border-green-700 bg-green-50 px-4 py-3 font-ui text-sm text-green-800">
+          <div className="mt-6 border border-green-700 bg-green-50 px-4 py-3 font-ui text-sm text-green-800">
             <span>{successMessage}</span>
-            <button
-              type="button"
-              className="ml-4 border border-green-700 px-3 py-1 text-xs"
-              onClick={() => setSuccessMessage("")}
-            >
-              Close
-            </button>
           </div>
         )}
 
         {errorMessage && (
-          <div className="mt-6 flex items-center justify-between border border-red-600 bg-red-50 px-4 py-3 font-ui text-sm text-red-700">
+          <div className="mt-6 border border-red-600 bg-red-50 px-4 py-3 font-ui text-sm text-red-700">
             <span>{errorMessage}</span>
-            <button
-              type="button"
-              className="ml-4 border border-red-600 px-3 py-1 text-xs"
-              onClick={() => setErrorMessage("")}
-            >
-              Close
-            </button>
+          </div>
+        )}
+
+        {/* PANAUDOTA: useAdminProducts grąžintas error čia atvaizduojamas */}
+        {error && (
+          <div className="mt-6 border border-red-600 bg-red-50 px-4 py-3 font-ui text-sm text-red-700">
+            {error}
           </div>
         )}
 
@@ -349,59 +339,20 @@ export default function AdminProducts() {
           <div className="flex min-h-[400px] w-full items-center justify-center">
             <Loader className="h-12 w-12" />
           </div>
-        ) : error ? (
-          <div className="mt-6 border border-red-600 bg-red-50 px-4 py-3 font-ui text-sm text-red-700">
-            {error}
-          </div>
-        ) : filteredProducts.length === 0 ? (
-          <p className="mt-6 font-ui text-sm text-black/60">
-            No products found.
-          </p>
         ) : (
           <>
-            <div className="mt-6 flex items-center justify-between gap-3 border border-black/20 bg-black/5 p-3 lg:hidden">
-              <label className="flex items-center gap-3 font-ui text-sm">
-                <input
-                  type="checkbox"
-                  checked={allVisibleSelected}
-                  onChange={toggleSelectAllProducts}
-                  className="h-4 w-4"
-                />
-                <span>Select all visible</span>
-              </label>
-              <span className="font-ui text-xs text-black/50">
-                {selectedProductIds.length} selected
-              </span>
-            </div>
-
+            {/* MOBILE VIEW  */}
             <div className="mt-6 grid gap-3 lg:hidden">
               {paginatedProducts.map((product) => (
                 <div
                   key={product.id}
                   className={`border bg-white p-4 ${selectedProductIds.includes(product.id) ? "border-black" : "border-black/30"}`}
                 >
-                  <div className="mb-4 flex items-center justify-between gap-3">
-                    <label className="flex items-center gap-3 font-ui text-sm">
-                      <input
-                        type="checkbox"
-                        checked={selectedProductIds.includes(product.id)}
-                        onChange={() => toggleSelectProduct(product.id)}
-                        className="h-4 w-4"
-                      />
-                      <span>Select</span>
-                    </label>
-                  </div>
                   <div className="flex items-start gap-4">
-                    {/* Čia bus nuotrauka, kai sutvarkysime Table failą */}
                     <div className="min-w-0 flex-1">
                       <p className="font-ui text-sm">{product.name}</p>
                       <p className="mt-1 text-xs text-black/50">{product.id}</p>
-                      <div className="mt-2 flex flex-wrap items-center gap-2">
-                        {product.isBestSeller && (
-                          <span className="border border-black bg-black px-2 py-1 text-[10px] text-white">
-                            Best seller
-                          </span>
-                        )}
+                      <div className="mt-2">
                         {(() => {
                           const stock = getStockBadge(product);
                           return (
@@ -414,21 +365,18 @@ export default function AdminProducts() {
                         })()}
                       </div>
                     </div>
-                    <div className="shrink-0 text-right">
-                      <p className="font-ui text-sm">€{product.priceValue}</p>
-                    </div>
                   </div>
                   <div className="mt-4 flex gap-2">
                     <button
                       type="button"
-                      className="flex-1 border border-black bg-white px-3 py-3 font-ui text-sm"
+                      className="flex-1 border border-black bg-white py-3 text-xs"
                       onClick={() => handleEditProduct(product)}
                     >
                       Edit
                     </button>
                     <button
                       type="button"
-                      className="flex-1 border border-red-600 bg-white px-3 py-3 font-ui text-sm text-red-600"
+                      className="flex-1 border border-red-600 text-red-600 py-3 text-xs"
                       onClick={() => handleDeleteProduct(product)}
                     >
                       Delete
