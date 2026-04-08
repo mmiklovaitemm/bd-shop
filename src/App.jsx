@@ -24,17 +24,23 @@ import AdminOrders from "@/pages/admin/AdminOrders";
 import RequireAdmin from "@/components/auth/RequireAdmin";
 import AdminProducts from "@/pages/admin/AdminProducts";
 
-const PageWrapper = ({ children }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 10 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, y: -10 }}
-    transition={{ duration: 0.4, ease: "easeInOut" }}
-    className="pt-6"
-  >
-    {children}
-  </motion.div>
-);
+const PageWrapper = ({ children }) => {
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.4, ease: "easeInOut" }}
+      className="pt-28 md:pt-32"
+    >
+      {children}
+    </motion.div>
+  );
+};
 
 export default function App() {
   const fetchMe = useAuth((s) => s.fetchMe);
@@ -138,7 +144,7 @@ export default function App() {
             }
           />
 
-          {/* ADMIN ROUTES (if needed) */}
+          {/* ADMIN ROUTES  */}
           <Route
             path="/admin/orders"
             element={

@@ -11,11 +11,14 @@ export default function RootLayout() {
   return (
     <div className="flex min-h-screen flex-col bg-white text-neutral-900">
       <ScrollToTop />
-      <AnnouncementBar />
-      <Header />
+
+      <div className="fixed top-0 left-0 right-0 z-[100]">
+        <AnnouncementBar />
+        <Header />
+      </div>
+
       <ShoppingBagDrawer />
 
-      {/* flex-1 uztikrina, kad jei turinio mazai, Footeris visada bus apacioje */}
       <main className="flex-1 w-full">
         <Outlet />
       </main>

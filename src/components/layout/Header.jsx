@@ -1,4 +1,3 @@
-// src/components/layout/Header.jsx
 import { useState, useCallback, memo } from "react";
 import { NavLink } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -114,7 +113,7 @@ export default function Header() {
   const handleMenuClose = useCallback(() => setIsMenuOpen(false), []);
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-[50] border-b border-black bg-white select-none">
+    <header className="fixed top-[40px] left-0 right-0 z-[50] border-b border-black bg-white select-none">
       {/* MOBILE + TABLET */}
       <div
         className={`mx-auto grid ${HEADER_HEIGHT} ${MAX_WIDTH} grid-cols-3 items-center px-4 md:px-6 lg:hidden`}
