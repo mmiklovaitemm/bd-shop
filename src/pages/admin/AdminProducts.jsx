@@ -130,7 +130,8 @@ export default function AdminProducts() {
     try {
       setIsSaving(true);
       setErrorMessage("");
-      const url = getAdminApiUrl("/admin/products");
+
+      const url = getAdminApiUrl("/products");
 
       console.log("--- DEBUG: CREATE PRODUCT ---");
       console.log("URL:", url);
@@ -145,12 +146,8 @@ export default function AdminProducts() {
 
       console.log("Status:", res.status);
       const data = await res.json();
-      console.log("Response Data:", data);
 
-      if (!res.ok)
-        throw new Error(
-          data?.message || `Error ${res.status}: Route not found on server.`,
-        );
+      if (!res.ok) throw new Error(data?.message || `Error ${res.status}`);
 
       setSuccessMessage(`Product created: ${newProduct.name}`);
       setIsCreateOpen(false);
