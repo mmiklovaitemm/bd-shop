@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from "react";
-
 import AdminProductCreateModal from "@/pages/admin/components/AdminProductCreateModal";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 import Pagination from "@/components/ui/Pagination";
@@ -9,8 +8,7 @@ import AdminProductDeleteModal from "@/pages/admin/components/AdminProductDelete
 import AdminProductBulkDeleteModal from "@/pages/admin/components/AdminProductBulkDeleteModal";
 import AdminProductEditModal from "@/pages/admin/components/AdminProductEditModal";
 import Loader from "@/components/ui/Loader";
-import ProductImage from "@/components/ui/ProductCard/ProductImage"; // PRIDĖTA
-
+import ProductImage from "@/components/ui/ProductCard/ProductImage";
 import { getStockBadge } from "@/pages/admin/helpers/productHelpers";
 
 const API_ORIGIN =
@@ -40,6 +38,7 @@ export default function AdminProducts() {
     return window.matchMedia("(max-width: 1023px)").matches ? 6 : 10;
   });
 
+  // PAGELBĖJIMO FUNKCIJA API ADRESUI
   const getAdminApiUrl = (path) => {
     const base = API_ORIGIN.replace(/\/api$/, "").replace(/\/$/, "");
     const cleanPath = path.startsWith("/api")
@@ -95,7 +94,6 @@ export default function AdminProducts() {
   const totalItems = filteredProducts.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
   const safePage = Math.min(page, totalPages);
-
   const showingCount = Math.min(safePage * pageSize, totalItems);
 
   const paginatedProducts = useMemo(() => {
@@ -127,48 +125,72 @@ export default function AdminProducts() {
     );
   };
 
+  // --- PRODUKTO KŪRIMAS ---
   const handleCreateProduct = async (newProduct) => {
     try {
       setIsSaving(true);
       setErrorMessage("");
       const url = getAdminApiUrl("/products");
+
+      console.log("--- DEBUG: CREATE PRODUCT ---");
+      console.log("URL:", url);
+      console.log("Payload:", newProduct);
+
       const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify(newProduct),
       });
+
+      console.log("Status:", res.status);
       const data = await res.json();
+      console.log("Response Data:", data);
+
       if (!res.ok)
-        throw new Error(data?.message || "Failed to create product.");
+        throw new Error(
+          data?.message || `Error ${res.status}: Route not found on server.`,
+        );
+
       setSuccessMessage(`Product created: ${newProduct.name}`);
       setIsCreateOpen(false);
       await fetchProducts();
     } catch (err) {
+      console.error("Create error:", err);
       setErrorMessage(err.message);
     } finally {
       setIsSaving(false);
     }
   };
 
+  // --- PRODUKTO ATNAUJINIMAS ---
   const handleUpdateProduct = async (updatedProduct) => {
     try {
       setIsSaving(true);
       setErrorMessage("");
       const url = getAdminApiUrl(`/products/${updatedProduct.id}`);
+
+      console.log("--- DEBUG: UPDATE PRODUCT ---");
+      console.log("URL:", url);
+
       const res = await fetch(url, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify(updatedProduct),
       });
+
       const data = await res.json();
+      console.log("Status:", res.status);
+
       if (!res.ok)
         throw new Error(data?.message || "Failed to update product.");
+
       setSuccessMessage(`Product updated: ${updatedProduct.name}`);
       setEditProduct(null);
       await fetchProducts();
     } catch (err) {
+      console.error("Update error:", err);
       setErrorMessage(err.message);
     } finally {
       setIsSaving(false);
@@ -329,24 +351,22 @@ export default function AdminProducts() {
           </div>
         )}
 
-        {error && (
-          <div className="mt-6 border border-red-600 bg-red-50 px-4 py-3 font-ui text-sm text-red-700">
-            {error}
-          </div>
-        )}
-
         {loading ? (
           <div className="flex min-h-[400px] w-full items-center justify-center">
             <Loader className="h-12 w-12" />
           </div>
         ) : (
           <>
-            {/* MOBILE VIEW  */}
+            {/* MOBILE VIEW */}
             <div className="mt-6 grid gap-3 lg:hidden">
               {paginatedProducts.map((product) => (
                 <div
                   key={product.id}
-                  className={`border bg-white p-4 ${selectedProductIds.includes(product.id) ? "border-black" : "border-black/30"}`}
+                  className={`border bg-white p-4 ${
+                    selectedProductIds.includes(product.id)
+                      ? "border-black"
+                      : "border-black/30"
+                  }`}
                 >
                   <div className="flex items-start gap-4">
                     <div className="relative h-20 w-20 shrink-0 border border-black/10 overflow-hidden bg-gray-50">
@@ -357,7 +377,6 @@ export default function AdminProducts() {
                         className="h-full w-full object-cover"
                       />
                     </div>
-
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-2">
                         <div>
@@ -375,11 +394,9 @@ export default function AdminProducts() {
                           className="h-5 w-5 shrink-0"
                         />
                       </div>
-
                       <p className="mt-2 font-ui text-sm font-semibold text-black">
                         €{product.priceValue}
                       </p>
-
                       <div className="mt-2">
                         {(() => {
                           const stock = getStockBadge(product);
@@ -397,14 +414,14 @@ export default function AdminProducts() {
                   <div className="mt-4 flex gap-2">
                     <button
                       type="button"
-                      className="flex-1 border border-black bg-white py-3 font-ui text-xs uppercase tracking-widest transition-colors hover:bg-black hover:text-white"
+                      className="flex-1 border border-black bg-white py-3 font-ui text-xs uppercase tracking-widest hover:bg-black hover:text-white"
                       onClick={() => handleEditProduct(product)}
                     >
                       Edit
                     </button>
                     <button
                       type="button"
-                      className="flex-1 border border-red-600 text-red-600 py-3 font-ui text-xs uppercase tracking-widest transition-colors hover:bg-red-600 hover:text-white"
+                      className="flex-1 border border-red-600 text-red-600 py-3 font-ui text-xs uppercase tracking-widest hover:bg-red-600 hover:text-white"
                       onClick={() => handleDeleteProduct(product)}
                     >
                       Delete
