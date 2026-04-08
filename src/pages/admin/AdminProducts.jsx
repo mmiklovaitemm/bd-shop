@@ -130,7 +130,7 @@ export default function AdminProducts() {
     try {
       setIsSaving(true);
       setErrorMessage("");
-      const url = getAdminApiUrl("/products");
+      const url = getAdminApiUrl("/admin/products");
 
       console.log("--- DEBUG: CREATE PRODUCT ---");
       console.log("URL:", url);
