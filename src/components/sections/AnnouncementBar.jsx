@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion"; // Pridėta AnimatePresence ir motion
+import { motion, AnimatePresence } from "framer-motion";
 
 import preventDragHandler from "@/utils/preventDrag";
 import useLanguage from "@/context/useLanguage";
@@ -8,25 +8,6 @@ import warrantyIcon from "@/assets/ui/warranty.svg";
 import returnIcon from "@/assets/ui/return-box.svg";
 import deliveryIcon from "@/assets/ui/delivery.svg";
 import qualityIcon from "@/assets/ui/star.svg";
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.15,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 5 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.5, ease: "easeOut" },
-  },
-};
 
 export default function AnnouncementBar() {
   const { t } = useLanguage();
@@ -43,67 +24,86 @@ export default function AnnouncementBar() {
 
   const [index, setIndex] = useState(0);
 
+  // Mobile rotation logic
   useEffect(() => {
-    const mq = window.matchMedia("(min-width: 768px)");
+    const mq = window.matchMedia("(min-width: 1024px)");
     if (mq.matches) return;
 
     const id = setInterval(() => {
       setIndex((prev) => (prev + 1) % items.length);
-    }, 3000); // Padidinau iki 3s geresniam skaitomumui
+    }, 3000);
 
     return () => clearInterval(id);
   }, [items.length]);
 
+  // Duplicating items for seamless infinite loop on desktop
+  const marqueeItems = [...items, ...items, ...items, ...items];
+
   return (
-    <div className="bg-black text-white overflow-hidden">
-      {/* Mobile: rotating with Fade effect */}
-      <div className="mx-auto flex h-[40px] max-w-6xl items-center justify-center gap-2 px-4 font-ui text-[12px] font-normal md:hidden">
+    <div className="bg-black text-white overflow-hidden border-b border-white/10">
+      {/* MOBILE & TABLET: Fade rotation */}
+      <div className="mx-auto flex h-[40px] items-center justify-center gap-2 px-4 font-ui text-[12px] font-normal lg:hidden">
         <AnimatePresence mode="wait">
           <motion.div
             key={index}
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.4 }}
+            exit={{ opacity: 0, y: -5 }}
+            transition={{ duration: 0.3 }}
             className="flex items-center gap-2"
           >
             <img
               src={items[index].icon}
               alt=""
-              className="h-[15px] w-auto invert select-none"
-              draggable={false}
-              onDragStart={preventDragHandler}
+              className="h-[14px] w-auto invert opacity-90"
             />
-            <span>{items[index].text}</span>
+            <span className="tracking-wide uppercase text-[10px]">
+              {items[index].text}
+            </span>
           </motion.div>
         </AnimatePresence>
       </div>
 
-      {/* Tablet/Desktop: Staggered Fade-in */}
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="mx-auto hidden h-[40px] max-w-6xl items-center justify-center gap-12 px-4 font-ui text-[12px] font-normal leading-none md:flex"
-      >
-        {items.map((it) => (
-          <motion.div
-            key={it.text}
-            variants={itemVariants}
-            whileHover={{ y: -1, opacity: 0.8 }} // Subtilus hover
-            className="flex items-center gap-2 cursor-default"
-          >
-            <img
-              src={it.icon}
-              alt=""
-              className="h-[15px] w-auto invert select-none"
-              draggable={false}
-              onDragStart={preventDragHandler}
-            />
-            <span className="whitespace-nowrap">{it.text}</span>
-          </motion.div>
-        ))}
-      </motion.div>
+      {/* DESKTOP: Infinite Marquee */}
+      <div className="hidden h-[40px] items-center lg:flex relative">
+        <motion.div
+          className="flex whitespace-nowrap gap-24"
+          animate={{
+            x: [0, -1035],
+          }}
+          transition={{
+            x: {
+              repeat: Infinity,
+              repeatType: "loop",
+              duration: 25,
+              ease: "linear",
+            },
+          }}
+          style={{ width: "fit-content" }}
+        >
+          {marqueeItems.map((it, idx) => (
+            <div
+              key={idx}
+              className="flex items-center gap-3 px-4 opacity-80 hover:opacity-100 transition-opacity cursor-default"
+            >
+              <img
+                src={it.icon}
+                alt=""
+                className="h-[14px] w-auto invert"
+                draggable={false}
+                onDragStart={preventDragHandler}
+              />
+              <span className="font-ui text-[11px] uppercase tracking-[0.15em] whitespace-nowrap">
+                {it.text}
+              </span>
+            </div>
+          ))}
+        </motion.div>
+
+        {/* Gradient fade on edges for smoother look */}
+        <div className="absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-black to-transparent z-10" />
+        <div className="absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-black to-transparent z-10" />
+      </div>
     </div>
   );
 }
