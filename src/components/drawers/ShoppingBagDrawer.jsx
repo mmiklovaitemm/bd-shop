@@ -20,6 +20,9 @@ const fmtPrice = (n) =>
     minimumFractionDigits: 2,
   }).format(Number(n || 0));
 
+/**
+ * Cleans legacy localhost URLs or formats relative paths for production.
+ */
 const cleanImageUrl = (url) => {
   if (!url || typeof url !== "string") return "";
   if (url.includes("cloudinary.com")) return url;
@@ -32,35 +35,62 @@ const cleanImageUrl = (url) => {
 
 // --- LOGIC HELPERS ---
 
+/**
+ * Returns colors that have at least one size in stock.
+ */
 function getAvailableColors(product, item) {
-  if (!product) return [item?.color || "silver"];
-  let colors = [];
-  if (Array.isArray(product.colors)) colors = product.colors;
-  else if (Array.isArray(product.variants))
-    colors = product.variants.map((v) => v.name).filter(Boolean);
+  if (!product || !product.variants) return [item?.color || "silver"];
 
-  return colors.length > 0 ? colors : [item?.color || "silver"];
+  const colorsWithStock = Object.keys(product.variants).filter((colorKey) => {
+    const sizeArray = product.variants[colorKey];
+    return (
+      Array.isArray(sizeArray) && sizeArray.some((v) => Number(v.stock) > 0)
+    );
+  });
+
+  return colorsWithStock.length > 0
+    ? colorsWithStock
+    : [item?.color || "silver"];
 }
 
+/**
+ * Returns sizes for a specific color that are currently in stock.
+ */
 function getAvailableSizes(product, colorName, item) {
-  if (!product) return [String(item?.size || "")].filter(Boolean);
-  let sizes = [];
-  if (Array.isArray(product.variants)) {
-    // Ištraukiam visus dydžius iš variantų masyvo
-    sizes = product.variants.map((v) => v.size).filter(Boolean);
-  }
-  if (sizes.length === 0 && Array.isArray(product.sizes)) sizes = product.sizes;
+  if (!product || !product.variants)
+    return [String(item?.size || "")].filter(Boolean);
 
-  return sizes.map(String).filter(Boolean);
+  const variantKey = Object.keys(product.variants).find(
+    (key) => key.toLowerCase() === colorName.toLowerCase(),
+  );
+
+  const sizeArray = variantKey ? product.variants[variantKey] : null;
+
+  if (Array.isArray(sizeArray)) {
+    return sizeArray
+      .filter((v) => Number(v.stock) > 0)
+      .map((v) => String(v.size));
+  }
+
+  return [String(item?.size || "")].filter(Boolean);
 }
 
+/**
+ * Gets the stock quantity for a specific variant.
+ */
 function getVariantStock(product, colorName, size) {
-  if (!product) return 0;
-  if (Array.isArray(product.variants)) {
-    const v = product.variants.find((v) => String(v.size) === String(size));
-    if (v) return Number(v.stock || 0);
+  if (!product || !product.variants) return 0;
+
+  const variantKey = Object.keys(product.variants).find(
+    (key) => key.toLowerCase() === colorName.toLowerCase(),
+  );
+
+  const sizeArray = variantKey ? product.variants[variantKey] : null;
+  if (Array.isArray(sizeArray)) {
+    const v = sizeArray.find((v) => String(v.size) === String(size));
+    return v ? Number(v.stock || 0) : 0;
   }
-  return Number(product.stockQuantity || 0);
+  return 0;
 }
 
 const drawerVariants = {
@@ -76,7 +106,6 @@ export default function ShoppingBagDrawer() {
   const navigate = useNavigate();
   const isOpen = useBagDrawer((s) => s.isOpen);
   const close = useBagDrawer((s) => s.close);
-
   const items = useCart((s) => s.items);
   const inc = useCart((s) => s.inc);
   const dec = useCart((s) => s.dec);
@@ -95,8 +124,7 @@ export default function ShoppingBagDrawer() {
         setIsValidating(true);
         const data = await apiGet("/products");
         if (isMounted) {
-          const list = Array.isArray(data) ? data : data?.products || [];
-          setProducts(list);
+          setProducts(Array.isArray(data) ? data : data?.products || []);
         }
       } catch (err) {
         console.error("Drawer API Error:", err);
@@ -132,20 +160,15 @@ export default function ShoppingBagDrawer() {
     [items],
   );
 
-  // --- FUNKCIJA SU DAUG CONSOLE LOG ---
+  /**
+   * Handles color/size updates and ensures the correct image is selected.
+   */
   const handleVariantUpdate = (item, product, newColor, newSize) => {
-    console.log("-----------------------------------------");
-    console.log("DEBUG: Pradedamas atnaujinimas");
-
     const color = newColor || item.color;
-    const size = newSize || item.size;
+    let size = newSize || item.size;
     let image = item.image;
 
     if (product && product.variants) {
-      console.log("Struktūra: variants yra objektas", product.variants);
-
-      // 1. Paimame masyvą pagal spalvą (pvz., product.variants['gold'])
-      // Naudojame toLowerCase(), kad būtume tikri dėl sutapimo
       const variantKey = Object.keys(product.variants).find(
         (key) => key.toLowerCase() === color.toLowerCase(),
       );
@@ -155,39 +178,30 @@ export default function ShoppingBagDrawer() {
         : null;
 
       if (selectedVariantArray && Array.isArray(selectedVariantArray)) {
-        console.log(`Rastas spalvos '${color}' masyvas:`, selectedVariantArray);
+        // If color changed, check if current size is available in new color, otherwise pick first available
+        if (newColor) {
+          const availableSizes = selectedVariantArray.filter(
+            (v) => Number(v.stock) > 0,
+          );
+          const sizeExists = availableSizes.some(
+            (v) => String(v.size) === String(size),
+          );
 
-        // 2. Tame masyve ieškome objekto pagal pasirinktą dydį
+          if (!sizeExists && availableSizes.length > 0) {
+            size = String(availableSizes[0].size);
+          }
+        }
+
         const sizeVariant = selectedVariantArray.find(
           (v) => String(v.size) === String(size),
         );
-
-        if (sizeVariant) {
-          console.log("Rastas konkretus dydis ir jo duomenys:", sizeVariant);
-
-          // 3. Ištraukiame nuotrauką (pirma nuotrauka iš "images" masyvo)
-          if (sizeVariant.images && sizeVariant.images.length > 0) {
-            image = cleanImageUrl(sizeVariant.images[0]);
-            console.log("SĖKMĖ: Parinkta nauja nuotrauka:", image);
-          }
-        } else {
-          // Jei konkretaus dydžio masyve nėra, imam tiesiog pirmą pasitaikiusią spalvos nuotrauką
-          console.log("Dydis nerastas masyve, imam pirmą spalvos nuotrauką");
-          const firstWithImg = selectedVariantArray.find(
-            (v) => v.images && v.images.length > 0,
-          );
-          if (firstWithImg) {
-            image = cleanImageUrl(firstWithImg.images[0]);
-          }
+        if (sizeVariant?.images?.length > 0) {
+          image = cleanImageUrl(sizeVariant.images[0]);
         }
-      } else {
-        console.warn(`Nepavyko rasti spalvos '${color}' variantų objekte.`);
       }
     }
 
-    console.log("GALUTINIS SIUNTIMAS Į STORE:", { color, size, image });
     updateVariant(item.key, { color, size, image });
-    console.log("-----------------------------------------");
   };
 
   return (
@@ -291,31 +305,29 @@ export default function ShoppingBagDrawer() {
                                 </select>
                               </div>
 
-                              {sizes.length > 0 && (
-                                <div className="bg-black/5 px-2 py-1.5 rounded-sm relative">
-                                  <p className="text-[9px] uppercase text-black/40 font-ui mb-0.5">
-                                    Size
-                                  </p>
-                                  <select
-                                    value={item.size}
-                                    className="w-full bg-transparent font-ui text-[12px] outline-none cursor-pointer"
-                                    onChange={(e) =>
-                                      handleVariantUpdate(
-                                        item,
-                                        product,
-                                        null,
-                                        e.target.value,
-                                      )
-                                    }
-                                  >
-                                    {sizes.map((s) => (
-                                      <option key={s} value={s}>
-                                        {s}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-                              )}
+                              <div className="bg-black/5 px-2 py-1.5 rounded-sm relative">
+                                <p className="text-[9px] uppercase text-black/40 font-ui mb-0.5">
+                                  Size
+                                </p>
+                                <select
+                                  value={item.size}
+                                  className="w-full bg-transparent font-ui text-[12px] outline-none cursor-pointer"
+                                  onChange={(e) =>
+                                    handleVariantUpdate(
+                                      item,
+                                      product,
+                                      null,
+                                      e.target.value,
+                                    )
+                                  }
+                                >
+                                  {sizes.map((s) => (
+                                    <option key={s} value={s}>
+                                      {s}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
                             </div>
 
                             <div className="mt-4 flex items-center justify-between">
@@ -332,7 +344,7 @@ export default function ShoppingBagDrawer() {
                                 </div>
                                 <button
                                   onClick={() => inc(item.key)}
-                                  className="w-8 bg-black/5"
+                                  className="w-8 bg-black/5 disabled:opacity-30"
                                   disabled={stockLimit <= item.quantity}
                                 >
                                   +
@@ -349,6 +361,12 @@ export default function ShoppingBagDrawer() {
                                 />
                               </button>
                             </div>
+
+                            {stockLimit < 5 && stockLimit > 0 && (
+                              <p className="text-[10px] text-orange-600 mt-1 font-ui">
+                                Only {stockLimit} left
+                              </p>
+                            )}
                           </div>
                         </div>
                       </motion.div>
