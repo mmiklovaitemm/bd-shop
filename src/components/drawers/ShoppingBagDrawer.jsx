@@ -136,53 +136,47 @@ export default function ShoppingBagDrawer() {
   const handleVariantUpdate = (item, product, newColor, newSize) => {
     console.log("--- ATNAUJINIMO ANALIZĖ ---");
 
-    // 1. Nustatome spalvą ir dydį
     const color = newColor || item.color;
-    let size = newSize || item.size;
-    let image = item.image; // Pradinė (sena) nuotrauka
+    const size = newSize || item.size;
+    let image = item.image; // Pradinė nuotrauka
 
-    if (product) {
-      console.log("Produkto duomenys iš API:", product);
+    if (product && Array.isArray(product.variants)) {
+      console.log("Ieškome nuotraukos variantui, kurio dydis:", size);
 
-      // 2. Surandame variantą. Patikriname visus įmanomus kelius:
-      // Tavo API gali grąžinti variantus kaip masyvą ARBA kaip objektą
-      let variant = null;
-
-      if (Array.isArray(product.variants)) {
-        variant = product.variants.find(
-          (v) => String(v.name).toLowerCase() === String(color).toLowerCase(),
-        );
-      } else if (product.variants && typeof product.variants === "object") {
-        variant =
-          product.variants[color] || product.variants[color.toLowerCase()];
-      }
+      // Ieškome varianto, kuris atitinka pasirinktą DYDĮ (nes tavo DB struktūra tokia)
+      const variant = product.variants.find(
+        (v) => String(v.size) === String(size),
+      );
 
       if (variant) {
-        console.log("Rastas variantas:", variant);
+        console.log("Rastas variantas pagal dydį:", variant);
 
-        // 3. Ištraukiame nuotrauką. Patikriname variant.images ARBA variant.image
-        const vImg = variant.images?.[0] || variant.image;
+        // Paimame nuotrauką iš šio varianto
+        const vImg = Array.isArray(variant.images)
+          ? variant.images[0]
+          : variant.image;
 
         if (vImg) {
           image = cleanImageUrl(vImg);
           console.log("SĖKMĖ: Nauja nuotrauka parinkta:", image);
-        } else {
-          console.warn(
-            "VARIANTE NUOTRAUKŲ NERASTA. Gal laukas vadinasi kitaip?",
-          );
         }
       } else {
-        console.warn("VARIANTAS NERASTAS PAGAL SPALVĄ:", color);
-      }
-
-      // 4. Sutvarkome dydį
-      const availableSizes = getAvailableSizes(product, color, item);
-      if (newColor && !availableSizes.includes(String(size))) {
-        size = availableSizes[0] || item.size;
+        // Jei pagal dydį neradome (pvz. personalizuota prekė), bandom paimti pirmą pasitaikiusią
+        console.warn(
+          "Variantas pagal dydį nerastas, bandom paimti pirmą prieinamą nuotrauką",
+        );
+        const firstWithImg = product.variants.find(
+          (v) => v.images?.length > 0 || v.image,
+        );
+        if (firstWithImg) {
+          const fallbackImg = Array.isArray(firstWithImg.images)
+            ? firstWithImg.images[0]
+            : firstWithImg.image;
+          image = cleanImageUrl(fallbackImg);
+        }
       }
     }
 
-    // 5. SIUNČIAME Į STORE
     console.log("GALUTINIS REZULTATAS SIUNTIMUI:", { color, size, image });
     updateVariant(item.key, { color, size, image });
   };
