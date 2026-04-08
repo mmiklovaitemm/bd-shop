@@ -23,6 +23,7 @@ export default function Checkout() {
   const items = useCart((s) => s.items);
   const clearCart = useCart((s) => s.clearCart);
 
+  // Input references for potential scrolling or focus (auto-focus not implemented here but refs are kept)
   const emailRef = useRef(null);
   const firstNameRef = useRef(null);
   const lastNameRef = useRef(null);
@@ -41,6 +42,7 @@ export default function Checkout() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [payStatus, setPayStatus] = useState("idle");
 
+  // Form State
   const [email, setEmail] = useState(() => getEmailFromLocalStorage());
   const [deliveryType, setDeliveryType] = useState("ship");
   const [shippingMethod, setShippingMethod] = useState("lp");
@@ -64,6 +66,7 @@ export default function Checkout() {
 
   const SHIPPING_KIT_FEE = 15;
 
+  // Logic to clear specific error when user starts typing
   const clearError = (key) => {
     setErrors((prev) => {
       if (!prev[key]) return prev;
@@ -73,6 +76,7 @@ export default function Checkout() {
     });
   };
 
+  // Price calculations
   const subtotal = useMemo(() => {
     return items.reduce((sum, item) => {
       const base = Number(item.price?.toString().replace("€", "")) || 0;
@@ -104,44 +108,62 @@ export default function Checkout() {
     return (base + fee) * qty;
   };
 
+  /**
+   * UPDATED: Dynamic validation logic.
+   * Stores 'true' in errors state to indicate a field is invalid.
+   * The actual text is retrieved during render based on current language 't'.
+   */
   const validate = () => {
     const next = {};
-    const errText = t?.checkout?.errors || {};
-    const pageErrText = t?.checkoutPage?.errors || {};
 
-    if (!email || !/^\S+@\S+\.\S+$/.test(email))
-      next.email = pageErrText.enterValidEmail || "Enter valid email";
+    if (!email || !/^\S+@\S+\.\S+$/.test(email)) next.email = true;
 
     if (deliveryType === "ship") {
-      if (!firstName.trim())
-        next.firstName = errText.firstNameRequired || "First name required";
-      if (!lastName.trim())
-        next.lastName = errText.lastNameRequired || "Last name required";
-      if (!address.trim())
-        next.address = errText.addressRequired || "Address required";
-      if (!city.trim()) next.city = errText.cityRequired || "City required";
-      if (!postalCode.trim())
-        next.postalCode = errText.postalCodeRequired || "Postal code required";
-      if (!phone.trim()) next.phone = errText.phoneRequired || "Phone required";
+      if (!firstName.trim()) next.firstName = true;
+      if (!lastName.trim()) next.lastName = true;
+      if (!address.trim()) next.address = true;
+      if (!city.trim()) next.city = true;
+      if (!postalCode.trim()) next.postalCode = true;
+      if (!phone.trim()) next.phone = true;
     }
 
     if (paymentType === "card") {
       const digits = (s) => String(s || "").replace(/\D/g, "");
-      if (digits(cardNumber).length < 12)
-        next.cardNumber = errText.invalidCardNumber || "Invalid card number";
-      if (!/^\d{2}\/\d{2}$/.test(cardDate))
-        next.cardDate = errText.useCardDateFormat || "Use MM/YY format";
-      if (digits(cardCvc).length < 3)
-        next.cardCvc = errText.invalidCvc || "Invalid CVC";
-      if (!cardName.trim())
-        next.cardName =
-          errText.cardOwnerNameRequired || "Card owner name required";
+      if (digits(cardNumber).length < 12) next.cardNumber = true;
+      if (!/^\d{2}\/\d{2}$/.test(cardDate)) next.cardDate = true;
+      if (digits(cardCvc).length < 3) next.cardCvc = true;
+      if (!cardName.trim()) next.cardName = true;
     }
 
     setErrors(next);
     return Object.keys(next).length === 0;
   };
 
+  /**
+   * Translation Helper: Maps internal error keys to current language strings.
+   */
+  const getErrorMessage = (field) => {
+    if (!errors[field]) return null;
+    const errText = t?.checkoutPage?.errors || {};
+
+    const fieldMapping = {
+      email: errText.enterValidEmail,
+      firstName: errText.firstNameRequired,
+      lastName: errText.lastNameRequired,
+      address: errText.addressRequired,
+      city: errText.cityRequired,
+      postalCode: errText.postalCodeRequired,
+      phone: errText.phoneRequired,
+      cardNumber: errText.invalidCardNumber,
+      cardDate: errText.useCardDateFormat,
+      cardCvc: errText.invalidCvc,
+      cardName: errText.cardOwnerNameRequired,
+    };
+
+    return fieldMapping[field] || "Error";
+  };
+
+  // Form submission
   const handlePay = async (e) => {
     if (e) e.preventDefault();
     if (payStatus === "success" || isSubmitting) return;
@@ -187,8 +209,6 @@ export default function Checkout() {
             : null,
       };
 
-      console.log("DEBUG - Submitting order:", payload);
-
       const res = await fetch(`${API_ORIGIN}/api/orders`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -203,8 +223,6 @@ export default function Checkout() {
           data?.message || t?.somethingWentWrong || "Something went wrong",
         );
       }
-
-      console.log("DEBUG - Order success:", data);
 
       clearCart();
       setIsSubmitting(false);
@@ -251,14 +269,16 @@ export default function Checkout() {
             <form onSubmit={handlePay} className="space-y-8 px-4 py-6">
               {errors.submit && (
                 <div className="border border-black bg-black/5 px-4 py-4 text-red-600 font-ui text-sm">
-                  {errors.submit}
+                  {typeof errors.submit === "string"
+                    ? errors.submit
+                    : t?.somethingWentWrong}
                 </div>
               )}
 
               <ContactSection
                 email={email}
                 setEmail={setEmail}
-                error={errors.email}
+                error={getErrorMessage("email")}
                 clearError={clearError}
                 emailRef={emailRef}
               />
@@ -287,7 +307,15 @@ export default function Checkout() {
                     setPostalCode={setPostalCode}
                     phone={phone}
                     setPhone={setPhone}
-                    errors={errors}
+                    // Passing translated errors object
+                    errors={{
+                      firstName: getErrorMessage("firstName"),
+                      lastName: getErrorMessage("lastName"),
+                      address: getErrorMessage("address"),
+                      city: getErrorMessage("city"),
+                      postalCode: getErrorMessage("postalCode"),
+                      phone: getErrorMessage("phone"),
+                    }}
                     clearError={clearError}
                     firstNameRef={firstNameRef}
                     lastNameRef={lastNameRef}
@@ -323,7 +351,13 @@ export default function Checkout() {
                 setCardCvc={setCardCvc}
                 cardName={cardName}
                 setCardName={setCardName}
-                errors={errors}
+                // Passing translated errors object
+                errors={{
+                  cardNumber: getErrorMessage("cardNumber"),
+                  cardDate: getErrorMessage("cardDate"),
+                  cardCvc: getErrorMessage("cardCvc"),
+                  cardName: getErrorMessage("cardName"),
+                }}
                 clearError={clearError}
                 cardNumberRef={cardNumberRef}
                 cardDateRef={cardDateRef}
