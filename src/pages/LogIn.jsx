@@ -267,7 +267,13 @@ export default function Login() {
 
       navigate(from, { replace: true });
     } catch (err) {
-      setServerError(err.message || t.somethingWentWrong);
+      if (err.message === "Invalid credentials") {
+        setServerError(t.invalidCredentials);
+      } else if (err.message === "Email already in use") {
+        setServerError(t.emailAlreadyInUse);
+      } else {
+        setServerError(t.somethingWentWrong);
+      }
     } finally {
       setSubmitting(false);
     }
