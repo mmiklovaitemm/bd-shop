@@ -25,9 +25,13 @@ import RequireAdmin from "@/components/auth/RequireAdmin";
 import AdminProducts from "@/pages/admin/AdminProducts";
 
 const PageWrapper = ({ children }) => {
+  const { pathname } = useLocation();
+
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, []);
+  }, [pathname]);
+
+  const isHome = pathname === "/";
 
   return (
     <motion.div
@@ -35,7 +39,7 @@ const PageWrapper = ({ children }) => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.4, ease: "easeInOut" }}
-      className="pt-28 md:pt-32"
+      className={isHome ? "pt-[104px]" : "pt-28 md:pt-32"}
     >
       {children}
     </motion.div>

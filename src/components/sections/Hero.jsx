@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import mob1 from "@/assets/images/hero/mobile.webp";
@@ -19,7 +19,7 @@ import useLanguage from "@/context/useLanguage";
 const BREAKPOINTS = { desktop: 1024, tablet: 768 };
 const SLIDE_INTERVAL = 4000;
 
-const IMAGES = {
+const IMAGES_DATA = {
   mobile: [mob1, mob2, mob3],
   tablet: [tab1, tab2, tab3],
   desktop: [desk1, desk2, desk3],
@@ -54,7 +54,8 @@ export default function Hero() {
     return () => window.removeEventListener("resize", debouncedUpdate);
   }, []);
 
-  const images = IMAGES[mode] || [];
+  // Memoize images array to prevent unnecessary effect re-runs
+  const images = useMemo(() => IMAGES_DATA[mode] || [], [mode]);
 
   // Slideshow timer
   useEffect(() => {
@@ -74,7 +75,6 @@ export default function Hero() {
   return (
     <section className="w-full">
       <div className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden">
-        {/* Restored original height */}
         <div className="relative h-[520px] sm:h-[600px] lg:h-[560px] xl:h-[620px] bg-black">
           {/* Animated Background Images */}
           <AnimatePresence mode="popLayout">
@@ -141,7 +141,6 @@ export default function Hero() {
             </div>
           </div>
 
-          {/* Subtle bottom vignette */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent pointer-events-none z-[5]" />
         </div>
 
