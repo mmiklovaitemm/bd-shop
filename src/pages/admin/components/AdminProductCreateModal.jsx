@@ -167,21 +167,6 @@ export default function AdminProductCreateModal({
     }
   };
 
-  const isRingCategory = form.category === "rings";
-  const isNecklaceCategory = form.category === "necklaces";
-  const isBraceletCategory = form.category === "bracelets";
-  const isPersonalCategory = form.category === "personal";
-  const isPersonalNecklace =
-    isPersonalCategory && form.personalType === "necklace";
-  const isPersonalBracelet =
-    isPersonalCategory && form.personalType === "bracelet";
-  const shouldShowNecklaceFields = isNecklaceCategory || isPersonalNecklace;
-  const shouldShowBraceletFields = isBraceletCategory || isPersonalBracelet;
-  const shouldShowRingBandWidth = isRingCategory;
-  const shouldShowSizes = ["rings", "bracelets", "personal"].includes(
-    form.category,
-  );
-
   const handleSubmit = () => {
     const normalizedVariants = form.variants
       .map((v) => ({
@@ -226,11 +211,23 @@ export default function AdminProductCreateModal({
         chain: form.chainType,
         bandWidthMm: Number(form.bandWidth) || undefined,
         braceletLengthCm: Number(form.braceletLength) || undefined,
-        personalType: isPersonalCategory ? form.personalType : undefined,
+        personalType:
+          form.category === "personal" ? form.personalType : undefined,
       },
     };
     onCreate?.(payload);
   };
+
+  const isPersonalCategory = form.category === "personal";
+  const shouldShowNecklaceFields =
+    form.category === "necklaces" ||
+    (isPersonalCategory && form.personalType === "necklace");
+  const shouldShowBraceletFields =
+    form.category === "bracelets" ||
+    (isPersonalCategory && form.personalType === "bracelet");
+  const shouldShowSizes = ["rings", "bracelets", "personal"].includes(
+    form.category,
+  );
 
   return (
     <div
@@ -350,59 +347,63 @@ export default function AdminProductCreateModal({
             />
           </div>
 
-          <div>
-            <label className="mb-2 block text-black/70">Metal</label>
-            <input
-              type="text"
-              value={form.metal}
-              placeholder="Silver / Gold / Pearl"
-              onChange={(e) => handleChange("metal", e.target.value)}
-              className="h-12 w-full border border-black px-4 outline-none"
-            />
-          </div>
-
-          {isPersonalCategory && (
+          <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <label className="mb-2 block text-black/70">Personal type</label>
-              <select
-                value={form.personalType}
-                onChange={(e) => handleChange("personalType", e.target.value)}
-                className="h-12 w-full border border-black bg-white px-4 outline-none"
-              >
-                <option value="ring">Ring</option>
-                <option value="necklace">Necklace</option>
-                <option value="bracelet">Bracelet</option>
-              </select>
-            </div>
-          )}
-
-          <div>
-            <label className="mb-2 block text-black/70">Weight (g)</label>
-            <input
-              type="number"
-              step="0.1"
-              value={form.weight}
-              placeholder="4.5"
-              onChange={(e) => handleChange("weight", e.target.value)}
-              className="h-12 w-full border border-black px-4 outline-none"
-            />
-          </div>
-
-          {shouldShowRingBandWidth && (
-            <div>
-              <label className="mb-2 block text-black/70">
-                Band width (mm)
-              </label>
+              <label className="mb-2 block text-black/70">Metal</label>
               <input
-                type="number"
-                step="0.1"
-                value={form.bandWidth}
-                placeholder="2.5"
-                onChange={(e) => handleChange("bandWidth", e.target.value)}
+                type="text"
+                value={form.metal}
+                placeholder="Silver / Gold / Pearl"
+                onChange={(e) => handleChange("metal", e.target.value)}
                 className="h-12 w-full border border-black px-4 outline-none"
               />
             </div>
-          )}
+            {isPersonalCategory && (
+              <div>
+                <label className="mb-2 block text-black/70">
+                  Personal type
+                </label>
+                <select
+                  value={form.personalType}
+                  onChange={(e) => handleChange("personalType", e.target.value)}
+                  className="h-12 w-full border border-black bg-white px-4 outline-none"
+                >
+                  <option value="ring">Ring</option>
+                  <option value="necklace">Necklace</option>
+                  <option value="bracelet">Bracelet</option>
+                </select>
+              </div>
+            )}
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-black/70">Weight (g)</label>
+              <input
+                type="number"
+                step="0.1"
+                value={form.weight}
+                placeholder="4.5"
+                onChange={(e) => handleChange("weight", e.target.value)}
+                className="h-12 w-full border border-black px-4 outline-none"
+              />
+            </div>
+            {form.category === "rings" && (
+              <div>
+                <label className="mb-2 block text-black/70">
+                  Band width (mm)
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={form.bandWidth}
+                  placeholder="2.5"
+                  onChange={(e) => handleChange("bandWidth", e.target.value)}
+                  className="h-12 w-full border border-black px-4 outline-none"
+                />
+              </div>
+            )}
+          </div>
 
           {shouldShowNecklaceFields && (
             <div className="grid gap-4 md:grid-cols-2">
@@ -519,26 +520,9 @@ export default function AdminProductCreateModal({
             </div>
 
             {form.variants.map((variant, idx) => {
-              // Ištaisyta: Konvertuojame tekstą į masyvą peržiūrai
-              const imageArray = String(variant.images || "")
-                .split("\n")
-                .map((img) => img.trim())
-                .filter(Boolean);
-
-              console.log("--- PREVIEW DEBUG ---");
-              console.log("Raw image array before helper:", imageArray);
-              const testPreview = makePreviewList({
-                category: form.category,
-                rawValue: imageArray,
-                apiOrigin: API_ORIGIN,
-                frontendBasePath: FRONTEND_BASE_PATH,
-              });
-              console.log("Generated Preview URLs:", testPreview);
-              console.log("----------------------");
-
               const preview = makePreviewList({
                 category: form.category,
-                rawValue: imageArray, // Perduodame masyvą
+                rawValue: variant.images,
                 apiOrigin: API_ORIGIN,
                 frontendBasePath: FRONTEND_BASE_PATH,
               });
@@ -570,7 +554,7 @@ export default function AdminProductCreateModal({
                       value={variant.images}
                       rows={4}
                       placeholder={
-                        "example:\npearl-necklace-1.webp\npearl-necklace-2.webp"
+                        "example:\npearl-necklace-1.webp\nhttps://res.cloudinary.com/..."
                       }
                       onChange={(e) =>
                         handleVariantChange(idx, "images", e.target.value)
@@ -608,11 +592,14 @@ export default function AdminProductCreateModal({
                           key={imgIdx}
                           className="relative aspect-square border border-black p-2 bg-white overflow-hidden"
                         >
-                          {/* Pakeista: naudojame ProductImage su loaded={true} */}
-                          <ProductImage
+                          <img
                             src={src}
-                            loaded={true}
-                            className="h-28 w-full object-cover"
+                            alt=""
+                            className="h-full w-full object-cover"
+                            onError={(e) => {
+                              e.target.src =
+                                "https://placehold.co/400x400?text=No+Image";
+                            }}
                           />
                           <button
                             type="button"

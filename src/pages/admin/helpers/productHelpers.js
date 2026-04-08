@@ -68,12 +68,19 @@ export function makePreviewList({
   apiOrigin,
   frontendBasePath,
 }) {
-  return String(rawValue || "")
+  // Convert value to string to avoid errors if rawValue is an array
+  const input = Array.isArray(rawValue)
+    ? rawValue.join("\n")
+    : String(rawValue || "");
+
+  return input
     .split("\n")
     .map((item) => item.trim())
     .filter(Boolean)
     .map((item) => {
-      if (/^https?:\/\//i.test(item)) return item;
+      if (/^https?:\/\//i.test(item)) {
+        return item;
+      }
 
       return withBasePath({
         apiOrigin,
