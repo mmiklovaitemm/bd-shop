@@ -20,51 +20,63 @@ const fmtPrice = (n) =>
     minimumFractionDigits: 2,
   }).format(Number(n || 0));
 
+/**
+ * FIXED: Valo bet kokią nuorodą nuo localhost šiukšlių.
+ */
 const cleanImageUrl = (url) => {
   if (!url || typeof url !== "string") return "";
   if (url.includes("cloudinary.com")) return url;
-
   if (url.includes("localhost:")) {
     const parts = url.split("/products/");
     if (parts.length > 1) return "products/" + parts[1];
-
-    return url.replace(/^https?:\/\/localhost:\d+\//, "");
   }
-  return url;
+  return url.replace(/^https?:\/\/localhost:\d+\//, "");
 };
 
 // --- LOGIC HELPERS ---
 
 function getAvailableColors(product, item) {
   if (!product) return [item?.color || "silver"];
-  let colors = [];
+
+  // Tavo struktūroje spalvos dažniausiai būna prie produktų pagrindiniame lygyje
+  if (Array.isArray(product.colors) && product.colors.length > 0)
+    return product.colors;
+
+  // Jei variants masyvas turi spalvų pavadinimus
   if (Array.isArray(product.variants)) {
-    colors = product.variants.map((v) => v.name);
-  } else if (product.variants && typeof product.variants === "object") {
-    colors = Object.keys(product.variants);
+    const names = product.variants.map((v) => v.name).filter(Boolean);
+    if (names.length > 0) return names;
   }
-  return colors.length > 0 ? colors : [item?.color || "silver"];
+
+  return [item?.color || "silver"];
 }
 
 function getAvailableSizes(product, colorName, item) {
   if (!product) return [String(item?.size || "")].filter(Boolean);
-  let sizes = [];
+
+  // Ieškome dydžių tavo specifinėje struktūroje (per variantus)
   if (Array.isArray(product.variants)) {
-    const variant = product.variants.find((v) => v.name === colorName);
-    if (variant && Array.isArray(variant.sizes)) {
-      sizes = variant.sizes.map(String);
-    }
+    // 1. Bandome rasti pagal pasirinktą spalvą (jei struktūra tokia)
+    const byColor = product.variants.find(
+      (v) => String(v.name).toLowerCase() === String(colorName).toLowerCase(),
+    );
+    if (byColor && Array.isArray(byColor.sizes))
+      return byColor.sizes.map(String);
+
+    // 2. Jei visi variantai turi tik po vieną dydį (kaip tavo konsolėje)
+    const allSizes = product.variants.map((v) => v.size).filter(Boolean);
+    if (allSizes.length > 0) return allSizes.map(String);
   }
-  if (sizes.length === 0 && Array.isArray(product.sizes)) {
-    sizes = product.sizes.map(String);
-  }
-  return sizes.filter(Boolean);
+
+  if (Array.isArray(product.sizes)) return product.sizes.map(String);
+  return [String(item?.size || "")].filter(Boolean);
 }
 
 function getVariantStock(product, colorName, size) {
   if (!product) return 0;
-  if (product.variantStock?.[colorName]?.[size] !== undefined) {
-    return Number(product.variantStock[colorName][size]);
+  if (Array.isArray(product.variants)) {
+    const v = product.variants.find((v) => String(v.size) === String(size));
+    if (v) return Number(v.stock || 0);
   }
   return Number(product.stockQuantity || 0);
 }
@@ -116,10 +128,16 @@ export default function ShoppingBagDrawer() {
     };
   }, [isOpen]);
 
+  // FIXED: Geresnė prekės paieška krepšelyje
   const findProduct = useCallback(
     (item) => {
       const itemId = String(item.productId || item.id || "");
-      return products.find((p) => String(p.id) === itemId) || null;
+      // Ieškome atitikmens pagal ID
+      return (
+        products.find(
+          (p) => String(p.id) === itemId || String(p._id) === itemId,
+        ) || null
+      );
     },
     [products],
   );
@@ -133,51 +151,35 @@ export default function ShoppingBagDrawer() {
     [items],
   );
 
+  // --- ATNAUJINTA: NUOTRAUKOS PAIEŠKA PAGAL DYDĮ ARBA SPALVĄ ---
   const handleVariantUpdate = (item, product, newColor, newSize) => {
     console.log("--- ATNAUJINIMO ANALIZĖ ---");
 
     const color = newColor || item.color;
     const size = newSize || item.size;
-    let image = item.image; // Pradinė nuotrauka
+    let image = item.image;
 
     if (product && Array.isArray(product.variants)) {
-      console.log("Ieškome nuotraukos variantui, kurio dydis:", size);
-
-      // Ieškome varianto, kuris atitinka pasirinktą DYDĮ (nes tavo DB struktūra tokia)
+      // Tavo DB struktūra rodo, kad nuotraukos yra prie objektų, kurie turi "size"
+      // Ieškome varianto, kuris atitinka pasirinktą dydį
       const variant = product.variants.find(
         (v) => String(v.size) === String(size),
       );
 
       if (variant) {
-        console.log("Rastas variantas pagal dydį:", variant);
+        const variantImages = variant.images || variant.image;
+        const imgUrl = Array.isArray(variantImages)
+          ? variantImages[0]
+          : variantImages;
 
-        // Paimame nuotrauką iš šio varianto
-        const vImg = Array.isArray(variant.images)
-          ? variant.images[0]
-          : variant.image;
-
-        if (vImg) {
-          image = cleanImageUrl(vImg);
-          console.log("SĖKMĖ: Nauja nuotrauka parinkta:", image);
-        }
-      } else {
-        // Jei pagal dydį neradome (pvz. personalizuota prekė), bandom paimti pirmą pasitaikiusią
-        console.warn(
-          "Variantas pagal dydį nerastas, bandom paimti pirmą prieinamą nuotrauką",
-        );
-        const firstWithImg = product.variants.find(
-          (v) => v.images?.length > 0 || v.image,
-        );
-        if (firstWithImg) {
-          const fallbackImg = Array.isArray(firstWithImg.images)
-            ? firstWithImg.images[0]
-            : firstWithImg.image;
-          image = cleanImageUrl(fallbackImg);
+        if (imgUrl) {
+          image = cleanImageUrl(imgUrl);
+          console.log("SURASTA NAUJA NUOTRAUKA:", image);
         }
       }
     }
 
-    console.log("GALUTINIS REZULTATAS SIUNTIMUI:", { color, size, image });
+    console.log("SIUNČIAMA Į STORE:", { color, size, image });
     updateVariant(item.key, { color, size, image });
   };
 
@@ -237,7 +239,6 @@ export default function ShoppingBagDrawer() {
                       <motion.div key={item.key} layout className="px-6 py-6">
                         <div className="grid grid-cols-[90px_1fr] gap-5">
                           <div className="h-[110px] w-[90px] relative overflow-hidden bg-black/5 border border-black/5">
-                            {/* VALOMEitem.image PRIES PADUODANT I KOMPONENTA */}
                             <ProductImage
                               src={cleanImageUrl(item.image)}
                               alt={item.name}
@@ -312,7 +313,7 @@ export default function ShoppingBagDrawer() {
                               <div className="flex border border-black h-8 items-stretch">
                                 <button
                                   onClick={() => dec(item.key)}
-                                  className="w-8 bg-black/5"
+                                  className="w-8 bg-black/5 disabled:opacity-30"
                                   disabled={item.quantity <= 1}
                                 >
                                   –
@@ -322,7 +323,7 @@ export default function ShoppingBagDrawer() {
                                 </div>
                                 <button
                                   onClick={() => inc(item.key)}
-                                  className="w-8 bg-black/5"
+                                  className="w-8 bg-black/5 disabled:opacity-30"
                                   disabled={stockLimit <= item.quantity}
                                 >
                                   +
@@ -359,7 +360,7 @@ export default function ShoppingBagDrawer() {
               >
                 {isValidating
                   ? "Validating..."
-                  : `${t.checkout} — ${fmtPrice(subtotal)}`}
+                  : `Check out — ${fmtPrice(subtotal)}`}
               </button>
             </div>
           </motion.aside>
