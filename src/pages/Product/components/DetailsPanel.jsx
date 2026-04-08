@@ -1,25 +1,27 @@
 import { memo, useMemo } from "react";
-
 import useLanguage from "@/context/useLanguage";
 import preventDragHandler from "@/utils/preventDrag";
 import arrowUpRightIcon from "@/assets/ui/arrow-up-right.svg";
 
+/**
+ * UTILS: Selection helpers for flexible data structures
+ */
 const pickFirst = (...vals) =>
   vals.find((v) => v !== undefined && v !== null && String(v).trim() !== "");
 
 const pickNumber = (...vals) => {
   for (const v of vals) {
     if (v === undefined || v === null || v === "") continue;
-
     const n =
       typeof v === "number" ? v : Number(String(v ?? "").replace(",", "."));
-
-    if (Number.isFinite(n) && n > 0) return n;
+    if (Number.isFinite(n) && n >= 0) return n;
   }
-
   return null;
 };
 
+/**
+ * Logic to identify product category based on various fields
+ */
 const detectCategory = (product) => {
   const raw =
     pickFirst(
@@ -32,20 +34,16 @@ const detectCategory = (product) => {
     ) || "";
 
   const s = String(raw).toLowerCase();
-
   if (s.includes("ring")) return "rings";
   if (s.includes("bracelet")) return "bracelets";
   if (s.includes("necklace")) return "necklaces";
   if (s.includes("earring")) return "earrings";
-
-  if (s.includes("rings")) return "rings";
-  if (s.includes("bracelets")) return "bracelets";
-  if (s.includes("necklaces")) return "necklaces";
-  if (s.includes("earrings")) return "earrings";
-
   return "generic";
 };
 
+/**
+ * Formatting helpers for labels and metals
+ */
 const toTitleCaseLabel = (value) =>
   String(value || "")
     .trim()
@@ -58,9 +56,7 @@ const toTitleCaseLabel = (value) =>
 
 const formatMetal = (value, t) => {
   if (!value) return "";
-
   const raw = String(value).toLowerCase().trim();
-
   const colorNames = {
     "soft-yellow": t.product.detailsPanel.metals.softYellow,
     "soft-blue": t.product.detailsPanel.metals.softBlue,
@@ -69,7 +65,6 @@ const formatMetal = (value, t) => {
     silver: t.product.detailsPanel.metals.silver,
     pearl: t.perlas,
   };
-
   return colorNames[raw] || toTitleCaseLabel(raw);
 };
 
@@ -80,13 +75,14 @@ const getDefaultCategoryText = (category, t) => {
     necklaces: t.product.detailsPanel.defaultTexts.necklaces,
     earrings: t.product.detailsPanel.defaultTexts.earrings,
   };
-
   return texts[category] || "";
 };
 
+/**
+ * UI Components for data rows
+ */
 function Row({ label, value }) {
   if (!value && value !== 0) return null;
-
   return (
     <p className="font-ui text-[14px] leading-relaxed text-black">
       <span className="text-black/70">{label} </span>
@@ -97,7 +93,7 @@ function Row({ label, value }) {
 
 function SectionTitle({ children }) {
   return (
-    <p className="font-ui text-[14px] leading-relaxed text-black/70">
+    <p className="font-ui text-[14px] leading-relaxed text-black/70 font-medium">
       {children}
     </p>
   );
@@ -114,6 +110,7 @@ const DetailsContent = memo(function DetailsContent({
     if (!product) return null;
 
     const baseCategory = detectCategory(product);
+    // Support for multiple detail object naming conventions
     const detailsObj =
       product.details || product.dimensionsDetails || product.specs || {};
 
@@ -122,6 +119,7 @@ const DetailsContent = memo(function DetailsContent({
       product.personalType,
     );
 
+    // Resolve specific category (handle "Personal" category mappings)
     const category =
       baseCategory === "personal"
         ? personalType === "necklace"
@@ -131,18 +129,18 @@ const DetailsContent = memo(function DetailsContent({
             : "rings"
         : baseCategory;
 
-    const gemstonesArr =
-      Array.isArray(detailsObj.gemstones) && detailsObj.gemstones.length > 0
-        ? detailsObj.gemstones
-        : Array.isArray(product.gemstones) && product.gemstones.length > 0
-          ? product.gemstones
-          : [];
+    // Gemstones parsing
+    const gemstonesArr = Array.isArray(detailsObj.gemstones)
+      ? detailsObj.gemstones
+      : [];
+    const gemstonesText = gemstonesArr.length
+      ? gemstonesArr.join(", ")
+      : pickFirst(detailsObj.metal === "Pearl" ? "Pearl" : null);
 
-    const gemstonesText = gemstonesArr.length ? gemstonesArr.join(", ") : "";
-
+    // Description text resolution
     const text = pickFirst(
+      detailsObj.detailsText, // From new Admin Payload
       product.detailsText,
-      detailsObj.detailsText,
       detailsObj.text,
       detailsObj.description,
       product.longDescription,
@@ -157,98 +155,52 @@ const DetailsContent = memo(function DetailsContent({
       Array.isArray(product.colors) ? product.colors[0] : null,
     );
 
-    const metal = formatMetal(metalRaw, t);
-
-    const productCode = pickFirst(
-      detailsObj.productCode,
-      product.productCode,
-      product.sku,
-      product.code,
-      product.id ? `ID-${product.id}` : null,
-    );
-
-    const weightG = pickNumber(
-      detailsObj.weightG,
-      product.weightG,
-      detailsObj.weight,
-      product.weight,
-    );
-
-    const bandWidthMm = pickNumber(
-      detailsObj.bandWidthMm,
-      product.bandWidthMm,
-      detailsObj.bandWidth,
-      product.bandWidth,
-    );
-
-    const chain = pickFirst(detailsObj.chain, product.chain);
-
-    const totalLengthCm = pickNumber(
-      detailsObj.totalLengthCm,
-      product.totalLengthCm,
-      detailsObj.totalLength,
-      product.totalLength,
-    );
-
-    const adjustableFromCm = pickNumber(
-      detailsObj.adjustableFromCm,
-      product.adjustableFromCm,
-      detailsObj.adjustableFrom,
-      product.adjustableFrom,
-    );
-
-    const adjustableToCm = pickNumber(
-      detailsObj.adjustableToCm,
-      product.adjustableToCm,
-      detailsObj.adjustableTo,
-      product.adjustableTo,
-    );
-
-    const braceletLengthCm = pickNumber(
-      detailsObj.braceletLengthCm,
-      detailsObj.totalBraceletLengthCm,
-      product.braceletLengthCm,
-      product.totalBraceletLengthCm,
-    );
-
-    const dims = detailsObj.dimensions || product.dimensions || {};
-    const heightMm = pickNumber(
-      dims.heightMm,
-      product.heightMm,
-      dims.height,
-      product.height,
-    );
-    const widthMm = pickNumber(
-      dims.widthMm,
-      product.widthMm,
-      dims.width,
-      product.width,
-    );
-
-    const sizeDetailsMap =
-      product.sizeDetails || detailsObj.sizeDetails || null;
-
+    // Build dimensions and specs from multiple possible sources
     return {
       category,
       text: text ? String(text).trim() : "",
-      metal,
-      productCode,
-      weightG,
-      bandWidthMm,
-      chain,
-      totalLengthCm,
-      adjustableFromCm,
-      adjustableToCm,
-      braceletLengthCm,
-      heightMm,
-      widthMm,
-      sizeDetailsMap,
+      metal: formatMetal(metalRaw, t),
+      productCode: pickFirst(
+        detailsObj.productCode,
+        product.productCode,
+        `ID-${product.id}`,
+      ),
+      weightG: pickNumber(
+        detailsObj.weightG,
+        product.weightG,
+        detailsObj.weight,
+      ),
+      bandWidthMm: pickNumber(
+        detailsObj.bandWidthMm,
+        product.bandWidthMm,
+        detailsObj.bandWidth,
+      ),
+      chain: pickFirst(detailsObj.chain, product.chain),
+      totalLengthCm: pickNumber(
+        detailsObj.totalLengthCm,
+        product.totalLengthCm,
+        detailsObj.totalLength,
+      ),
+      adjustableFromCm: pickNumber(
+        detailsObj.adjustableFromCm,
+        product.adjustableFromCm,
+      ),
+      adjustableToCm: pickNumber(
+        detailsObj.adjustableToCm,
+        product.adjustableToCm,
+      ),
+      braceletLengthCm: pickNumber(
+        detailsObj.braceletLengthCm,
+        detailsObj.totalBraceletLengthCm,
+        product.braceletLengthCm,
+      ),
+      heightMm: pickNumber(detailsObj.dimensions?.heightMm, product.heightMm),
+      widthMm: pickNumber(detailsObj.dimensions?.widthMm, product.widthMm),
+      sizeDetailsMap: product.sizeDetails || detailsObj.sizeDetails || null,
       gemstonesText,
       selectedSize:
         selectedSize ??
-        (Array.isArray(product.sizes) && product.sizes.length > 0
-          ? product.sizes[0]
-          : null),
+        (Array.isArray(product.sizes) ? product.sizes[0] : null),
     };
   }, [product, selectedColor, selectedSize, t]);
 
@@ -273,22 +225,21 @@ const DetailsContent = memo(function DetailsContent({
     selectedSize: activeSize,
   } = view;
 
-  const metalLine = metal ? `${metal}` : null;
-
+  // RINGS Display Block
   const ringBlock = (
     <div className="space-y-2">
-      <Row label={t.product.detailsPanel.labels.metal} value={metalLine} />
+      <Row label={t.product.detailsPanel.labels.metal} value={metal} />
       <Row
         label={t.product.detailsPanel.labels.bandWidth}
-        value={bandWidthMm != null ? `${bandWidthMm} mm` : null}
+        value={bandWidthMm ? `${bandWidthMm} mm` : null}
       />
       <Row
         label={t.product.detailsPanel.labels.weight}
-        value={weightG != null ? `${weightG} g` : null}
+        value={weightG ? `${weightG} g` : null}
       />
       <Row
         label={t.product.detailsPanel.labels.gemstone}
-        value={gemstonesText || null}
+        value={gemstonesText}
       />
       <Row
         label={t.product.detailsPanel.labels.productCode}
@@ -297,35 +248,32 @@ const DetailsContent = memo(function DetailsContent({
     </div>
   );
 
+  // NECKLACES Display Block (Handles Adjustable lengths)
   const necklaceLengthValue = (() => {
-    const hasTotal = totalLengthCm != null;
-    const hasAdj = adjustableFromCm != null && adjustableToCm != null;
-
-    if (!hasTotal && !hasAdj) return null;
-
-    const total = hasTotal ? `${totalLengthCm} cm` : "";
-    const adj = hasAdj
-      ? `, ${t.product.detailsPanel.adjustableFromToPrefix} ${adjustableFromCm} cm ${t.product.detailsPanel.adjustableFromToMiddle} ${adjustableToCm} cm`
-      : "";
-
+    if (totalLengthCm == null && adjustableFromCm == null) return null;
+    const total = totalLengthCm ? `${totalLengthCm} cm` : "";
+    const adj =
+      adjustableFromCm && adjustableToCm
+        ? `, ${t.product.detailsPanel.adjustableFromToPrefix} ${adjustableFromCm}-${adjustableToCm} cm`
+        : "";
     return `${total}${adj}`.trim();
   })();
 
   const necklaceBlock = (
     <div className="space-y-2">
-      <Row label={t.product.detailsPanel.labels.metal} value={metalLine} />
-      <Row label={t.product.detailsPanel.labels.chain} value={chain || null} />
+      <Row label={t.product.detailsPanel.labels.metal} value={metal} />
+      <Row label={t.product.detailsPanel.labels.chain} value={chain} />
       <Row
         label={t.product.detailsPanel.labels.totalNecklaceLength}
         value={necklaceLengthValue}
       />
       <Row
         label={t.product.detailsPanel.labels.weight}
-        value={weightG != null ? `${weightG} g` : null}
+        value={weightG ? `${weightG} g` : null}
       />
       <Row
         label={t.product.detailsPanel.labels.gemstone}
-        value={gemstonesText || null}
+        value={gemstonesText}
       />
       <Row
         label={t.product.detailsPanel.labels.productCode}
@@ -334,33 +282,32 @@ const DetailsContent = memo(function DetailsContent({
     </div>
   );
 
+  // EARRINGS Display Block
   const earringsBlock = (
     <div className="space-y-2">
-      <Row label={t.product.detailsPanel.labels.metal} value={metalLine} />
-
-      {heightMm != null || widthMm != null ? (
-        <div className="space-y-1">
+      <Row label={t.product.detailsPanel.labels.metal} value={metal} />
+      {(heightMm || widthMm) && (
+        <div className="pt-1">
           <SectionTitle>
             {t.product.detailsPanel.sectionTitles.dimensions}
           </SectionTitle>
           <Row
             label={t.product.detailsPanel.labels.height}
-            value={heightMm != null ? `${heightMm} mm` : null}
+            value={`${heightMm} mm`}
           />
           <Row
             label={t.product.detailsPanel.labels.width}
-            value={widthMm != null ? `${widthMm} mm` : null}
+            value={`${widthMm} mm`}
           />
         </div>
-      ) : null}
-
+      )}
       <Row
         label={t.product.detailsPanel.labels.weight}
-        value={weightG != null ? `${weightG} g` : null}
+        value={weightG ? `${weightG} g` : null}
       />
       <Row
         label={t.product.detailsPanel.labels.gemstone}
-        value={gemstonesText || null}
+        value={gemstonesText}
       />
       <Row
         label={t.product.detailsPanel.labels.productCode}
@@ -369,31 +316,24 @@ const DetailsContent = memo(function DetailsContent({
     </div>
   );
 
+  // BRACELETS Logic for sizes
   const renderBraceletSizeBlocks = () => {
     if (sizeDetailsMap && activeSize && sizeDetailsMap[activeSize]) {
-      const info = sizeDetailsMap[activeSize] || {};
-      const totalText = pickFirst(
-        info.totalLengthText,
-        info.totalBraceletLength,
-        info.totalLength,
-      );
-      const w = pickNumber(info.weightG, info.weight);
-
+      const info = sizeDetailsMap[activeSize];
       return (
         <div className="space-y-2">
           <Row label={t.product.detailsPanel.labels.size} value={activeSize} />
           <Row
             label={t.product.detailsPanel.labels.totalBraceletLength}
-            value={totalText}
+            value={info.totalLength || info.totalBraceletLength}
           />
           <Row
             label={t.product.detailsPanel.labels.weight}
-            value={w != null ? `${w} g` : null}
+            value={info.weightG ? `${info.weightG} g` : null}
           />
         </div>
       );
     }
-
     return (
       <div className="space-y-2">
         <Row
@@ -402,11 +342,11 @@ const DetailsContent = memo(function DetailsContent({
         />
         <Row
           label={t.product.detailsPanel.labels.totalBraceletLength}
-          value={braceletLengthCm != null ? `${braceletLengthCm} cm` : null}
+          value={braceletLengthCm ? `${braceletLengthCm} cm` : null}
         />
         <Row
           label={t.product.detailsPanel.labels.weight}
-          value={weightG != null ? `${weightG} g` : null}
+          value={weightG ? `${weightG} g` : null}
         />
       </div>
     );
@@ -414,31 +354,11 @@ const DetailsContent = memo(function DetailsContent({
 
   const braceletBlock = (
     <div className="space-y-2">
-      <Row label={t.product.detailsPanel.labels.metal} value={metalLine} />
+      <Row label={t.product.detailsPanel.labels.metal} value={metal} />
       <div className="pt-2">{renderBraceletSizeBlocks()}</div>
-      <div className="pt-2">
-        <Row
-          label={t.product.detailsPanel.labels.gemstone}
-          value={gemstonesText || null}
-        />
-        <Row
-          label={t.product.detailsPanel.labels.productCode}
-          value={productCode}
-        />
-      </div>
-    </div>
-  );
-
-  const genericBlock = (
-    <div className="space-y-2">
-      <Row label={t.product.detailsPanel.labels.metal} value={metalLine} />
       <Row
-        label={t.product.detailsPanel.labels.size}
-        value={activeSize || "—"}
-      />
-      <Row
-        label={t.product.detailsPanel.labels.weight}
-        value={weightG != null ? `${weightG} g` : null}
+        label={t.product.detailsPanel.labels.gemstone}
+        value={gemstonesText}
       />
       <Row
         label={t.product.detailsPanel.labels.productCode}
@@ -447,30 +367,45 @@ const DetailsContent = memo(function DetailsContent({
     </div>
   );
 
+  // Fallback for unknown categories
+  const genericBlock = (
+    <div className="space-y-2">
+      <Row label={t.product.detailsPanel.labels.metal} value={metal} />
+      <Row
+        label={t.product.detailsPanel.labels.weight}
+        value={weightG ? `${weightG} g` : null}
+      />
+      <Row
+        label={t.product.detailsPanel.labels.productCode}
+        value={productCode}
+      />
+    </div>
+  );
+
+  // Determine which block to render
   const block =
-    category === "rings"
-      ? ringBlock
-      : category === "bracelets"
-        ? braceletBlock
-        : category === "necklaces"
-          ? necklaceBlock
-          : category === "earrings"
-            ? earringsBlock
-            : genericBlock;
+    {
+      rings: ringBlock,
+      bracelets: braceletBlock,
+      necklaces: necklaceBlock,
+      earrings: earringsBlock,
+    }[category] || genericBlock;
 
   return (
     <div className="select-none">
-      {text ? (
+      {text && (
         <p className="font-ui text-[14px] leading-relaxed text-black/80">
           {text}
         </p>
-      ) : null}
-
+      )}
       <div className={text ? "mt-6" : ""}>{block}</div>
     </div>
   );
 });
 
+/**
+ * MAIN PANEL COMPONENT: Handles the slide-out sidebar logic
+ */
 const DetailsPanel = memo(function DetailsPanel({
   isOpen,
   onClose,
@@ -487,6 +422,7 @@ const DetailsPanel = memo(function DetailsPanel({
       className="fixed inset-0 z-[120] select-none"
       onDragStart={preventDragHandler}
     >
+      {/* Background Overlay */}
       <button
         type="button"
         aria-label={t.product.detailsPanel.closeAriaLabel}
@@ -494,26 +430,24 @@ const DetailsPanel = memo(function DetailsPanel({
         className="absolute inset-0 bg-black/40"
       />
 
+      {/* Sidebar Content */}
       <aside className="absolute right-0 top-0 flex h-full w-[92%] max-w-[520px] flex-col border-l border-black bg-white shadow-2xl">
         <div className="shrink-0 border-b border-black px-6 pt-7 pb-5">
           <div className="flex items-start justify-between gap-4">
-            <h2 className="font-display text-[24px] leading-[0.95]">
+            <h2 className="font-display text-[24px] leading-[0.95] uppercase">
               {t.product.detailsPanel.title}
             </h2>
 
             <button
               type="button"
               onClick={onClose}
-              className="group inline-flex items-center gap-2 font-ui text-[14px] text-black/80 transition-transform duration-200 ease-out active:scale-95 lg:hover:-translate-y-[2px]"
+              className="group inline-flex items-center gap-2 font-ui text-[14px] text-black/80 transition-transform duration-200 active:scale-95 lg:hover:-translate-y-[2px]"
             >
               <span>{t.product.detailsPanel.close}</span>
               <img
                 src={arrowUpRightIcon}
                 alt=""
-                aria-hidden="true"
-                draggable={false}
-                onDragStart={preventDragHandler}
-                className="h-3 w-3 select-none transition-transform duration-200 ease-out lg:group-hover:translate-x-[1px] lg:group-hover:-translate-y-[1px]"
+                className="h-3 w-3 transition-transform duration-200 lg:group-hover:translate-x-[1px] lg:group-hover:-translate-y-[1px]"
               />
             </button>
           </div>

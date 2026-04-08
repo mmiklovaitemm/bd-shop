@@ -63,28 +63,24 @@ const Lightbox = memo(function Lightbox({
   const currentImage = safeImages[activeImgIndex] || safeImages[0];
 
   return (
-    /**
-     * Increased z-index to 9999 to ensure it stays on top of Header and AnnouncementBar.
-     * Use fixed inset-0 to cover the whole viewport.
-     */
     <div
       className="fixed inset-0 z-[9999] select-none"
       onDragStart={preventDragHandler}
     >
-      {/* Overlay - darkened backdrop with blur */}
+      {/* Background Overlay */}
       <div
-        className="absolute inset-0 bg-black/90 backdrop-blur-md"
+        className="absolute inset-0 bg-black/95 backdrop-blur-md"
         aria-hidden="true"
         onClick={requestClose}
       />
 
       <div className="absolute inset-0 flex flex-col pointer-events-none">
-        {/* Lightbox Header - UI Controls */}
+        {/* Top Header */}
         <div
-          className="flex h-16 shrink-0 items-center justify-between border-b border-white/5 bg-black/20 px-6 text-white pointer-events-auto"
+          className="flex h-16 shrink-0 items-center justify-between border-b border-white/5 bg-black/40 px-6 text-white pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="font-ui text-[11px] uppercase tracking-[0.2em] text-white/50">
+          <div className="font-ui text-[11px] uppercase tracking-[0.2em] text-white/40">
             {Math.min(activeImgIndex + 1, imagesCount)} / {imagesCount}
           </div>
 
@@ -102,8 +98,11 @@ const Lightbox = memo(function Lightbox({
           </button>
         </div>
 
-        {/* Main Viewing Area */}
-        <div className="relative flex flex-1 items-center justify-center p-6 md:p-12 lg:p-16">
+        {/* Image Display Area */}
+        <div
+          className="relative flex flex-1 items-center justify-center p-4 md:p-12 pointer-events-auto"
+          onClick={requestClose} // Close if clicking outside the image
+        >
           {/* Navigation - Left */}
           {hasManyImages && (
             <button
@@ -112,7 +111,7 @@ const Lightbox = memo(function Lightbox({
                 e.stopPropagation();
                 goPrev();
               }}
-              className="absolute left-4 top-1/2 z-30 flex h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/20 text-white backdrop-blur-xl transition-all hover:bg-white hover:text-black pointer-events-auto md:left-8 group"
+              className="absolute left-6 top-1/2 z-30 flex h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/20 text-white backdrop-blur-xl transition-all hover:bg-white hover:text-black pointer-events-auto group"
             >
               <img
                 src={arrowLeftIcon}
@@ -122,20 +121,21 @@ const Lightbox = memo(function Lightbox({
             </button>
           )}
 
-          {/* Image Container - Size Optimized for Desktop */}
+          {/* Main Image Container */}
           <div
-            className="relative w-full h-full flex items-center justify-center pointer-events-auto"
+            className="relative flex items-center justify-center pointer-events-auto"
             style={{
-              // Restricting size for desktop to avoid it being overwhelming
-              maxWidth: "min(90vw, 700px)",
-              maxHeight: "min(85vh, 700px)",
+              width: "90vw",
+              height: "80vh",
             }}
+            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking on the image itself
           >
             <ProductImage
               src={currentImage}
-              alt={`${product?.name || "Product"} - high resolution view`}
+              alt={`${product?.name || "Product"} - original view`}
               loaded={true}
-              className="object-contain w-full h-full drop-shadow-2xl"
+              // to ensure the image scales naturally without being cropped.
+              className="!relative !inset-auto object-contain max-w-full max-h-full drop-shadow-2xl"
             />
           </div>
 
@@ -147,7 +147,7 @@ const Lightbox = memo(function Lightbox({
                 e.stopPropagation();
                 goNext();
               }}
-              className="absolute right-4 top-1/2 z-30 flex h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/20 text-white backdrop-blur-xl transition-all hover:bg-white hover:text-black pointer-events-auto md:right-8 group"
+              className="absolute right-6 top-1/2 z-30 flex h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/20 text-white backdrop-blur-xl transition-all hover:bg-white hover:text-black pointer-events-auto group"
             >
               <img
                 src={arrowRightIcon}
