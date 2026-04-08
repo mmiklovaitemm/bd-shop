@@ -136,48 +136,54 @@ export default function ShoppingBagDrawer() {
   const handleVariantUpdate = (item, product, newColor, newSize) => {
     console.log("--- ATNAUJINIMO ANALIZĖ ---");
 
+    // 1. Nustatome spalvą ir dydį
     const color = newColor || item.color;
     let size = newSize || item.size;
-    let image = item.image;
+    let image = item.image; // Pradinė (sena) nuotrauka
 
     if (product) {
-      const variantList = Array.isArray(product.variants)
-        ? product.variants
-        : product.variants
-          ? Object.entries(product.variants).map(([name, data]) => ({
-              name,
-              ...data,
-            }))
-          : [];
+      console.log("Produkto duomenys iš API:", product);
 
-      const variant = variantList.find(
-        (v) => String(v.name).toLowerCase() === String(color).toLowerCase(),
-      );
+      // 2. Surandame variantą. Patikriname visus įmanomus kelius:
+      // Tavo API gali grąžinti variantus kaip masyvą ARBA kaip objektą
+      let variant = null;
 
-      if (variant) {
-        const variantImages = variant.images || variant.image;
-        if (variantImages) {
-          const imgUrl = Array.isArray(variantImages)
-            ? variantImages[0]
-            : variantImages;
-          if (imgUrl) {
-            image = cleanImageUrl(imgUrl); // Išvalome localhost nuorodą čia
-            console.log("Parinkta nauja išvalyta nuotrauka:", image);
-          }
-        }
+      if (Array.isArray(product.variants)) {
+        variant = product.variants.find(
+          (v) => String(v.name).toLowerCase() === String(color).toLowerCase(),
+        );
+      } else if (product.variants && typeof product.variants === "object") {
+        variant =
+          product.variants[color] || product.variants[color.toLowerCase()];
       }
 
+      if (variant) {
+        console.log("Rastas variantas:", variant);
+
+        // 3. Ištraukiame nuotrauką. Patikriname variant.images ARBA variant.image
+        const vImg = variant.images?.[0] || variant.image;
+
+        if (vImg) {
+          image = cleanImageUrl(vImg);
+          console.log("SĖKMĖ: Nauja nuotrauka parinkta:", image);
+        } else {
+          console.warn(
+            "VARIANTE NUOTRAUKŲ NERASTA. Gal laukas vadinasi kitaip?",
+          );
+        }
+      } else {
+        console.warn("VARIANTAS NERASTAS PAGAL SPALVĄ:", color);
+      }
+
+      // 4. Sutvarkome dydį
       const availableSizes = getAvailableSizes(product, color, item);
       if (newColor && !availableSizes.includes(String(size))) {
         size = availableSizes[0] || item.size;
       }
     }
 
-    console.log("Siunčiama į krepšelį (updateVariant):", {
-      color,
-      size,
-      image,
-    });
+    // 5. SIUNČIAME Į STORE
+    console.log("GALUTINIS REZULTATAS SIUNTIMUI:", { color, size, image });
     updateVariant(item.key, { color, size, image });
   };
 
