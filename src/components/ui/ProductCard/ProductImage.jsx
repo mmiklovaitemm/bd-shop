@@ -4,8 +4,8 @@ import useLanguage from "@/context/useLanguage";
 
 /**
  * SMART FILTER:
- * Distinguishes between database data (which may contain localhost)
- * and static imports (which contain Vite-generated hashes).
+ * Distinguishes between Cloudinary (external), database data (localhost remains),
+ * and static imports
  */
 const getFinalUrl = (rawPath) => {
   if (!rawPath || typeof rawPath !== "string") return "";
@@ -13,32 +13,46 @@ const getFinalUrl = (rawPath) => {
   const RENDER_BACKEND = "https://bd-shop-gfva.onrender.com";
   const VERCEL_FRONTEND = "https://bd-shop-gray.vercel.app";
 
-  // 1. If the path is already a full Vercel URL (e.g., from Best Sellers static import),
-  // we return it as-is to preserve Vite-generated hashes (-CwBIXg4R.webp).
+  // 1. CLOUDINARY & EXTERNAL LINKS
+  // If the URL is already complete (Cloudinary, Google), return it immediately.
+  if (
+    rawPath.startsWith("http") &&
+    (rawPath.includes("cloudinary.com") || !rawPath.includes("localhost"))
+  ) {
+    // Check if it's not a localhost URL that needs sanitizing
+    if (!rawPath.includes("localhost")) {
+      return rawPath;
+    }
+  }
+
+  // 2. Already a full Vercel URL (e.g., from static Vite imports)
   if (rawPath.startsWith("https://") && rawPath.includes("vercel.app")) {
     return rawPath;
   }
 
-  // 2. Sanitize localhost remains from the development environment
+  // 3. Sanitize localhost remains from database data
   let cleanPath = rawPath.replace(/http:\/\/localhost:\d+/, "");
   const purePath = cleanPath.replace(/^\/+/, "");
 
-  // 3. ROUTING LOGIC BASED ON DIRECTORY:
+  // 4. ROUTING LOGIC:
 
-  // A. Admin-uploaded images (hosted on Render backend)
+  // A. Admin-uploaded images if still stored on Render server (non-Cloudinary)
   if (purePath.includes("uploads/")) {
     return `${RENDER_BACKEND}/${purePath}`;
   }
 
-  // B. Static images from the DB or developer imports
-  // Checks if the path includes /products/ or starts with /assets/
+  // B. Static images / public assets
   if (purePath.startsWith("products/") || purePath.startsWith("assets/")) {
     return `${VERCEL_FRONTEND}/${purePath}`;
   }
 
-  // C. Fallback: If only the filename is provided (e.g., "ring.webp")
+  // C. Fallback: if only a filename is provided (e.g., "ring.webp")
   const fileName = purePath.split("/").pop();
-  return `${VERCEL_FRONTEND}/products/rings/${fileName}`;
+  if (fileName && fileName.includes(".")) {
+    return `${VERCEL_FRONTEND}/products/rings/${fileName}`;
+  }
+
+  return rawPath; // Final safeguard
 };
 
 export default function ProductImage({
@@ -66,7 +80,6 @@ export default function ProductImage({
 
   const showLoader = !loaded && !status.errored;
 
-  // Render fallback placeholder if an error occurs or src is missing
   if (status.errored || !finalSrc) {
     return (
       <div
@@ -108,7 +121,6 @@ export default function ProductImage({
         )}
         onLoad={onLoad}
         onError={(e) => {
-          // Log error and update state to show "No Image" placeholder
           console.warn("Image load failed. Tried to get it from:", finalSrc);
           setStatus((prev) => ({ ...prev, errored: true }));
           if (onError) onError(e);
