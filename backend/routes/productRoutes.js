@@ -35,7 +35,7 @@ function normalizeFrontendAssetUrl(value) {
   const raw = String(value).trim();
   if (!raw) return "";
 
-  if (/^https?:\/\//i.test(raw)) {
+  if (raw.startsWith("http://") || raw.startsWith("https://")) {
     return raw;
   }
 
@@ -188,13 +188,20 @@ router.post("/", requireAdmin, async (req, res) => {
       details,
     } = req.body;
 
-    // Process variants and images
     const builtVariants = buildVariants({ variants, sizes });
-    const colors = Object.keys(builtVariants);
-    const allImages = Object.values(builtVariants).flatMap(
-      (v) => v[0]?.images || [],
-    );
-    const thumbnail = allImages[0] || "";
+
+    const allImages = [];
+    Object.values(builtVariants).forEach((colorArray) => {
+      colorArray.forEach((variant) => {
+        if (variant.images && Array.isArray(variant.images)) {
+          variant.images.forEach((img) => {
+            if (img && !allImages.includes(img)) allImages.push(img);
+          });
+        }
+      });
+    });
+
+    const thumbnail = allImages.length > 0 ? allImages[0] : "";
 
     await db.query(
       `INSERT INTO products (
@@ -211,7 +218,7 @@ router.post("/", requireAdmin, async (req, res) => {
         isBestSeller ? 1 : 0,
         thumbnail,
         JSON.stringify(allImages),
-        JSON.stringify(colors),
+        JSON.stringify(Object.keys(builtVariants)),
         JSON.stringify(builtVariants),
         JSON.stringify(sizes),
         Number(stockQuantity) || 0,
