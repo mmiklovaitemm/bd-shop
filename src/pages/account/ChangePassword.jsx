@@ -1,4 +1,3 @@
-// src/pages/account/ChangePassword.jsx
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -124,10 +123,18 @@ export default function ChangePassword() {
     });
   };
 
-  const validatePasswordMin = (val) => {
-    if (String(val || "").trim().length < MIN_LEN) {
+  /**
+   * Helper to translate error keys to current language
+   */
+  const getErrorMessage = (field) => {
+    const errorKey = errors[field];
+    if (!errorKey) return "";
+
+    if (errorKey === "required") return t.thisFieldIsRequired;
+    if (errorKey === "minLength")
       return `${t.passwordMustBeAtLeast} ${MIN_LEN} ${t.characters}.`;
-    }
+    if (errorKey === "mismatch") return t.passwordsDoNotMatch;
+
     return "";
   };
 
@@ -135,15 +142,12 @@ export default function ChangePassword() {
     e.preventDefault();
     const nextErrors = {};
 
-    if (!currentPassword.trim())
-      nextErrors.currentPassword = t.thisFieldIsRequired;
-    if (!newPassword.trim()) nextErrors.newPassword = t.thisFieldIsRequired;
-    if (!repeatNewPassword.trim())
-      nextErrors.repeatNewPassword = t.thisFieldIsRequired;
+    if (!currentPassword.trim()) nextErrors.currentPassword = "required";
+    if (!newPassword.trim()) nextErrors.newPassword = "required";
+    if (!repeatNewPassword.trim()) nextErrors.repeatNewPassword = "required";
 
-    if (newPassword.trim()) {
-      const minErr = validatePasswordMin(newPassword);
-      if (minErr) nextErrors.newPassword = minErr;
+    if (newPassword.trim() && newPassword.length < MIN_LEN) {
+      nextErrors.newPassword = "minLength";
     }
 
     if (
@@ -151,7 +155,7 @@ export default function ChangePassword() {
       repeatNewPassword.trim() &&
       newPassword !== repeatNewPassword
     ) {
-      nextErrors.repeatNewPassword = t.passwordsDoNotMatch;
+      nextErrors.repeatNewPassword = "mismatch";
     }
 
     setErrors(nextErrors);
@@ -163,11 +167,7 @@ export default function ChangePassword() {
         ["repeatNewPassword", repeatRef],
       ];
       const first = order.find(([key]) => nextErrors[key]);
-      const ref = first?.[1]?.current;
-      if (ref) {
-        ref.focus();
-        ref.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
+      first?.[1]?.current?.focus();
       return;
     }
 
@@ -177,9 +177,7 @@ export default function ChangePassword() {
 
     try {
       await changePassword({ currentPassword, newPassword });
-
       setSuccess(t.passwordUpdatedSuccessfully);
-
       setCurrentPassword("");
       setNewPassword("");
       setRepeatNewPassword("");
@@ -201,9 +199,7 @@ export default function ChangePassword() {
           <h1 className="font-display text-4xl leading-none">
             {t.changePassword}
           </h1>
-
           <FullWidthDivider className="my-4" />
-
           <button
             type="button"
             onClick={() => navigate(-1)}
@@ -213,22 +209,18 @@ export default function ChangePassword() {
             <img src={backArrowIcon} alt="" className="h-3 w-3" />
             <span>{t.back}</span>
           </button>
-
           <FullWidthDivider className="my-4" />
 
           <div className="md:mx-auto md:max-w-[560px] md:border md:border-black/40 md:bg-white lg:max-w-[680px] shadow-sm">
             <div className="md:px-8 md:py-8">
               <form onSubmit={handleSubmit} className="space-y-5">
-                {/* Server Error Message */}
                 {serverError && (
-                  <div className="border border-red-600 bg-red-50 px-4 py-3 text-sm text-red-700 animate-in fade-in slide-in-from-left-2">
+                  <div className="border border-red-600 bg-red-50 px-4 py-3 text-sm text-red-700">
                     {serverError}
                   </div>
                 )}
-
-                {/* Success Message */}
                 {success && (
-                  <div className="border border-green-600 bg-green-50 px-4 py-3 text-sm text-green-700 animate-in fade-in slide-in-from-left-2">
+                  <div className="border border-green-600 bg-green-50 px-4 py-3 text-sm text-green-700">
                     {success}
                   </div>
                 )}
@@ -242,7 +234,7 @@ export default function ChangePassword() {
                   }}
                   autoComplete="current-password"
                   required
-                  error={errors.currentPassword}
+                  error={getErrorMessage("currentPassword")}
                   inputRef={currentRef}
                 />
 
@@ -255,7 +247,7 @@ export default function ChangePassword() {
                   }}
                   autoComplete="new-password"
                   required
-                  error={errors.newPassword}
+                  error={getErrorMessage("newPassword")}
                   inputRef={newRef}
                 />
 
@@ -268,7 +260,7 @@ export default function ChangePassword() {
                   }}
                   autoComplete="new-password"
                   required
-                  error={errors.repeatNewPassword}
+                  error={getErrorMessage("repeatNewPassword")}
                   inputRef={repeatRef}
                 />
 
@@ -287,11 +279,9 @@ export default function ChangePassword() {
               </form>
             </div>
           </div>
-
           <FullWidthDivider className="mt-6" />
         </section>
       </main>
-
       <FullWidthDivider />
       <AboutStudioSection />
     </>
