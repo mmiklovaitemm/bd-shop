@@ -135,68 +135,59 @@ export default function ShoppingBagDrawer() {
   // --- FUNKCIJA SU DAUG CONSOLE LOG ---
   const handleVariantUpdate = (item, product, newColor, newSize) => {
     console.log("-----------------------------------------");
-    console.log("DEBUG ANALIZĖ: Atnaujinimas pradėtas");
-    console.log("Krepšelio elementas:", item);
-    console.log("Pasirinkta spalva:", newColor || item.color);
-    console.log("Pasirinktas dydis:", newSize || item.size);
-
-    if (!product) {
-      console.error(
-        "KLAIDA: Nerastas produktas API sąraše pagal ID:",
-        item.productId,
-      );
-      return;
-    }
-
-    console.log("Rastas produktas API sąraše:", product);
+    console.log("DEBUG: Pradedamas atnaujinimas");
 
     const color = newColor || item.color;
     const size = newSize || item.size;
-    let image = item.image; // Default
+    let image = item.image;
 
-    if (Array.isArray(product.variants)) {
-      console.log("Tikrinami produkto variantai (masyvas):", product.variants);
+    if (product && product.variants) {
+      console.log("Struktūra: variants yra objektas", product.variants);
 
-      // 1 bandymas: Ieškome pagal dydį (size), nes tavo struktūroje nuotraukos ten
-      let foundVariant = product.variants.find(
-        (v) => String(v.size) === String(size),
+      // 1. Paimame masyvą pagal spalvą (pvz., product.variants['gold'])
+      // Naudojame toLowerCase(), kad būtume tikri dėl sutapimo
+      const variantKey = Object.keys(product.variants).find(
+        (key) => key.toLowerCase() === color.toLowerCase(),
       );
 
-      // 2 bandymas: Jei neradome pagal dydį, galbūt spalva yra name lauke?
-      if (!foundVariant) {
-        foundVariant = product.variants.find(
-          (v) => v.name && v.name.toLowerCase() === color.toLowerCase(),
+      const selectedVariantArray = variantKey
+        ? product.variants[variantKey]
+        : null;
+
+      if (selectedVariantArray && Array.isArray(selectedVariantArray)) {
+        console.log(`Rastas spalvos '${color}' masyvas:`, selectedVariantArray);
+
+        // 2. Tame masyve ieškome objekto pagal pasirinktą dydį
+        const sizeVariant = selectedVariantArray.find(
+          (v) => String(v.size) === String(size),
         );
-      }
 
-      if (foundVariant) {
-        console.log("SĖKMĖ: Rastas atitinkamas variantas:", foundVariant);
-        const variantImages = foundVariant.images || foundVariant.image;
-        const potentialImg = Array.isArray(variantImages)
-          ? variantImages[0]
-          : variantImages;
+        if (sizeVariant) {
+          console.log("Rastas konkretus dydis ir jo duomenys:", sizeVariant);
 
-        if (potentialImg) {
-          image = cleanImageUrl(potentialImg);
-          console.log("NAUJA NUOTRAUKA PARINKTA:", image);
+          // 3. Ištraukiame nuotrauką (pirma nuotrauka iš "images" masyvo)
+          if (sizeVariant.images && sizeVariant.images.length > 0) {
+            image = cleanImageUrl(sizeVariant.images[0]);
+            console.log("SĖKMĖ: Parinkta nauja nuotrauka:", image);
+          }
         } else {
-          console.warn("ĮSPĖJIMAS: Variantas rastas, bet jame nėra nuotraukų.");
+          // Jei konkretaus dydžio masyve nėra, imam tiesiog pirmą pasitaikiusią spalvos nuotrauką
+          console.log("Dydis nerastas masyve, imam pirmą spalvos nuotrauką");
+          const firstWithImg = selectedVariantArray.find(
+            (v) => v.images && v.images.length > 0,
+          );
+          if (firstWithImg) {
+            image = cleanImageUrl(firstWithImg.images[0]);
+          }
         }
       } else {
-        console.warn(
-          "ĮSPĖJIMAS: Nepavyko rasti jokio varianto atitinkančio pasirinkimus.",
-        );
+        console.warn(`Nepavyko rasti spalvos '${color}' variantų objekte.`);
       }
     }
 
-    console.log("GALUTINIS REZULTATAS SIUNTIMUI Į STORE:", {
-      color,
-      size,
-      image,
-    });
-    console.log("-----------------------------------------");
-
+    console.log("GALUTINIS SIUNTIMAS Į STORE:", { color, size, image });
     updateVariant(item.key, { color, size, image });
+    console.log("-----------------------------------------");
   };
 
   return (
