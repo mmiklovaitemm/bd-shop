@@ -34,24 +34,24 @@ const cleanImageUrl = (url) => {
 
 function getAvailableColors(product, item) {
   if (!product) return [item?.color || "silver"];
-  if (Array.isArray(product.colors) && product.colors.length > 0)
-    return product.colors;
-  if (Array.isArray(product.variants)) {
-    const names = product.variants.map((v) => v.name).filter(Boolean);
-    if (names.length > 0) return names;
-  }
-  return [item?.color || "silver"];
+  let colors = [];
+  if (Array.isArray(product.colors)) colors = product.colors;
+  else if (Array.isArray(product.variants))
+    colors = product.variants.map((v) => v.name).filter(Boolean);
+
+  return colors.length > 0 ? colors : [item?.color || "silver"];
 }
 
 function getAvailableSizes(product, colorName, item) {
   if (!product) return [String(item?.size || "")].filter(Boolean);
+  let sizes = [];
   if (Array.isArray(product.variants)) {
-    // Ieškome dydžių tavo struktūroje, kur nuotraukos prisegtos prie dydžių
-    const allSizes = product.variants.map((v) => v.size).filter(Boolean);
-    if (allSizes.length > 0) return allSizes.map(String);
+    // Ištraukiam visus dydžius iš variantų masyvo
+    sizes = product.variants.map((v) => v.size).filter(Boolean);
   }
-  if (Array.isArray(product.sizes)) return product.sizes.map(String);
-  return [String(item?.size || "")].filter(Boolean);
+  if (sizes.length === 0 && Array.isArray(product.sizes)) sizes = product.sizes;
+
+  return sizes.map(String).filter(Boolean);
 }
 
 function getVariantStock(product, colorName, size) {
@@ -110,19 +110,13 @@ export default function ShoppingBagDrawer() {
     };
   }, [isOpen]);
 
-  // PATOBULINTA PAIEŠKA: Ieškome pagal productId ARBA name ARBA id
   const findProduct = useCallback(
     (item) => {
       if (!products.length) return null;
       const itemId = String(item.productId || item.id || "");
-      const itemName = String(item.name || "").toLowerCase();
-
       return (
         products.find(
-          (p) =>
-            String(p.id) === itemId ||
-            String(p._id) === itemId ||
-            String(p.name).toLowerCase() === itemName,
+          (p) => String(p.id) === itemId || String(p._id) === itemId,
         ) || null
       );
     },
@@ -138,32 +132,71 @@ export default function ShoppingBagDrawer() {
     [items],
   );
 
+  // --- FUNKCIJA SU DAUG CONSOLE LOG ---
   const handleVariantUpdate = (item, product, newColor, newSize) => {
+    console.log("-----------------------------------------");
+    console.log("DEBUG ANALIZĖ: Atnaujinimas pradėtas");
+    console.log("Krepšelio elementas:", item);
+    console.log("Pasirinkta spalva:", newColor || item.color);
+    console.log("Pasirinktas dydis:", newSize || item.size);
+
+    if (!product) {
+      console.error(
+        "KLAIDA: Nerastas produktas API sąraše pagal ID:",
+        item.productId,
+      );
+      return;
+    }
+
+    console.log("Rastas produktas API sąraše:", product);
+
     const color = newColor || item.color;
     const size = newSize || item.size;
-    let image = item.image;
+    let image = item.image; // Default
 
-    if (product && Array.isArray(product.variants)) {
-      // Tavo DB struktūroje nuotrauka priklauso nuo dydžio parinkties
-      const variant = product.variants.find(
+    if (Array.isArray(product.variants)) {
+      console.log("Tikrinami produkto variantai (masyvas):", product.variants);
+
+      // 1 bandymas: Ieškome pagal dydį (size), nes tavo struktūroje nuotraukos ten
+      let foundVariant = product.variants.find(
         (v) => String(v.size) === String(size),
       );
 
-      if (variant) {
-        const vImg = Array.isArray(variant.images)
-          ? variant.images[0]
-          : variant.image;
-        if (vImg) {
-          image = cleanImageUrl(vImg);
+      // 2 bandymas: Jei neradome pagal dydį, galbūt spalva yra name lauke?
+      if (!foundVariant) {
+        foundVariant = product.variants.find(
+          (v) => v.name && v.name.toLowerCase() === color.toLowerCase(),
+        );
+      }
+
+      if (foundVariant) {
+        console.log("SĖKMĖ: Rastas atitinkamas variantas:", foundVariant);
+        const variantImages = foundVariant.images || foundVariant.image;
+        const potentialImg = Array.isArray(variantImages)
+          ? variantImages[0]
+          : variantImages;
+
+        if (potentialImg) {
+          image = cleanImageUrl(potentialImg);
+          console.log("NAUJA NUOTRAUKA PARINKTA:", image);
+        } else {
+          console.warn("ĮSPĖJIMAS: Variantas rastas, bet jame nėra nuotraukų.");
         }
       } else {
-        // Jei pagal dydį nerado, bandom paimti pirmo varianto nuotrauką
-        const firstV = product.variants[0];
-        if (firstV?.images?.[0]) image = cleanImageUrl(firstV.images[0]);
+        console.warn(
+          "ĮSPĖJIMAS: Nepavyko rasti jokio varianto atitinkančio pasirinkimus.",
+        );
       }
     }
 
-    updateVariant(item.key, { color, size, image: cleanImageUrl(image) });
+    console.log("GALUTINIS REZULTATAS SIUNTIMUI Į STORE:", {
+      color,
+      size,
+      image,
+    });
+    console.log("-----------------------------------------");
+
+    updateVariant(item.key, { color, size, image });
   };
 
   return (
@@ -189,7 +222,9 @@ export default function ShoppingBagDrawer() {
             className="absolute right-0 top-0 h-full w-[min(92vw,420px)] border-l border-black bg-white shadow-2xl flex flex-col"
           >
             <div className="flex h-16 items-center justify-between border-b border-black px-6 shrink-0">
-              <p className="font-display text-[20px] uppercase">{t.bag}</p>
+              <p className="font-display text-[20px] uppercase tracking-tight">
+                {t.bag}
+              </p>
               <button
                 onClick={close}
                 className="flex items-center gap-2 font-ui text-[14px] group"
