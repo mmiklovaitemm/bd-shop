@@ -4,7 +4,6 @@ import {
   makePreviewList,
 } from "@/pages/admin/helpers/productHelpers";
 import Loader from "@/components/ui/Loader";
-import ProductImage from "@/components/ui/ProductCard/ProductImage";
 
 export default function AdminProductCreateModal({
   onClose,
@@ -266,7 +265,7 @@ export default function AdminProductCreateModal({
         <div className="grid gap-4 p-6 font-ui text-sm">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="md:col-span-2">
-              <label className="mb-2 block text-black/70">Product id</label>
+              <label className="mb-2 block text-black/70">Product ID</label>
               <input
                 type="text"
                 value={form.id}
@@ -276,7 +275,7 @@ export default function AdminProductCreateModal({
               />
             </div>
             <div className="md:col-span-2">
-              <label className="mb-2 block text-black/70">Product name</label>
+              <label className="mb-2 block text-black/70">Product Name</label>
               <input
                 type="text"
                 value={form.name}
@@ -312,9 +311,7 @@ export default function AdminProductCreateModal({
             </div>
             <div>
               <label className="mb-2 block text-black/70">
-                {initialData
-                  ? "Stock quantity (edit disabled)"
-                  : "Stock quantity"}
+                {initialData ? "Stock (edit disabled)" : "Stock quantity"}
               </label>
               <input
                 type="number"
@@ -326,7 +323,7 @@ export default function AdminProductCreateModal({
               />
             </div>
             <div>
-              <label className="mb-2 block text-black/70">Created date</label>
+              <label className="mb-2 block text-black/70">Created Date</label>
               <input
                 type="date"
                 value={form.createdAt}
@@ -361,7 +358,7 @@ export default function AdminProductCreateModal({
             {isPersonalCategory && (
               <div>
                 <label className="mb-2 block text-black/70">
-                  Personal type
+                  Personal Type
                 </label>
                 <select
                   value={form.personalType}
@@ -391,7 +388,7 @@ export default function AdminProductCreateModal({
             {form.category === "rings" && (
               <div>
                 <label className="mb-2 block text-black/70">
-                  Band width (mm)
+                  Band Width (mm)
                 </label>
                 <input
                   type="number"
@@ -408,9 +405,7 @@ export default function AdminProductCreateModal({
           {shouldShowNecklaceFields && (
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label className="mb-2 block text-black/70">
-                  Necklace length (cm)
-                </label>
+                <label className="mb-2 block text-black/70">Length (cm)</label>
                 <input
                   type="number"
                   step="0.1"
@@ -421,7 +416,7 @@ export default function AdminProductCreateModal({
                 />
               </div>
               <div>
-                <label className="mb-2 block text-black/70">Chain type</label>
+                <label className="mb-2 block text-black/70">Chain Type</label>
                 <input
                   type="text"
                   value={form.chainType}
@@ -432,7 +427,7 @@ export default function AdminProductCreateModal({
               </div>
               <div>
                 <label className="mb-2 block text-black/70">
-                  Adjustable from (cm)
+                  Adjust From (cm)
                 </label>
                 <input
                   type="number"
@@ -447,7 +442,7 @@ export default function AdminProductCreateModal({
               </div>
               <div>
                 <label className="mb-2 block text-black/70">
-                  Adjustable to (cm)
+                  Adjust To (cm)
                 </label>
                 <input
                   type="number"
@@ -464,7 +459,7 @@ export default function AdminProductCreateModal({
           {shouldShowBraceletFields && (
             <div>
               <label className="mb-2 block text-black/70">
-                Bracelet length (cm)
+                Bracelet Length (cm)
               </label>
               <input
                 type="number"
@@ -479,16 +474,12 @@ export default function AdminProductCreateModal({
 
           {shouldShowSizes && (
             <div>
-              <label className="mb-2 block text-black/70">
-                Sizes (comma separated)
-              </label>
+              <label className="mb-2 block text-black/70">Sizes</label>
               <input
                 type="text"
                 value={form.sizes}
                 placeholder={
-                  form.category === "bracelets"
-                    ? "S/M, M/L"
-                    : "15.5, 16, 17.5, 18"
+                  form.category === "bracelets" ? "S, M, L" : "16, 17, 18"
                 }
                 onChange={(e) => handleChange("sizes", e.target.value)}
                 className="h-12 w-full border border-black px-4 outline-none"
@@ -503,7 +494,7 @@ export default function AdminProductCreateModal({
               onChange={(e) => handleChange("isBestSeller", e.target.checked)}
               className="h-4 w-4"
             />
-            <span>Best seller</span>
+            <span>Best Seller</span>
           </label>
 
           <div className="mt-4 border-t border-black pt-4">
@@ -515,7 +506,7 @@ export default function AdminProductCreateModal({
                 onClick={handleAddVariant}
                 disabled={isSaving}
               >
-                Add variant
+                Add Variant
               </button>
             </div>
 
@@ -534,12 +525,12 @@ export default function AdminProductCreateModal({
                 >
                   <div>
                     <label className="mb-2 block text-black/70">
-                      Variant name
+                      Variant Name
                     </label>
                     <input
                       type="text"
                       value={variant.name}
-                      placeholder="pearl / silver / soft blue"
+                      placeholder="pearl / silver"
                       onChange={(e) =>
                         handleVariantChange(idx, "name", e.target.value)
                       }
@@ -548,14 +539,12 @@ export default function AdminProductCreateModal({
                   </div>
                   <div>
                     <label className="mb-2 block text-black/70">
-                      Images filenames / URLs
+                      Images (URLs)
                     </label>
                     <textarea
                       value={variant.images}
                       rows={4}
-                      placeholder={
-                        "example:\npearl-necklace-1.webp\nhttps://res.cloudinary.com/..."
-                      }
+                      placeholder="Image links per line..."
                       onChange={(e) =>
                         handleVariantChange(idx, "images", e.target.value)
                       }
@@ -572,7 +561,7 @@ export default function AdminProductCreateModal({
                       />
                       {uploadingVariantIndex === idx
                         ? "Uploading..."
-                        : "Upload image"}
+                        : "Upload Image"}
                     </label>
                     {form.variants.length > 1 && (
                       <button
@@ -580,7 +569,7 @@ export default function AdminProductCreateModal({
                         onClick={() => handleRemoveVariant(idx)}
                         className="border border-red-600 bg-white px-4 py-3 text-sm text-red-600"
                       >
-                        Remove variant
+                        Remove Variant
                       </button>
                     )}
                   </div>
@@ -633,8 +622,8 @@ export default function AdminProductCreateModal({
               {isSaving
                 ? "Saving..."
                 : initialData
-                  ? "Update product"
-                  : "Save product"}
+                  ? "Update Product"
+                  : "Save Product"}
             </button>
             <button
               type="button"

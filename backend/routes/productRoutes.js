@@ -4,6 +4,11 @@ import { requireAdmin } from "../middleware/auth.js";
 
 const router = express.Router();
 
+// --- HELPER FUNCTIONS ---
+
+/**
+ * Safely parses JSON strings with a fallback value.
+ */
 function safeJsonParse(value, fallback) {
   if (value === null || value === undefined) return fallback;
   if (typeof value !== "string") return value;
@@ -16,47 +21,52 @@ function safeJsonParse(value, fallback) {
   }
 }
 
-const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "http://localhost:5173";
-const FRONTEND_BASE_PATH = process.env.FRONTEND_BASE_PATH || "/";
 const BACKEND_ORIGIN =
   process.env.BACKEND_ORIGIN ||
   process.env.API_ORIGIN ||
   "https://bd-shop-gfva.onrender.com";
 
-function joinUrl(origin, path) {
-  const o = String(origin).replace(/\/+$/, "");
-  const p = String(path).replace(/^\/+/, "");
-  return `${o}/${p}`;
-}
-
-function withBackendBase(path) {
-  const clean = String(path).replace(/^\/+/, "");
-  return joinUrl(BACKEND_ORIGIN, clean);
-}
-
+/**
+ * Normalizes asset URLs. If it's a Cloudinary/external link, leaves it as is.
+ * If it's a local upload, prepends the backend origin.
+ */
 function normalizeFrontendAssetUrl(value) {
   if (!value) return "";
   const raw = String(value).trim();
   if (!raw) return "";
+
+  // If it's an external URL (e.g., Cloudinary), return as is
   if (/^https?:\/\//i.test(raw)) return raw;
-  if (raw.startsWith("/uploads/") || raw.startsWith("uploads/"))
-    return withBackendBase(raw);
+
+  // If it's a local upload path, prepend the backend origin
+  if (raw.startsWith("/uploads/") || raw.startsWith("uploads/")) {
+    const cleanPath = raw.startsWith("/") ? raw : `/${raw}`;
+    return `${BACKEND_ORIGIN}${cleanPath}`;
+  }
   return raw;
 }
 
+/**
+ * Builds the structured variants object for the database.
+ */
 function buildVariants({ variants = [], sizes = [], variantStock = {} }) {
   const cleanSizes = sizes.length ? sizes : ["one size"];
   const result = {};
 
   for (const variant of variants) {
     const color = variant.name.toLowerCase();
-    const normalizedImages = Array.isArray(variant.images)
-      ? variant.images.map(normalizeFrontendAssetUrl)
-      : [];
+
+    // Ensure images are handled as an array and URLs are normalized
+    const rawImages = Array.isArray(variant.images)
+      ? variant.images
+      : String(variant.images || "")
+          .split("\n")
+          .filter(Boolean);
+
+    const normalizedImages = rawImages.map(normalizeFrontendAssetUrl);
 
     result[color] = cleanSizes.map((size) => {
       let stock = 0;
-
       if (variantStock[color] && variantStock[color][size] !== undefined) {
         stock = Number(variantStock[color][size]);
       } else if (
@@ -64,6 +74,9 @@ function buildVariants({ variants = [], sizes = [], variantStock = {} }) {
         variantStock[color]["default"] !== undefined
       ) {
         stock = Number(variantStock[color]["default"]);
+      } else {
+        // Default stock for new products/variants
+        stock = 0;
       }
 
       return {
@@ -76,6 +89,9 @@ function buildVariants({ variants = [], sizes = [], variantStock = {} }) {
   return result;
 }
 
+/**
+ * Calculates total stock quantity by summing up all variant stock levels.
+ */
 function getTotalStockFromVariants(variants = {}) {
   return Object.values(variants).reduce((total, colorVariants) => {
     if (!Array.isArray(colorVariants)) return total;
@@ -85,7 +101,11 @@ function getTotalStockFromVariants(variants = {}) {
   }, 0);
 }
 
+/**
+ * Maps a raw database row to a clean product object for the frontend.
+ */
 function mapProductRow(row) {
+  if (!row) return null;
   const colors = safeJsonParse(row.colors, []);
   const variants = safeJsonParse(row.variants, {});
   const sizes = safeJsonParse(row.sizes, []);
@@ -117,17 +137,25 @@ function mapProductRow(row) {
   };
 }
 
-/** GET ALL */
+// --- ROUTES ---
+
+/** * GET /api/products
+ * Fetch all products, sorted by newest first.
+ */
 router.get("/", async (req, res) => {
   try {
-    const [rows] = await db.query("SELECT * FROM products");
+    const [rows] = await db.query(
+      "SELECT * FROM products ORDER BY created_at DESC",
+    );
     res.json(rows.map(mapProductRow));
   } catch {
     res.status(500).json({ message: "Failed to fetch products" });
   }
 });
 
-/** GET ONE */
+/** * GET /api/products/:id
+ * Fetch a single product by its ID.
+ */
 router.get("/:id", async (req, res) => {
   try {
     const [rows] = await db.query("SELECT * FROM products WHERE id = ?", [
@@ -141,7 +169,71 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-/** UPDATE */
+/** * POST /api/products
+ * Create a new product. Restricted to Admin.
+ */
+router.post("/", requireAdmin, async (req, res) => {
+  try {
+    const {
+      id,
+      name,
+      category,
+      priceValue,
+      createdAt,
+      variants,
+      sizes,
+      isBestSeller,
+      stockQuantity,
+      details,
+    } = req.body;
+
+    // Process variants and images
+    const builtVariants = buildVariants({ variants, sizes });
+    const colors = Object.keys(builtVariants);
+    const allImages = Object.values(builtVariants).flatMap(
+      (v) => v[0]?.images || [],
+    );
+    const thumbnail = allImages[0] || "";
+
+    await db.query(
+      `INSERT INTO products (
+        id, name, category, price_value, created_at, 
+        is_best_seller, thumbnail, images, colors, 
+        variants, sizes, stock_quantity, details
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id,
+        name,
+        category,
+        Number(priceValue),
+        createdAt || new Date().toISOString().slice(0, 10),
+        isBestSeller ? 1 : 0,
+        thumbnail,
+        JSON.stringify(allImages),
+        JSON.stringify(colors),
+        JSON.stringify(builtVariants),
+        JSON.stringify(sizes),
+        Number(stockQuantity) || 0,
+        JSON.stringify(details || {}),
+      ],
+    );
+
+    const [rows] = await db.query("SELECT * FROM products WHERE id = ?", [id]);
+    res.status(201).json(mapProductRow(rows[0]));
+  } catch (err) {
+    console.error("Create product error:", err);
+    if (err.code === "ER_DUP_ENTRY") {
+      return res
+        .status(400)
+        .json({ message: "Product with this ID already exists" });
+    }
+    res.status(500).json({ message: err.message });
+  }
+});
+
+/** * PUT /api/products/:id
+ * Update an existing product. Restricted to Admin.
+ */
 router.put("/:id", requireAdmin, async (req, res) => {
   try {
     const {
@@ -153,15 +245,15 @@ router.put("/:id", requireAdmin, async (req, res) => {
       sizes,
       variantStock,
       isBestSeller,
+      details,
     } = req.body;
     const id = req.params.id;
 
     const builtVariants = buildVariants({ variants, sizes, variantStock });
     const colors = Object.keys(builtVariants);
     const totalStock = getTotalStockFromVariants(builtVariants);
-
     const allImages = Object.values(builtVariants).flatMap(
-      (colorArr) => colorArr[0]?.images || [],
+      (v) => v[0]?.images || [],
     );
     const thumbnail = allImages[0] || "";
 
@@ -169,7 +261,7 @@ router.put("/:id", requireAdmin, async (req, res) => {
       `UPDATE products SET 
         name = ?, category = ?, price_value = ?, created_at = ?, 
         is_best_seller = ?, thumbnail = ?, images = ?, colors = ?, 
-        variants = ?, sizes = ?, stock_quantity = ? 
+        variants = ?, sizes = ?, stock_quantity = ?, details = ?
       WHERE id = ?`,
       [
         name,
@@ -183,24 +275,28 @@ router.put("/:id", requireAdmin, async (req, res) => {
         JSON.stringify(builtVariants),
         JSON.stringify(sizes),
         totalStock,
+        JSON.stringify(details || {}),
         id,
       ],
     );
 
     const [rows] = await db.query("SELECT * FROM products WHERE id = ?", [id]);
-    res.json({ product: mapProductRow(rows[0]) });
+    res.json(mapProductRow(rows[0]));
   } catch (err) {
-    console.error("Update error:", err);
+    console.error("Update product error:", err);
     res.status(500).json({ message: err.message });
   }
 });
 
-/** DELETE */
+/** * DELETE /api/products/:id
+ * Delete a product by its ID. Restricted to Admin.
+ */
 router.delete("/:id", requireAdmin, async (req, res) => {
   try {
     await db.query("DELETE FROM products WHERE id = ?", [req.params.id]);
-    res.json({ ok: true });
-  } catch {
+    res.json({ ok: true, message: "Product deleted successfully" });
+  } catch (err) {
+    console.error("Delete product error:", err);
     res.status(500).json({ message: "Delete failed" });
   }
 });
