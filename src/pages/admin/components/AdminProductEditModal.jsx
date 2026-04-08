@@ -1,5 +1,4 @@
 import { useMemo, useState, useEffect } from "react";
-
 import {
   createEmptyVariant,
   getImageTextFromVariant,
@@ -14,8 +13,10 @@ export default function AdminProductEditModal({
 }) {
   const API_ORIGIN =
     import.meta.env.VITE_API_URL || "https://bd-shop-gfva.onrender.com";
-  const FRONTEND_BASE_PATH = import.meta.env.BASE_URL || "/";
 
+  /**
+   * HELPERS: Build state from initial product data
+   */
   function buildVariantStockState(variants = {}) {
     const result = {};
     for (const [color, colorVariants] of Object.entries(variants || {})) {
@@ -40,6 +41,9 @@ export default function AdminProductEditModal({
     }));
   }
 
+  /**
+   * INITIAL STATE: Including category-specific fields
+   */
   const [form, setForm] = useState({
     id: initialData?.id || "",
     name: initialData?.name || "",
@@ -48,16 +52,31 @@ export default function AdminProductEditModal({
     createdAt: initialData?.createdAt
       ? String(initialData.createdAt).slice(0, 10)
       : "",
-    description: initialData?.details?.detailsText || "",
+    description:
+      initialData?.details?.detailsText || initialData?.description || "",
     sizes: initialData?.sizes?.join(", ") || "",
     isBestSeller: initialData?.isBestSeller || false,
     variants: buildVariantsStateFromInitialData(initialData),
     variantStock: buildVariantStockState(initialData?.variants),
+
+    // Category specific fields from details object
+    metal: initialData?.details?.metal || "",
+    weight: initialData?.details?.weightG || "",
+    length: initialData?.details?.totalLengthCm || "",
+    adjustableFrom: initialData?.details?.adjustableFromCm || "",
+    adjustableTo: initialData?.details?.adjustableToCm || "",
+    chainType: initialData?.details?.chain || "",
+    bandWidth: initialData?.details?.bandWidthMm || "",
+    braceletLength: initialData?.details?.braceletLengthCm || "",
+    personalType: initialData?.details?.personalType || "ring",
   });
 
   const [error, setError] = useState("");
   const [uploadingVariantIndex, setUploadingVariantIndex] = useState(null);
 
+  /**
+   * MEMOIZED VALUES: Sizes and Stock calculation
+   */
   const parsedSizes = useMemo(() => {
     return form.sizes
       .split(",")
@@ -67,29 +86,45 @@ export default function AdminProductEditModal({
 
   const normalizedSizes = parsedSizes.length ? parsedSizes : ["one size"];
 
-  // APSKAIČIUOJAMAS BENDRAS LIKUTIS IŠ VISŲ DYDŽIŲ
   const totalStock = useMemo(() => {
     return Object.values(form.variantStock || {}).reduce((total, colorMap) => {
       return (
         total +
-        Object.values(colorMap || {}).reduce((sum, value) => {
-          return sum + Math.max(0, Number(value) || 0);
-        }, 0)
+        Object.values(colorMap || {}).reduce(
+          (sum, value) => sum + Math.max(0, Number(value) || 0),
+          0,
+        )
       );
     }, 0);
   }, [form.variantStock]);
 
+  /**
+   * EVENT HANDLERS
+   */
   const handleChange = (key, value) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
+    setForm((prev) => {
+      const next = { ...prev, [key]: value };
+      // Logic to clear irrelevant fields when category changes
+      if (key === "category") {
+        if (value !== "necklaces") {
+          next.length =
+            next.chainType =
+            next.adjustableFrom =
+            next.adjustableTo =
+              "";
+        }
+        if (value !== "rings") next.bandWidth = "";
+      }
+      return next;
+    });
     setError("");
   };
 
   const handleVariantChange = (index, key, value) => {
     setForm((prev) => {
-      const nextVariants = prev.variants.map((variant, i) =>
-        i === index ? { ...variant, [key]: value } : variant,
+      const nextVariants = prev.variants.map((v, i) =>
+        i === index ? { ...v, [key]: value } : v,
       );
-
       let nextVariantStock = { ...prev.variantStock };
 
       if (key === "name") {
@@ -99,25 +134,18 @@ export default function AdminProductEditModal({
         const newName = String(value || "")
           .trim()
           .toLowerCase();
-
-        if (oldName !== newName) {
+        if (oldName !== newName && oldName) {
           const oldStockData = nextVariantStock[oldName];
           delete nextVariantStock[oldName];
-          if (newName) {
-            nextVariantStock[newName] =
-              oldStockData ||
-              Object.fromEntries(normalizedSizes.map((size) => [size, 0]));
-          }
+          if (newName) nextVariantStock[newName] = oldStockData || {};
         }
       }
-
       return {
         ...prev,
         variants: nextVariants,
         variantStock: nextVariantStock,
       };
     });
-    setError("");
   };
 
   const handleAddVariant = () => {
@@ -146,7 +174,6 @@ export default function AdminProductEditModal({
   const handleUploadImage = async (event, variantIndex) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
     try {
       setUploadingVariantIndex(variantIndex);
       const formData = new FormData();
@@ -158,7 +185,6 @@ export default function AdminProductEditModal({
         body: formData,
         credentials: "include",
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || "Upload failed");
 
@@ -177,33 +203,11 @@ export default function AdminProductEditModal({
       setError(err.message);
     } finally {
       setUploadingVariantIndex(null);
-      event.target.value = "";
     }
   };
 
   const handleSizesChange = (value) => {
-    const nextSizes = value
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-    const effectiveSizes = nextSizes.length ? nextSizes : ["one size"];
-
-    setForm((prev) => {
-      const nextVariantStock = {};
-      for (const variant of prev.variants) {
-        const color = String(variant.name || "")
-          .trim()
-          .toLowerCase();
-        if (!color) continue;
-        nextVariantStock[color] = Object.fromEntries(
-          effectiveSizes.map((size) => [
-            size,
-            Math.max(0, Number(prev.variantStock?.[color]?.[size]) || 0),
-          ]),
-        );
-      }
-      return { ...prev, sizes: value, variantStock: nextVariantStock };
-    });
+    setForm((prev) => ({ ...prev, sizes: value }));
   };
 
   const handleVariantStockChange = (color, size, value) => {
@@ -217,8 +221,10 @@ export default function AdminProductEditModal({
     }));
   };
 
+  /**
+   * SUBMISSION: Packaging data into the expected details object
+   */
   const handleSubmit = () => {
-    // FIX: Leidžiame išsaugoti, jei bent koks nors variantas turi pavadinimą
     const normalizedVariants = form.variants
       .map((v) => ({
         name: String(v.name || "")
@@ -229,12 +235,10 @@ export default function AdminProductEditModal({
           .map((s) => s.trim())
           .filter(Boolean),
       }))
-      .filter((v) => v.name); // Svarbu: reikalaujame tik vardo, images gali būti paimti iš tėvinio jei reikia
+      .filter((v) => v.name);
 
-    if (normalizedVariants.length === 0) {
-      setError("At least one variant with a name is required.");
-      return;
-    }
+    if (normalizedVariants.length === 0)
+      return setError("At least one variant name is required.");
 
     const normalizedVariantStock = {};
     normalizedVariants.forEach((v) => {
@@ -248,25 +252,41 @@ export default function AdminProductEditModal({
     });
 
     const payload = {
-      id: form.id.trim(),
+      id: form.id,
       name: form.name.trim(),
       category: form.category,
       priceValue: Number(form.priceValue || 0),
       createdAt: form.createdAt,
-      description: form.description.trim(),
       variants: normalizedVariants,
       sizes: normalizedSizes,
       variantStock: normalizedVariantStock,
-      stock_quantity: totalStock, // SIUNČIAME AKTUALŲ TOTAL STOCK
       isBestSeller: form.isBestSeller,
+      // CRITICAL: Rebuilding the details object for the Dimensions & Details panel
+      details: {
+        detailsText: form.description.trim(),
+        metal: form.metal,
+        weightG: Number(form.weight) || undefined,
+        totalLengthCm: Number(form.length) || undefined,
+        adjustableFromCm: Number(form.adjustableFrom) || undefined,
+        adjustableToCm: Number(form.adjustableTo) || undefined,
+        chain: form.chainType,
+        bandWidthMm: Number(form.bandWidth) || undefined,
+        braceletLengthCm: Number(form.braceletLength) || undefined,
+        personalType:
+          form.category === "personal" ? form.personalType : undefined,
+      },
     };
 
     if (!payload.name) return setError("Name is required");
     if (payload.priceValue <= 0) return setError("Price must be > 0");
 
-    setError("");
     onUpdate?.(payload);
   };
+
+  const isPersonal = form.category === "personal";
+  const showNecklace =
+    form.category === "necklaces" ||
+    (isPersonal && form.personalType === "necklace");
 
   return (
     <div
@@ -278,10 +298,10 @@ export default function AdminProductEditModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-black px-6 py-4">
-          <h2 className="font-display text-2xl leading-none">Edit product</h2>
+          <h2 className="font-display text-2xl uppercase">Edit product</h2>
           <button
             type="button"
-            className="border border-black px-3 py-2 hover:bg-black hover:text-white transition-colors"
+            className="border border-black px-3 py-2 hover:bg-black hover:text-white transition-all"
             onClick={onClose}
           >
             Close
@@ -289,21 +309,22 @@ export default function AdminProductEditModal({
         </div>
 
         <div className="grid gap-4 p-6 font-ui text-sm">
+          {/* Header Info */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-2 block text-black/70 italic">
+              <label className="mb-2 block text-black/50 italic">
                 Product ID (ReadOnly)
               </label>
               <input
                 type="text"
                 value={form.id}
                 disabled
-                className="h-12 w-full border border-black bg-black/5 px-4 outline-none opacity-50 cursor-not-allowed"
+                className="h-12 w-full border border-black bg-black/5 px-4 opacity-50 cursor-not-allowed"
               />
             </div>
             <div>
               <label className="mb-2 block text-black/70 font-bold">
-                Total Stock (Auto-calculated)
+                Total Stock (Auto)
               </label>
               <div className="flex h-12 w-full items-center border border-black bg-green-50 px-4 font-bold text-green-700">
                 {totalStock}
@@ -311,8 +332,11 @@ export default function AdminProductEditModal({
             </div>
           </div>
 
+          {/* Basic Info */}
           <div>
-            <label className="mb-2 block text-black/70">Product name</label>
+            <label className="mb-2 block text-black/70 font-bold">
+              Product Name
+            </label>
             <input
               type="text"
               value={form.name}
@@ -323,11 +347,13 @@ export default function AdminProductEditModal({
 
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <label className="mb-2 block text-black/70">Category</label>
+              <label className="mb-2 block text-black/70 font-bold">
+                Category
+              </label>
               <select
                 value={form.category}
                 onChange={(e) => handleChange("category", e.target.value)}
-                className="h-12 w-full border border-black bg-white px-4 outline-none"
+                className="h-12 w-full border border-black bg-white px-4"
               >
                 <option value="rings">Rings</option>
                 <option value="earrings">Earrings</option>
@@ -337,29 +363,124 @@ export default function AdminProductEditModal({
               </select>
             </div>
             <div>
-              <label className="mb-2 block text-black/70">Price (€)</label>
+              <label className="mb-2 block text-black/70 font-bold">
+                Price (€)
+              </label>
               <input
                 type="number"
                 value={form.priceValue}
                 onChange={(e) => handleChange("priceValue", e.target.value)}
-                className="h-12 w-full border border-black px-4 outline-none"
+                className="h-12 w-full border border-black px-4"
               />
             </div>
           </div>
 
+          {/* Category Specific Technical Details */}
+          <div className="border border-black p-4 space-y-4 bg-gray-50">
+            <label className="block font-bold uppercase text-[10px] tracking-widest text-black/60">
+              Technical Specifications
+            </label>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="mb-1 block text-xs">Metal</label>
+                <input
+                  type="text"
+                  value={form.metal}
+                  placeholder="e.g. Silver"
+                  onChange={(e) => handleChange("metal", e.target.value)}
+                  className="h-10 w-full border border-black px-3"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs">Weight (g)</label>
+                <input
+                  type="number"
+                  value={form.weight}
+                  placeholder="4.5"
+                  onChange={(e) => handleChange("weight", e.target.value)}
+                  className="h-10 w-full border border-black px-3"
+                />
+              </div>
+              {form.category === "rings" && (
+                <div className="col-span-2">
+                  <label className="mb-1 block text-xs">Band Width (mm)</label>
+                  <input
+                    type="number"
+                    value={form.bandWidth}
+                    placeholder="2.0"
+                    onChange={(e) => handleChange("bandWidth", e.target.value)}
+                    className="h-10 w-full border border-black px-3"
+                  />
+                </div>
+              )}
+            </div>
+
+            {showNecklace && (
+              <div className="grid grid-cols-2 gap-4 border-t border-black/10 pt-4">
+                <div className="col-span-2">
+                  <label className="mb-1 block text-xs">Chain Type</label>
+                  <input
+                    type="text"
+                    value={form.chainType}
+                    placeholder="e.g. Curb"
+                    onChange={(e) => handleChange("chainType", e.target.value)}
+                    className="h-10 w-full border border-black px-3"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs">
+                    Total Length (cm)
+                  </label>
+                  <input
+                    type="number"
+                    value={form.length}
+                    placeholder="45"
+                    onChange={(e) => handleChange("length", e.target.value)}
+                    className="h-10 w-full border border-black px-3"
+                  />
+                </div>
+                <div className="flex gap-2 items-end">
+                  <div className="flex-1">
+                    <label className="mb-1 block text-[10px]">Adj. From</label>
+                    <input
+                      type="number"
+                      value={form.adjustableFrom}
+                      onChange={(e) =>
+                        handleChange("adjustableFrom", e.target.value)
+                      }
+                      className="h-10 w-full border border-black px-2"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="mb-1 block text-[10px]">Adj. To</label>
+                    <input
+                      type="number"
+                      value={form.adjustableTo}
+                      onChange={(e) =>
+                        handleChange("adjustableTo", e.target.value)
+                      }
+                      className="h-10 w-full border border-black px-2"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           <div>
             <label className="mb-2 block text-black/70 italic">
-              Sizes (Comma separated, e.g.: 16, 17, 18)
+              Sizes (e.g.: 16, 17, 18)
             </label>
             <input
               type="text"
               value={form.sizes}
               onChange={(e) => handleSizesChange(e.target.value)}
-              className="h-12 w-full border border-black px-4 outline-none"
+              className="h-12 w-full border border-black px-4"
             />
           </div>
 
-          <div className="space-y-6">
+          {/* Variants Inventory Management */}
+          <div className="space-y-6 pt-4">
             <div className="flex items-center justify-between border-t border-black pt-4">
               <label className="font-bold uppercase tracking-widest text-[11px]">
                 Variant Inventory
@@ -369,7 +490,7 @@ export default function AdminProductEditModal({
                 onClick={handleAddVariant}
                 className="border border-black px-3 py-1 text-xs hover:bg-black hover:text-white transition-all"
               >
-                + Add Variant Color
+                + Add Variant
               </button>
             </div>
 
@@ -401,7 +522,7 @@ export default function AdminProductEditModal({
 
                 <div className="mb-4">
                   <label className="mb-1 block text-[10px] uppercase font-bold text-black/50">
-                    Image URLs (one per line)
+                    Image URLs
                   </label>
                   <textarea
                     value={variant.images}
@@ -421,7 +542,7 @@ export default function AdminProductEditModal({
                 <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
                   {normalizedSizes.map((size) => (
                     <div key={size}>
-                      <label className="block text-[10px] text-black/60 truncate">
+                      <label className="block text-[10px] text-black/60">
                         Size {size}
                       </label>
                       <input
@@ -438,7 +559,7 @@ export default function AdminProductEditModal({
                             e.target.value,
                           )
                         }
-                        className="h-8 w-full border border-black/30 px-2 outline-none focus:border-black"
+                        className="h-8 w-full border border-black/30 px-2 outline-none"
                       />
                     </div>
                   ))}
@@ -448,11 +569,13 @@ export default function AdminProductEditModal({
           </div>
 
           <div className="border-t border-black pt-4">
-            <label className="mb-2 block text-black/70">Description</label>
+            <label className="mb-2 block text-black/70 font-bold">
+              Description (Detailed)
+            </label>
             <textarea
               value={form.description}
               onChange={(e) => handleChange("description", e.target.value)}
-              rows={3}
+              rows={4}
               className="w-full border border-black px-4 py-3 outline-none"
             />
           </div>
@@ -480,7 +603,7 @@ export default function AdminProductEditModal({
               onClick={handleSubmit}
               disabled={isSaving}
             >
-              {isSaving ? "Saving changes..." : "Update Product"}
+              {isSaving ? "Updating server..." : "Update Product Data"}
             </button>
             <button
               type="button"

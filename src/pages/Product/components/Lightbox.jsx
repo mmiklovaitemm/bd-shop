@@ -101,7 +101,7 @@ const Lightbox = memo(function Lightbox({
         {/* Image Display Area */}
         <div
           className="relative flex flex-1 items-center justify-center p-4 md:p-12 pointer-events-auto"
-          onClick={requestClose} // Close if clicking outside the image
+          onClick={requestClose}
         >
           {/* Navigation - Left */}
           {hasManyImages && (
@@ -125,17 +125,18 @@ const Lightbox = memo(function Lightbox({
           <div
             className="relative flex items-center justify-center pointer-events-auto"
             style={{
-              width: "90vw",
-              height: "80vh",
+              width: "auto",
+              height: "auto",
+              maxWidth: "90vw",
+              maxHeight: "80vh",
             }}
-            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking on the image itself
+            onClick={(e) => e.stopPropagation()}
           >
             <ProductImage
               src={currentImage}
               alt={`${product?.name || "Product"} - original view`}
               loaded={true}
-              // to ensure the image scales naturally without being cropped.
-              className="!relative !inset-auto object-contain max-w-full max-h-full drop-shadow-2xl"
+              className="!static !inset-auto !w-auto !h-auto object-contain max-w-[90vw] max-h-[80vh] drop-shadow-2xl"
             />
           </div>
 
