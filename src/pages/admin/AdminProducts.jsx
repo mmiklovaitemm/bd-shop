@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+
 import AdminProductCreateModal from "@/pages/admin/components/AdminProductCreateModal";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 import Pagination from "@/components/ui/Pagination";
@@ -9,36 +10,55 @@ import AdminProductBulkDeleteModal from "@/pages/admin/components/AdminProductBu
 import AdminProductEditModal from "@/pages/admin/components/AdminProductEditModal";
 import Loader from "@/components/ui/Loader";
 import ProductImage from "@/components/ui/ProductCard/ProductImage";
+
 import { getStockBadge } from "@/pages/admin/helpers/productHelpers";
 
 const API_ORIGIN =
   import.meta.env.VITE_API_URL || "https://bd-shop-gfva.onrender.com";
 
 export default function AdminProducts() {
-  const { products, loading, error, fetchProducts } = useAdminProducts();
+  /** * Fetching products and status from custom hook
+   */
+  const {
+    products,
+    loading,
+    error: fetchError,
+    fetchProducts,
+  } = useAdminProducts();
 
+  /** * UI State Management
+   */
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
-  const [deleteProduct, setDeleteProduct] = useState(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [editProduct, setEditProduct] = useState(null);
+  const [errorMessage, setErrorMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
+  /** * Product Interaction State (Edit/Delete modals)
+   */
+  const [deleteProduct, setDeleteProduct] = useState(null);
+  const [editProduct, setEditProduct] = useState(null);
+  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
+  const [selectedProductIds, setSelectedProductIds] = useState([]);
+
+  /** * Filtering & Sorting State
+   */
   const [searchValue, setSearchValue] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sortValue, setSortValue] = useState("newest");
 
-  const [selectedProductIds, setSelectedProductIds] = useState([]);
-  const [errorMessage, setErrorMessage] = useState("");
-
+  /** * Pagination State
+   */
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(() => {
     if (typeof window === "undefined") return 10;
     return window.matchMedia("(max-width: 1023px)").matches ? 6 : 10;
   });
 
-  // PAGELBĖJIMO FUNKCIJA API ADRESUI
+  /**
+   * Helper function to construct safe API URLs
+   * Ensures no double slashes and correct /api prefix
+   */
   const getAdminApiUrl = (path) => {
     const base = API_ORIGIN.replace(/\/api$/, "").replace(/\/$/, "");
     const cleanPath = path.startsWith("/api")
@@ -47,12 +67,18 @@ export default function AdminProducts() {
     return `${base}${cleanPath}`;
   };
 
+  /**
+   * Automatically clear success message after 8 seconds
+   */
   useEffect(() => {
     if (!successMessage) return;
     const timer = setTimeout(() => setSuccessMessage(""), 8000);
     return () => clearTimeout(timer);
   }, [successMessage]);
 
+  /**
+   * Responsive PageSize: adjust number of items per page based on screen width
+   */
   useEffect(() => {
     const media = window.matchMedia("(max-width: 1023px)");
     const handleChange = (event) => setPageSize(event.matches ? 6 : 10);
@@ -60,6 +86,9 @@ export default function AdminProducts() {
     return () => media.removeEventListener("change", handleChange);
   }, []);
 
+  /**
+   * Compute filtered and sorted product list
+   */
   const filteredProducts = useMemo(() => {
     return [...products]
       .filter((product) => {
@@ -91,6 +120,9 @@ export default function AdminProducts() {
       });
   }, [products, searchValue, categoryFilter, sortValue]);
 
+  /**
+   * Pagination logic helpers
+   */
   const totalItems = filteredProducts.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
   const safePage = Math.min(page, totalPages);
@@ -101,8 +133,12 @@ export default function AdminProducts() {
     return filteredProducts.slice(start, start + pageSize);
   }, [filteredProducts, safePage, pageSize]);
 
+  // Reset to page 1 when filters change
   useEffect(() => setPage(1), [searchValue, categoryFilter, sortValue]);
 
+  /**
+   * Selection Logic for bulk actions
+   */
   const toggleSelectProduct = (productId) => {
     setSelectedProductIds((prev) =>
       prev.includes(productId)
@@ -125,17 +161,14 @@ export default function AdminProducts() {
     );
   };
 
-  // --- PRODUKTO KŪRIMAS ---
+  /**
+   * API Handler: Create New Product
+   */
   const handleCreateProduct = async (newProduct) => {
     try {
       setIsSaving(true);
       setErrorMessage("");
-
       const url = getAdminApiUrl("/products");
-
-      console.log("--- DEBUG: CREATE PRODUCT ---");
-      console.log("URL:", url);
-      console.log("Payload:", newProduct);
 
       const res = await fetch(url, {
         method: "POST",
@@ -144,31 +177,31 @@ export default function AdminProducts() {
         body: JSON.stringify(newProduct),
       });
 
-      console.log("Status:", res.status);
       const data = await res.json();
 
-      if (!res.ok) throw new Error(data?.message || `Error ${res.status}`);
+      if (!res.ok)
+        throw new Error(
+          data?.message || `Failed to create product (${res.status})`,
+        );
 
       setSuccessMessage(`Product created: ${newProduct.name}`);
       setIsCreateOpen(false);
-      await fetchProducts();
+      await fetchProducts(); // Refresh list from server
     } catch (err) {
-      console.error("Create error:", err);
       setErrorMessage(err.message);
     } finally {
       setIsSaving(false);
     }
   };
 
-  // --- PRODUKTO ATNAUJINIMAS ---
+  /**
+   * API Handler: Update Existing Product
+   */
   const handleUpdateProduct = async (updatedProduct) => {
     try {
       setIsSaving(true);
       setErrorMessage("");
       const url = getAdminApiUrl(`/products/${updatedProduct.id}`);
-
-      console.log("--- DEBUG: UPDATE PRODUCT ---");
-      console.log("URL:", url);
 
       const res = await fetch(url, {
         method: "PUT",
@@ -178,7 +211,6 @@ export default function AdminProducts() {
       });
 
       const data = await res.json();
-      console.log("Status:", res.status);
 
       if (!res.ok)
         throw new Error(data?.message || "Failed to update product.");
@@ -187,13 +219,15 @@ export default function AdminProducts() {
       setEditProduct(null);
       await fetchProducts();
     } catch (err) {
-      console.error("Update error:", err);
       setErrorMessage(err.message);
     } finally {
       setIsSaving(false);
     }
   };
 
+  /**
+   * API Handler: Bulk Delete
+   */
   const handleDeleteSelectedProducts = async () => {
     if (selectedProductIds.length === 0) return;
     try {
@@ -219,6 +253,9 @@ export default function AdminProducts() {
     }
   };
 
+  /**
+   * Modal triggers
+   */
   const handleEditProduct = (product) => {
     setErrorMessage("");
     setSuccessMessage("");
@@ -231,6 +268,9 @@ export default function AdminProducts() {
     setDeleteProduct(product);
   };
 
+  /**
+   * API Handler: Single Delete Confirmation
+   */
   const confirmDeleteProduct = async (product) => {
     try {
       setIsDeleting(true);
@@ -254,6 +294,7 @@ export default function AdminProducts() {
   return (
     <>
       <main className="mx-auto w-full max-w-6xl px-4 py-8">
+        {/* Page Header */}
         <div className="flex items-center justify-between gap-4">
           <h1 className="font-display text-4xl leading-none">Admin products</h1>
           <button
@@ -269,6 +310,7 @@ export default function AdminProducts() {
           </button>
         </div>
 
+        {/* Bulk Actions Bar */}
         {selectedProductIds.length > 0 && (
           <div className="mt-4 flex items-center justify-between gap-3 border border-red-200 bg-red-50 px-4 py-3">
             <p className="font-ui text-sm text-red-700">
@@ -285,6 +327,7 @@ export default function AdminProducts() {
           </div>
         )}
 
+        {/* Filter Controls */}
         <div className="mt-6 grid gap-3 md:grid-cols-3">
           <input
             type="text"
@@ -317,6 +360,7 @@ export default function AdminProducts() {
           </select>
         </div>
 
+        {/* Stats and Reset */}
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           <p className="font-ui text-sm text-black/60">
             Showing {showingCount} of {totalItems} filtered products
@@ -336,6 +380,7 @@ export default function AdminProducts() {
           </button>
         </div>
 
+        {/* Notification Area */}
         {successMessage && (
           <div className="mt-6 border border-green-700 bg-green-50 px-4 py-3 font-ui text-sm text-green-800">
             <span>{successMessage}</span>
@@ -348,13 +393,21 @@ export default function AdminProducts() {
           </div>
         )}
 
+        {/* Handle Error from Hook */}
+        {fetchError && (
+          <div className="mt-6 border border-red-600 bg-red-50 px-4 py-3 font-ui text-sm text-red-700">
+            {fetchError}
+          </div>
+        )}
+
+        {/* Data Loading or Table */}
         {loading ? (
           <div className="flex min-h-[400px] w-full items-center justify-center">
             <Loader className="h-12 w-12" />
           </div>
         ) : (
           <>
-            {/* MOBILE VIEW */}
+            {/* MOBILE VIEW (Stack of cards) */}
             <div className="mt-6 grid gap-3 lg:hidden">
               {paginatedProducts.map((product) => (
                 <div
@@ -411,14 +464,14 @@ export default function AdminProducts() {
                   <div className="mt-4 flex gap-2">
                     <button
                       type="button"
-                      className="flex-1 border border-black bg-white py-3 font-ui text-xs uppercase tracking-widest hover:bg-black hover:text-white"
+                      className="flex-1 border border-black bg-white py-3 font-ui text-xs uppercase tracking-widest transition-colors hover:bg-black hover:text-white"
                       onClick={() => handleEditProduct(product)}
                     >
                       Edit
                     </button>
                     <button
                       type="button"
-                      className="flex-1 border border-red-600 text-red-600 py-3 font-ui text-xs uppercase tracking-widest hover:bg-red-600 hover:text-white"
+                      className="flex-1 border border-red-600 text-red-600 py-3 font-ui text-xs uppercase tracking-widest transition-colors hover:bg-red-600 hover:text-white"
                       onClick={() => handleDeleteProduct(product)}
                     >
                       Delete
@@ -428,7 +481,7 @@ export default function AdminProducts() {
               ))}
             </div>
 
-            {/* DESKTOP VIEW */}
+            {/* DESKTOP VIEW (Classic Table) */}
             <AdminProductsTable
               products={paginatedProducts}
               onDelete={handleDeleteProduct}
@@ -438,6 +491,7 @@ export default function AdminProducts() {
               onToggleSelectAllProducts={toggleSelectAllProducts}
             />
 
+            {/* Pagination Controls */}
             <div className="mt-8 flex flex-col items-center gap-3">
               <Pagination
                 totalItems={totalItems}
@@ -450,6 +504,7 @@ export default function AdminProducts() {
           </>
         )}
 
+        {/* Modals Section */}
         {isCreateOpen && (
           <AdminProductCreateModal
             onClose={() => setIsCreateOpen(false)}
