@@ -1,6 +1,5 @@
 import { memo, useCallback, useEffect } from "react";
 import preventDragHandler from "@/utils/preventDrag";
-import ProductImage from "@/components/ui/ProductCard/ProductImage";
 
 import arrowUpRightIcon from "@/assets/ui/arrow-up-right.svg";
 import arrowLeftIcon from "@/assets/ui/arrow-left.svg";
@@ -32,9 +31,9 @@ const Lightbox = memo(function Lightbox({
     onClose?.();
   }, [onClose]);
 
+  // Handle keyboard navigation
   useEffect(() => {
     if (!isOpen) return;
-
     const handleKeyDown = (e) => {
       if (e.key === "Escape") {
         requestClose();
@@ -44,11 +43,11 @@ const Lightbox = memo(function Lightbox({
       if (e.key === "ArrowLeft") goPrev();
       if (e.key === "ArrowRight") goNext();
     };
-
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, hasManyImages, requestClose, goPrev, goNext]);
 
+  // Lock body scroll
   useEffect(() => {
     if (!isOpen) return;
     const prevOverflow = document.body.style.overflow;
@@ -75,7 +74,7 @@ const Lightbox = memo(function Lightbox({
       />
 
       <div className="absolute inset-0 flex flex-col pointer-events-none">
-        {/* Top Header */}
+        {/* Header Section */}
         <div
           className="flex h-16 shrink-0 items-center justify-between border-b border-white/5 bg-black/40 px-6 text-white pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
@@ -98,12 +97,12 @@ const Lightbox = memo(function Lightbox({
           </button>
         </div>
 
-        {/* Image Display Area */}
+        {/* Content Area */}
         <div
           className="relative flex flex-1 items-center justify-center p-4 md:p-12 pointer-events-auto"
           onClick={requestClose}
         >
-          {/* Navigation - Left */}
+          {/* Navigation - Prev */}
           {hasManyImages && (
             <button
               type="button"
@@ -121,26 +120,25 @@ const Lightbox = memo(function Lightbox({
             </button>
           )}
 
-          {/* Main Image Container */}
+          {/* Image Container: Using standard img for maximum reliability and original scaling */}
           <div
-            className="relative flex items-center justify-center pointer-events-auto"
-            style={{
-              width: "auto",
-              height: "auto",
-              maxWidth: "90vw",
-              maxHeight: "80vh",
-            }}
-            onClick={(e) => e.stopPropagation()}
+            className="flex items-center justify-center pointer-events-none"
+            style={{ width: "100%", height: "100%" }}
           >
-            <ProductImage
+            <img
               src={currentImage}
-              alt={`${product?.name || "Product"} - original view`}
-              loaded={true}
-              className="!static !inset-auto !w-auto !h-auto object-contain max-w-[90vw] max-h-[80vh] drop-shadow-2xl"
+              alt={`${product?.name || "Product"} - view`}
+              className="pointer-events-auto block max-w-[90vw] max-h-[75vh] object-contain drop-shadow-2xl transition-opacity duration-300"
+              style={{ width: "auto", height: "auto" }}
+              onDragStart={preventDragHandler}
+              onError={(e) => {
+                e.target.src =
+                  "https://placehold.co/400x400?text=Image+Not+Found";
+              }}
             />
           </div>
 
-          {/* Navigation - Right */}
+          {/* Navigation - Next */}
           {hasManyImages && (
             <button
               type="button"
