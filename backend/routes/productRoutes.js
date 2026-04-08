@@ -35,14 +35,15 @@ function normalizeFrontendAssetUrl(value) {
   const raw = String(value).trim();
   if (!raw) return "";
 
-  // If it's an external URL (e.g., Cloudinary), return as is
-  if (/^https?:\/\//i.test(raw)) return raw;
+  if (/^https?:\/\//i.test(raw)) {
+    return raw;
+  }
 
-  // If it's a local upload path, prepend the backend origin
   if (raw.startsWith("/uploads/") || raw.startsWith("uploads/")) {
     const cleanPath = raw.startsWith("/") ? raw : `/${raw}`;
     return `${BACKEND_ORIGIN}${cleanPath}`;
   }
+
   return raw;
 }
 
