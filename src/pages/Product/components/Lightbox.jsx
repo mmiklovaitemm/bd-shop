@@ -1,9 +1,37 @@
-import { memo, useCallback, useEffect } from "react";
+import { memo, useCallback, useEffect, useMemo } from "react";
 import preventDragHandler from "@/utils/preventDrag";
 
 import arrowUpRightIcon from "@/assets/ui/arrow-up-right.svg";
 import arrowLeftIcon from "@/assets/ui/arrow-left.svg";
 import arrowRightIcon from "@/assets/ui/arrow-right.svg";
+
+/**
+ * URL Helper to ensure images load correctly in Lightbox.
+ * Prevents ERR_CONNECTION_REFUSED by pointing relative paths to production.
+ */
+const getLightboxUrl = (rawPath) => {
+  if (!rawPath || typeof rawPath !== "string") return "";
+
+  // 1. If it's already a full external URL (Cloudinary), return as-is
+  if (rawPath.startsWith("http") && !rawPath.includes("localhost")) {
+    return rawPath;
+  }
+
+  const VERCEL_FRONTEND = "https://bd-shop-gray.vercel.app";
+
+  // 2. Clean up localhost references and remove leading slashes
+  const purePath = rawPath
+    .replace(/http:\/\/localhost:\d+\//, "")
+    .replace(/^\/+/, "");
+
+  // 3. Routing logic for static assets
+  if (purePath.startsWith("products/") || purePath.startsWith("assets/")) {
+    return `${VERCEL_FRONTEND}/${purePath}`;
+  }
+
+  // 4. Default fallback for simple filenames
+  return `${VERCEL_FRONTEND}/products/rings/${purePath}`;
+};
 
 const Lightbox = memo(function Lightbox({
   isOpen,
@@ -13,10 +41,21 @@ const Lightbox = memo(function Lightbox({
   setActiveImgIndex,
   product,
 }) {
-  const safeImages = Array.isArray(images) ? images.filter(Boolean) : [];
+  /**
+   * MEMOIZED DATA: Fixes ESLint warnings and optimizes performance.
+   * safeImages ensures we always work with a valid array of strings.
+   */
+  const safeImages = useMemo(
+    () => (Array.isArray(images) ? images.filter(Boolean) : []),
+    [images],
+  );
+
   const imagesCount = safeImages.length;
   const hasManyImages = imagesCount > 1;
 
+  /**
+   * NAVIGATION LOGIC
+   */
   const goPrev = useCallback(() => {
     if (!imagesCount) return;
     setActiveImgIndex((i) => (i - 1 + imagesCount) % imagesCount);
@@ -31,7 +70,9 @@ const Lightbox = memo(function Lightbox({
     onClose?.();
   }, [onClose]);
 
-  // Handle keyboard navigation
+  /**
+   * KEYBOARD EVENTS: Escape to close, arrows to navigate
+   */
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e) => {
@@ -47,7 +88,9 @@ const Lightbox = memo(function Lightbox({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, hasManyImages, requestClose, goPrev, goNext]);
 
-  // Lock body scroll
+  /**
+   * SCROLL LOCK: Prevents background scrolling when lightbox is open
+   */
   useEffect(() => {
     if (!isOpen) return;
     const prevOverflow = document.body.style.overflow;
@@ -57,16 +100,22 @@ const Lightbox = memo(function Lightbox({
     };
   }, [isOpen]);
 
-  if (!isOpen || !imagesCount) return null;
+  /**
+   * IMAGE URL RESOLUTION: Normalizes the URL for the currently active image
+   */
+  const currentImageUrl = useMemo(() => {
+    const raw = safeImages[activeImgIndex] || safeImages[0];
+    return getLightboxUrl(raw);
+  }, [safeImages, activeImgIndex]);
 
-  const currentImage = safeImages[activeImgIndex] || safeImages[0];
+  if (!isOpen || !imagesCount) return null;
 
   return (
     <div
       className="fixed inset-0 z-[9999] select-none"
       onDragStart={preventDragHandler}
     >
-      {/* Background Overlay */}
+      {/* Dark Overlay Backdrop */}
       <div
         className="absolute inset-0 bg-black/95 backdrop-blur-md"
         aria-hidden="true"
@@ -74,7 +123,7 @@ const Lightbox = memo(function Lightbox({
       />
 
       <div className="absolute inset-0 flex flex-col pointer-events-none">
-        {/* Header Section */}
+        {/* Lightbox Top Bar */}
         <div
           className="flex h-16 shrink-0 items-center justify-between border-b border-white/5 bg-black/40 px-6 text-white pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
@@ -97,12 +146,12 @@ const Lightbox = memo(function Lightbox({
           </button>
         </div>
 
-        {/* Content Area */}
+        {/* Main Display Area */}
         <div
           className="relative flex flex-1 items-center justify-center p-4 md:p-12 pointer-events-auto"
           onClick={requestClose}
         >
-          {/* Navigation - Prev */}
+          {/* Previous Button */}
           {hasManyImages && (
             <button
               type="button"
@@ -120,14 +169,14 @@ const Lightbox = memo(function Lightbox({
             </button>
           )}
 
-          {/* Image Container: Using standard img for maximum reliability and original scaling */}
+          {/* Actual Image: Scaled to fit screen while maintaining original proportions */}
           <div
             className="flex items-center justify-center pointer-events-none"
             style={{ width: "100%", height: "100%" }}
           >
             <img
-              src={currentImage}
-              alt={`${product?.name || "Product"} - view`}
+              src={currentImageUrl}
+              alt={`${product?.name || "Product"} - detailed view`}
               className="pointer-events-auto block max-w-[90vw] max-h-[75vh] object-contain drop-shadow-2xl transition-opacity duration-300"
               style={{ width: "auto", height: "auto" }}
               onDragStart={preventDragHandler}
@@ -138,7 +187,7 @@ const Lightbox = memo(function Lightbox({
             />
           </div>
 
-          {/* Navigation - Next */}
+          {/* Next Button */}
           {hasManyImages && (
             <button
               type="button"
