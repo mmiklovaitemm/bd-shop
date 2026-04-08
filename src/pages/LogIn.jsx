@@ -267,16 +267,14 @@ export default function Login() {
 
       navigate(from, { replace: true });
     } catch (err) {
-      console.error("Login error message:", err.message);
-
       const errorMsg = err.message || "";
 
       if (errorMsg.includes("Invalid credentials")) {
-        setServerError(t.invalidCredentials);
+        setServerError("invalidCredentials");
       } else if (errorMsg.includes("Email already in use")) {
-        setServerError(t.emailAlreadyInUse);
+        setServerError("emailAlreadyInUse");
       } else {
-        setServerError(t.somethingWentWrong);
+        setServerError("somethingWentWrong");
       }
     } finally {
       setSubmitting(false);
@@ -335,7 +333,7 @@ export default function Login() {
                     animate={{ opacity: 1, height: "auto" }}
                     className="border border-red-600 bg-red-50 px-4 py-3 text-sm text-red-700 overflow-hidden"
                   >
-                    {serverError}
+                    {t[serverError] || serverError}
                   </motion.div>
                 )}
 
