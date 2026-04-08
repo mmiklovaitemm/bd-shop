@@ -525,6 +525,17 @@ export default function AdminProductCreateModal({
                 .map((img) => img.trim())
                 .filter(Boolean);
 
+              console.log("--- PREVIEW DEBUG ---");
+              console.log("Raw image array before helper:", imageArray);
+              const testPreview = makePreviewList({
+                category: form.category,
+                rawValue: imageArray,
+                apiOrigin: API_ORIGIN,
+                frontendBasePath: FRONTEND_BASE_PATH,
+              });
+              console.log("Generated Preview URLs:", testPreview);
+              console.log("----------------------");
+
               const preview = makePreviewList({
                 category: form.category,
                 rawValue: imageArray, // Perduodame masyvą
