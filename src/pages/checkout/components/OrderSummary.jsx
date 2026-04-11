@@ -1,5 +1,6 @@
 import useLanguage from "@/context/useLanguage";
 import { fmtPrice } from "@/utils/checkout";
+import ProductImage from "@/components/ui/ProductCard/ProductImage"; // Imported ProductImage component
 
 export default function OrderSummary({
   variant = "mobile",
@@ -78,13 +79,13 @@ export default function OrderSummary({
             <div className="space-y-4">
               {items.map((item) => (
                 <div key={item.key} className="grid grid-cols-[64px_1fr] gap-4">
-                  <div className="h-20 w-16 overflow-hidden border border-black/10 bg-black/5">
-                    <img
+                  {/* Updated image container to use ProductImage for URL normalization */}
+                  <div className="relative h-20 w-16 overflow-hidden border border-black/10 bg-black/5">
+                    <ProductImage
                       src={item.image}
                       alt={item.name || ""}
+                      loaded={true}
                       className="h-full w-full object-cover"
-                      loading="lazy"
-                      draggable={false}
                     />
                   </div>
 

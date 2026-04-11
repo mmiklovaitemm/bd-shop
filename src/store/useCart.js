@@ -1,4 +1,3 @@
-// src/store/useCart.js
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -59,8 +58,21 @@ export default create(
           const productId = getProductIdFromItem(item);
           if (!productId) return state;
 
+          /**
+           * SECURITY FIX: Clean the image URL before saving to cart storage.
+           * Removes any localhost references if the user is in dev mode.
+           */
+          let cleanImage = item?.image || "";
+          if (
+            typeof cleanImage === "string" &&
+            cleanImage.includes("localhost:")
+          ) {
+            cleanImage = cleanImage.replace(/http:\/\/localhost:\d+\//, "");
+          }
+
           const normalizedItem = {
             ...item,
+            image: cleanImage, // Use the sanitized URL
             productId,
             color: normalizeColor(item?.color),
             size: normalizeSize(item?.size),
@@ -144,12 +156,23 @@ export default create(
             serviceOption: nextServiceOption,
           });
 
+          /**
+           * Re-sanitizing image on variant update
+           */
+          let nextImage = next?.image ?? current.image;
+          if (
+            typeof nextImage === "string" &&
+            nextImage.includes("localhost:")
+          ) {
+            nextImage = nextImage.replace(/http:\/\/localhost:\d+\//, "");
+          }
+
           const updatedItem = {
             ...current,
             key: nextKey,
             color: nextColor,
             size: nextSize,
-            image: next?.image ?? current.image,
+            image: nextImage,
           };
 
           const copy = [...items];
