@@ -2,7 +2,7 @@
 
 A full-stack modern e-commerce platform designed for a high-end jewelry brand. This project features a clean, minimalist aesthetic focused on high-quality visual representation and seamless user experience.
 
-## 🔗 Live Demo
+## Live Demo
 * **Frontend:** [bd-shop-gray.vercel.app](https://bd-shop-gray.vercel.app)
 * **Backend API:** [bd-shop-gfva.onrender.com](https://bd-shop-gfva.onrender.com)
 
