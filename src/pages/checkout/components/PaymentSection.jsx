@@ -1,3 +1,4 @@
+import { CardElement } from "@stripe/react-stripe-js";
 import useLanguage from "@/context/useLanguage";
 
 import visaIcon from "@/assets/ui/VISA-icon.svg";
@@ -11,16 +12,16 @@ import sebIcon from "@/assets/ui/seb-icon.svg";
 import luminorIcon from "@/assets/ui/Luminor-icon.svg";
 import revolutIcon from "@/assets/ui/Revolut-icon.svg";
 
-import TextInput from "./TextInput";
-
-const formatExpiry = (value) => {
-  if (!value) return "";
-
-  const digits = String(value).replace(/\D/g, "").slice(0, 4);
-
-  if (digits.length <= 2) return digits;
-
-  return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+const CARD_ELEMENT_OPTIONS = {
+  style: {
+    base: {
+      fontSize: "14px",
+      fontFamily: "Montserrat, sans-serif",
+      color: "#000000",
+      "::placeholder": { color: "#9ca3af" },
+    },
+    invalid: { color: "#dc2626" },
+  },
 };
 
 export default function PaymentSection({
@@ -28,23 +29,7 @@ export default function PaymentSection({
   setPaymentType,
   selectedBank,
   setSelectedBank,
-
-  cardNumber,
-  setCardNumber,
-  cardDate,
-  setCardDate,
-  cardCvc,
-  setCardCvc,
-  cardName,
-  setCardName,
-
-  errors = {},
-  clearError,
-
-  cardNumberRef,
-  cardDateRef,
-  cardCvcRef,
-  cardNameRef,
+  stripeCardError,
 }) {
   const { t } = useLanguage();
 
@@ -125,67 +110,11 @@ export default function PaymentSection({
         </button>
 
         {paymentType === "card" ? (
-          <div className="space-y-4 border border-black p-4">
-            <TextInput
-              label={t.checkoutPage.cardNumberLabel}
-              required
-              value={cardNumber}
-              onChange={(e) => {
-                setCardNumber(e.target.value);
-                clearError?.("cardNumber");
-              }}
-              placeholder={t.checkoutPage.cardNumberPlaceholder}
-              inputMode="numeric"
-              error={errors.cardNumber}
-              inputRef={cardNumberRef}
-            />
-
-            <div className="grid grid-cols-2 gap-3">
-              <TextInput
-                label={t.checkoutPage.cardDateLabel}
-                required
-                value={cardDate}
-                onChange={(e) => {
-                  const val = e.target.value || "";
-                  setCardDate(formatExpiry(val));
-                  clearError?.("cardDate");
-                }}
-                placeholder={t.checkoutPage.cardDatePlaceholder}
-                inputMode="numeric"
-                autoComplete="cc-exp"
-                maxLength={5}
-                error={errors.cardDate}
-                inputRef={cardDateRef}
-              />
-
-              <TextInput
-                label={t.checkoutPage.cardCvcLabel}
-                required
-                value={cardCvc}
-                onChange={(e) => {
-                  setCardCvc(e.target.value);
-                  clearError?.("cardCvc");
-                }}
-                placeholder={t.checkoutPage.cardCvcPlaceholder}
-                inputMode="numeric"
-                error={errors.cardCvc}
-                inputRef={cardCvcRef}
-              />
-            </div>
-
-            <TextInput
-              label={t.checkoutPage.cardOwnerNameLabel}
-              required
-              value={cardName}
-              onChange={(e) => {
-                setCardName(e.target.value);
-                clearError?.("cardName");
-              }}
-              placeholder={t.checkoutPage.cardOwnerNamePlaceholder}
-              autoComplete="cc-name"
-              error={errors.cardName}
-              inputRef={cardNameRef}
-            />
+          <div className="border border-black p-4">
+            <CardElement options={CARD_ELEMENT_OPTIONS} />
+            {stripeCardError && (
+              <p className="mt-2 font-ui text-xs text-red-600">{stripeCardError}</p>
+            )}
           </div>
         ) : null}
 

@@ -1,0 +1,63 @@
+import express from "express";
+import db from "../db.js";
+import { requireAuth } from "../middleware/auth.js";
+
+const router = express.Router();
+
+// Create table if it doesn't exist
+await db.query(`
+  CREATE TABLE IF NOT EXISTS favorites (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    product_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_favorite (user_id, product_id)
+  )
+`);
+
+/** GET user favorites */
+router.get("/", requireAuth, async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      "SELECT product_id FROM favorites WHERE user_id = ?",
+      [req.user.userId],
+    );
+    res.json({ favoriteIds: rows.map((r) => r.product_id) });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+/** ADD favorite */
+router.post("/", requireAuth, async (req, res) => {
+  try {
+    const productId = Number(req.body?.productId);
+    if (!productId) return res.status(400).json({ message: "Invalid productId." });
+
+    await db.query(
+      "INSERT IGNORE INTO favorites (user_id, product_id) VALUES (?, ?)",
+      [req.user.userId, productId],
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+/** REMOVE favorite */
+router.delete("/:productId", requireAuth, async (req, res) => {
+  try {
+    const productId = Number(req.params.productId);
+    if (!productId) return res.status(400).json({ message: "Invalid productId." });
+
+    await db.query(
+      "DELETE FROM favorites WHERE user_id = ? AND product_id = ?",
+      [req.user.userId, productId],
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+export default router;

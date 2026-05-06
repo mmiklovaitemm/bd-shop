@@ -16,15 +16,6 @@ const getUrl = (path) => {
   return `${base}${finalPath}`;
 };
 
-const getAuthHeaders = () => {
-  const token = localStorage.getItem("access_token");
-  const headers = { "Content-Type": "application/json" };
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-  return headers;
-};
-
 async function api(path, options = {}) {
   const url = getUrl(path);
 
@@ -32,7 +23,7 @@ async function api(path, options = {}) {
     credentials: "include",
     ...options,
     headers: {
-      ...getAuthHeaders(),
+      "Content-Type": "application/json",
       ...(options.headers || {}),
     },
   });
@@ -41,9 +32,6 @@ async function api(path, options = {}) {
   const data = await res.json().catch(() => ({}));
 
   if (!res.ok) {
-    if (res.status === 401) {
-      localStorage.removeItem("access_token");
-    }
     throw new Error(data.message || `API error ${res.status}`);
   }
 
@@ -69,8 +57,6 @@ const useAuth = create((set) => ({
       method: "POST",
       body: JSON.stringify({ email, password }),
     });
-    // If server returns a token in body, save it
-    if (data.token) localStorage.setItem("access_token", data.token);
     set({ user: data.user });
     return data;
   },
@@ -80,7 +66,6 @@ const useAuth = create((set) => ({
       method: "POST",
       body: JSON.stringify({ email, password, firstName, lastName }),
     });
-    if (data.token) localStorage.setItem("access_token", data.token);
     set({ user: data.user });
     return data;
   },
@@ -89,7 +74,6 @@ const useAuth = create((set) => ({
     try {
       await api("/api/auth/logout", { method: "POST" });
     } finally {
-      localStorage.removeItem("access_token");
       set({ user: null });
     }
   },

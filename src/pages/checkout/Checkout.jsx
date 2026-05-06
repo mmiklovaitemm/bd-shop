@@ -1,5 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements, useStripe, useElements, CardElement } from "@stripe/react-stripe-js";
 
 import useLanguage from "@/context/useLanguage";
 import useCart from "@/store/useCart";
@@ -15,15 +17,18 @@ import PickupSection from "./components/PickupSection";
 
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+
 const API_ORIGIN = "https://bd-shop-gfva.onrender.com";
 
-export default function Checkout() {
+function CheckoutForm() {
+  const stripe = useStripe();
+  const elements = useElements();
   const navigate = useNavigate();
   const { t } = useLanguage();
   const items = useCart((s) => s.items);
   const clearCart = useCart((s) => s.clearCart);
 
-  // Input references for potential scrolling or focus (auto-focus not implemented here but refs are kept)
   const emailRef = useRef(null);
   const firstNameRef = useRef(null);
   const lastNameRef = useRef(null);
@@ -32,13 +37,9 @@ export default function Checkout() {
   const postalCodeRef = useRef(null);
   const phoneRef = useRef(null);
 
-  const cardNumberRef = useRef(null);
-  const cardDateRef = useRef(null);
-  const cardCvcRef = useRef(null);
-  const cardNameRef = useRef(null);
-
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
   const [errors, setErrors] = useState({});
+  const [stripeCardError, setStripeCardError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [payStatus, setPayStatus] = useState("idle");
 
@@ -59,10 +60,6 @@ export default function Checkout() {
 
   const [paymentType, setPaymentType] = useState("card");
   const [selectedBank, setSelectedBank] = useState("swedbank");
-  const [cardNumber, setCardNumber] = useState("");
-  const [cardDate, setCardDate] = useState("");
-  const [cardCvc, setCardCvc] = useState("");
-  const [cardName, setCardName] = useState("");
 
   const SHIPPING_KIT_FEE = 15;
 
@@ -127,14 +124,6 @@ export default function Checkout() {
       if (!phone.trim()) next.phone = true;
     }
 
-    if (paymentType === "card") {
-      const digits = (s) => String(s || "").replace(/\D/g, "");
-      if (digits(cardNumber).length < 12) next.cardNumber = true;
-      if (!/^\d{2}\/\d{2}$/.test(cardDate)) next.cardDate = true;
-      if (digits(cardCvc).length < 3) next.cardCvc = true;
-      if (!cardName.trim()) next.cardName = true;
-    }
-
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -154,10 +143,6 @@ export default function Checkout() {
       city: errText.cityRequired,
       postalCode: errText.postalCodeRequired,
       phone: errText.phoneRequired,
-      cardNumber: errText.invalidCardNumber,
-      cardDate: errText.useCardDateFormat,
-      cardCvc: errText.invalidCvc,
-      cardName: errText.cardOwnerNameRequired,
     };
 
     return fieldMapping[field] || "Error";
@@ -172,9 +157,10 @@ export default function Checkout() {
     if (!ok) return;
 
     setIsSubmitting(true);
+    setStripeCardError(null);
 
     try {
-      const payload = {
+      const orderPayload = {
         items: items.map((it) => ({
           productId: it.productId ?? it.id ?? null,
           title: it.name ?? "",
@@ -196,33 +182,49 @@ export default function Checkout() {
         },
         shipping:
           deliveryType === "ship"
-            ? {
-                country,
-                firstName,
-                lastName,
-                address,
-                apartment,
-                city,
-                postalCode,
-                phone,
-              }
+            ? { country, firstName, lastName, address, apartment, city, postalCode, phone }
             : null,
       };
+
+      // Card payment: confirm with Stripe first, then create order
+      if (paymentType === "card") {
+        const intentRes = await fetch(`${API_ORIGIN}/api/payments/create-intent`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ amount: Math.round(total * 100) }),
+        });
+        const intentData = await intentRes.json().catch(() => ({}));
+        if (!intentRes.ok) throw new Error(intentData?.message || "Payment setup failed");
+
+        const cardElement = elements.getElement(CardElement);
+        const { error, paymentIntent } = await stripe.confirmCardPayment(
+          intentData.clientSecret,
+          { payment_method: { card: cardElement, billing_details: { email } } },
+        );
+
+        if (error) {
+          setStripeCardError(error.message);
+          setIsSubmitting(false);
+          return;
+        }
+
+        if (paymentIntent.status !== "succeeded") {
+          throw new Error("Payment was not completed.");
+        }
+
+        orderPayload.payment.intentId = paymentIntent.id;
+      }
 
       const res = await fetch(`${API_ORIGIN}/api/orders`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(payload),
+        body: JSON.stringify(orderPayload),
       });
 
       const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        throw new Error(
-          data?.message || t?.somethingWentWrong || "Something went wrong",
-        );
-      }
+      if (!res.ok) throw new Error(data?.message || t?.somethingWentWrong || "Something went wrong");
 
       clearCart();
       setIsSubmitting(false);
@@ -240,10 +242,7 @@ export default function Checkout() {
     } catch (err) {
       console.error("Pay error:", err);
       setIsSubmitting(false);
-      setErrors((prev) => ({
-        ...prev,
-        submit: err?.message || "Checkout failed",
-      }));
+      setErrors((prev) => ({ ...prev, submit: err?.message || "Checkout failed" }));
     }
   };
 
@@ -343,26 +342,7 @@ export default function Checkout() {
                 setPaymentType={setPaymentType}
                 selectedBank={selectedBank}
                 setSelectedBank={setSelectedBank}
-                cardNumber={cardNumber}
-                setCardNumber={setCardNumber}
-                cardDate={cardDate}
-                setCardDate={setCardDate}
-                cardCvc={cardCvc}
-                setCardCvc={setCardCvc}
-                cardName={cardName}
-                setCardName={setCardName}
-                // Passing translated errors object
-                errors={{
-                  cardNumber: getErrorMessage("cardNumber"),
-                  cardDate: getErrorMessage("cardDate"),
-                  cardCvc: getErrorMessage("cardCvc"),
-                  cardName: getErrorMessage("cardName"),
-                }}
-                clearError={clearError}
-                cardNumberRef={cardNumberRef}
-                cardDateRef={cardDateRef}
-                cardCvcRef={cardCvcRef}
-                cardNameRef={cardNameRef}
+                stripeCardError={stripeCardError}
               />
 
               <button
@@ -394,5 +374,13 @@ export default function Checkout() {
       </main>
       <FullWidthDivider />
     </>
+  );
+}
+
+export default function Checkout() {
+  return (
+    <Elements stripe={stripePromise}>
+      <CheckoutForm />
+    </Elements>
   );
 }

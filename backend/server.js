@@ -11,6 +11,8 @@ import uploadRoutes from "./routes/uploadRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
+import favoriteRoutes from "./routes/favoriteRoutes.js";
 
 const app = express();
 
@@ -74,6 +76,8 @@ app.use("/api/uploads", uploadRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/favorites", favoriteRoutes);
 
 // 5. Error handling middleware
 app.use((req, res) => {

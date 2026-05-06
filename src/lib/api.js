@@ -12,17 +12,10 @@ const getFullUrl = (path) => {
 };
 
 const getHeaders = (extraHeaders = {}) => {
-  const token = localStorage.getItem("access_token");
-  const headers = {
+  return {
     Accept: "application/json",
     ...extraHeaders,
   };
-
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
-  return headers;
 };
 
 async function handle(res) {
