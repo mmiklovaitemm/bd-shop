@@ -12,6 +12,8 @@ export default function Contact() {
   const { t } = useLanguage();
 
   const [isSent, setIsSent] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -47,7 +49,7 @@ export default function Contact() {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const nextErrors = {};
 
@@ -58,10 +60,35 @@ export default function Contact() {
     if (!formData.message.trim()) nextErrors.message = t.pleaseFillInThisField;
 
     setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
 
-    if (Object.keys(nextErrors).length === 0) {
-      setIsSent(true);
-      setFormData({ name: "", email: "", phone: "", message: "" });
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const res = await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          access_key: "5b16109a-df01-4fd8-822c-c8acf7775321",
+          subject: "UM Studio – naujas kontaktų žinutė",
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          message: formData.message,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setIsSent(true);
+        setFormData({ name: "", email: "", phone: "", message: "" });
+      } else {
+        setSubmitError(t.somethingWentWrong || "Something went wrong. Try again.");
+      }
+    } catch {
+      setSubmitError(t.somethingWentWrong || "Something went wrong. Try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -166,12 +193,17 @@ export default function Contact() {
                 )}
               </div>
 
+              {submitError && (
+                <p className="text-sm text-red-600">{submitError}</p>
+              )}
+
               {!isSent ? (
                 <button
                   type="submit"
-                  className="w-full bg-black py-5 font-ui text-base tracking-widest text-white transition-all hover:bg-neutral-800 active:scale-[0.99]"
+                  disabled={isSubmitting}
+                  className="w-full bg-black py-5 font-ui text-base tracking-widest text-white transition-all hover:bg-neutral-800 active:scale-[0.99] disabled:opacity-60"
                 >
-                  {t.sendMessage || "Send message"}
+                  {isSubmitting ? "..." : (t.sendMessage || "Send message")}
                 </button>
               ) : (
                 <motion.div
