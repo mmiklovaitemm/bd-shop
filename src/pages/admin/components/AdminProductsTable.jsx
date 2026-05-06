@@ -1,4 +1,5 @@
 import { getStockBadge } from "@/pages/admin/helpers/productHelpers";
+import useLanguage from "@/context/useLanguage";
 import ProductImage from "@/components/ui/ProductCard/ProductImage";
 
 function formatAdminDate(value) {
@@ -14,6 +15,8 @@ export default function AdminProductsTable({
   onToggleSelectProduct,
   onToggleSelectAllProducts,
 }) {
+  const { t } = useLanguage();
+  const a = t.admin;
   const allVisibleSelected =
     products.length > 0 &&
     products.every((product) => selectedProductIds.includes(product.id));
@@ -33,15 +36,15 @@ export default function AdminProductsTable({
               />
             </th>
 
-            <th className="px-4 py-3">Image</th>
-            <th className="px-4 py-3">Name</th>
-            <th className="px-4 py-3">Category</th>
-            <th className="px-4 py-3">Price</th>
-            <th className="px-4 py-3">Stock</th>
-            <th className="px-4 py-3">Best seller</th>
-            <th className="px-4 py-3">Created</th>
-            <th className="px-4 py-3">Edit</th>
-            <th className="px-4 py-3">Delete</th>
+            <th className="px-4 py-3">{a.image}</th>
+            <th className="px-4 py-3">{a.name}</th>
+            <th className="px-4 py-3">{a.category}</th>
+            <th className="px-4 py-3">{a.price}</th>
+            <th className="px-4 py-3">{a.stock}</th>
+            <th className="px-4 py-3">{a.bestSeller}</th>
+            <th className="px-4 py-3">{a.created}</th>
+            <th className="px-4 py-3">{a.edit}</th>
+            <th className="px-4 py-3">{a.delete}</th>
           </tr>
         </thead>
 
@@ -107,10 +110,10 @@ export default function AdminProductsTable({
                 <td className="px-4 py-3 align-middle">
                   {product.isBestSeller ? (
                     <span className="inline-block border border-black bg-black px-2 py-1 text-xs text-white">
-                      Yes
+                      {a.yes}
                     </span>
                   ) : (
-                    <span className="text-black/50">No</span>
+                    <span className="text-black/50">{a.no}</span>
                   )}
                 </td>
 
@@ -124,7 +127,7 @@ export default function AdminProductsTable({
                     className="border border-black bg-white px-3 py-2 transition-colors hover:bg-black hover:text-white"
                     onClick={() => onEdit(product)}
                   >
-                    Edit
+                    {a.edit}
                   </button>
                 </td>
 
@@ -134,7 +137,7 @@ export default function AdminProductsTable({
                     className="border border-red-600 bg-white px-3 py-2 text-red-600 transition-colors hover:bg-red-600 hover:text-white"
                     onClick={() => onDelete(product)}
                   >
-                    Delete
+                    {a.delete}
                   </button>
                 </td>
               </tr>

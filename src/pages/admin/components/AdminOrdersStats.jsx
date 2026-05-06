@@ -1,3 +1,5 @@
+import useLanguage from "@/context/useLanguage";
+
 export default function AdminOrdersStats({
   statusFilter,
   setStatusFilter,
@@ -9,6 +11,8 @@ export default function AdminOrdersStats({
   canceledCount,
   totalRevenue,
 }) {
+  const { t } = useLanguage();
+  const a = t.admin;
   return (
     <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-7">
       <button
@@ -23,7 +27,7 @@ export default function AdminOrdersStats({
             statusFilter === "all" ? "text-white/70" : "text-black/60"
           }`}
         >
-          Total orders
+          {a.totalOrders}
         </p>
         <p className="mt-2 font-display text-3xl leading-none">
           {totalOrdersCount}
@@ -44,7 +48,7 @@ export default function AdminOrdersStats({
             statusFilter === "Pending" ? "text-white/70" : "text-black/60"
           }`}
         >
-          Pending
+          {a.pending}
         </p>
         <p className="mt-2 font-display text-3xl leading-none">
           {pendingCount}
@@ -67,7 +71,7 @@ export default function AdminOrdersStats({
             statusFilter === "Confirmed" ? "text-white/70" : "text-black/60"
           }`}
         >
-          Confirmed
+          {a.confirmed}
         </p>
         <p className="mt-2 font-display text-3xl leading-none">
           {confirmedCount}
@@ -88,7 +92,7 @@ export default function AdminOrdersStats({
             statusFilter === "Shipped" ? "text-white/70" : "text-black/60"
           }`}
         >
-          Shipped
+          {a.shipped}
         </p>
         <p className="mt-2 font-display text-3xl leading-none">
           {shippedCount}
@@ -111,7 +115,7 @@ export default function AdminOrdersStats({
             statusFilter === "Completed" ? "text-white/70" : "text-black/60"
           }`}
         >
-          Completed
+          {a.completed}
         </p>
         <p className="mt-2 font-display text-3xl leading-none">
           {completedCount}
@@ -132,7 +136,7 @@ export default function AdminOrdersStats({
             statusFilter === "Canceled" ? "text-white/70" : "text-black/60"
           }`}
         >
-          Canceled
+          {a.canceled}
         </p>
         <p className="mt-2 font-display text-3xl leading-none">
           {canceledCount}
@@ -140,7 +144,7 @@ export default function AdminOrdersStats({
       </button>
 
       <div className="border border-black bg-white px-4 py-4">
-        <p className="font-ui text-xs text-black/60">Total revenue</p>
+        <p className="font-ui text-xs text-black/60">{a.totalRevenue}</p>
         <p className="mt-2 font-ui text-[18px] leading-none md:text-[24px]">
           €{(totalRevenue / 100).toFixed(2)}
         </p>

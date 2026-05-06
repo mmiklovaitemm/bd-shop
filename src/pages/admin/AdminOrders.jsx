@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import useLanguage from "@/context/useLanguage";
 
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 import Pagination from "@/components/ui/Pagination";
@@ -149,10 +150,13 @@ export default function AdminOrders() {
     deliveryFilter === "all" &&
     sortOrder === "newest";
 
+  const { t } = useLanguage();
+  const a = t.admin;
+
   return (
     <>
       <main className="mx-auto w-full max-w-6xl px-4 py-8">
-        <h1 className="font-display text-4xl leading-none">Admin orders</h1>
+        <h1 className="font-display text-4xl leading-none">{a.ordersTitle}</h1>
 
         <AdminOrdersStats
           statusFilter={statusFilter}
@@ -180,7 +184,7 @@ export default function AdminOrders() {
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           <p className="font-ui text-sm text-black/60">
-            Showing {filteredOrders.length} of {orders.length} orders
+            {a.showing} {filteredOrders.length} {a.of} {orders.length} {a.orders}
           </p>
 
           <button
@@ -189,7 +193,7 @@ export default function AdminOrders() {
             onClick={handleResetFilters}
             disabled={isDefaultFilters}
           >
-            Reset filters
+            {a.resetFilters}
           </button>
         </div>
 
@@ -203,7 +207,7 @@ export default function AdminOrders() {
           </div>
         ) : filteredOrders.length === 0 ? (
           <p className="mt-6 font-ui text-sm text-black/60 text-center py-20">
-            No matching orders found.
+            {a.noOrdersFound}
           </p>
         ) : (
           <>
@@ -228,7 +232,7 @@ export default function AdminOrders() {
         {!loading && !error && filteredOrders.length > 0 ? (
           <div className="mt-6 flex flex-col items-center gap-3">
             <p className="font-ui text-[13px] text-black/70">
-              Page {safePage} · {pageItems.length} order(s) on this page
+              {a.page} {safePage} · {pageItems.length} {a.ordersOnPage}
             </p>
 
             <Pagination

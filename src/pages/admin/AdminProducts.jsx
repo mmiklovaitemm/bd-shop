@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import useLanguage from "@/context/useLanguage";
 
 import AdminProductCreateModal from "@/pages/admin/components/AdminProductCreateModal";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
@@ -291,12 +292,15 @@ export default function AdminProducts() {
     }
   };
 
+  const { t } = useLanguage();
+  const a = t.admin;
+
   return (
     <>
       <main className="mx-auto w-full max-w-6xl px-4 py-8">
         {/* Page Header */}
         <div className="flex items-center justify-between gap-4">
-          <h1 className="font-display text-4xl leading-none">Admin products</h1>
+          <h1 className="font-display text-4xl leading-none">{a.productsTitle}</h1>
           <button
             type="button"
             className="border border-black bg-black px-4 py-3 font-ui text-sm text-white"
@@ -306,7 +310,7 @@ export default function AdminProducts() {
               setIsCreateOpen(true);
             }}
           >
-            Add product
+            {a.addProduct}
           </button>
         </div>
 
@@ -314,7 +318,7 @@ export default function AdminProducts() {
         {selectedProductIds.length > 0 && (
           <div className="mt-4 flex items-center justify-between gap-3 border border-red-200 bg-red-50 px-4 py-3">
             <p className="font-ui text-sm text-red-700">
-              Selected: {selectedProductIds.length} product(s)
+              {a.selected} {selectedProductIds.length}
             </p>
             <button
               type="button"
@@ -322,7 +326,7 @@ export default function AdminProducts() {
               onClick={() => setIsBulkDeleteOpen(true)}
               disabled={isDeleting}
             >
-              {isDeleting ? "Deleting..." : "Delete selected"}
+              {isDeleting ? a.deleting : a.deleteSelected}
             </button>
           </div>
         )}
@@ -333,7 +337,7 @@ export default function AdminProducts() {
             type="text"
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
-            placeholder="Search by name or id"
+            placeholder={a.searchByNameOrId}
             className="h-12 w-full border border-black px-4 outline-none"
           />
           <select
@@ -341,29 +345,29 @@ export default function AdminProducts() {
             onChange={(e) => setCategoryFilter(e.target.value)}
             className="h-12 w-full border border-black bg-white px-4 outline-none"
           >
-            <option value="all">All categories</option>
-            <option value="rings">Rings</option>
-            <option value="earrings">Earrings</option>
-            <option value="necklaces">Necklaces</option>
-            <option value="bracelets">Bracelets</option>
-            <option value="personal">Personal</option>
+            <option value="all">{a.allCategories}</option>
+            <option value="rings">{a.rings}</option>
+            <option value="earrings">{a.earrings}</option>
+            <option value="necklaces">{a.necklaces}</option>
+            <option value="bracelets">{a.bracelets}</option>
+            <option value="personal">{a.personal}</option>
           </select>
           <select
             value={sortValue}
             onChange={(e) => setSortValue(e.target.value)}
             className="h-12 w-full border border-black bg-white px-4 outline-none"
           >
-            <option value="newest">Newest first</option>
-            <option value="oldest">Oldest first</option>
-            <option value="price-low">Price: low to high</option>
-            <option value="price-high">Price: high to low</option>
+            <option value="newest">{a.newestFirst}</option>
+            <option value="oldest">{a.oldestFirst}</option>
+            <option value="price-low">{a.priceLowToHigh}</option>
+            <option value="price-high">{a.priceHighToLow}</option>
           </select>
         </div>
 
         {/* Stats and Reset */}
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           <p className="font-ui text-sm text-black/60">
-            Showing {showingCount} of {totalItems} filtered products
+            {a.showing} {showingCount} {a.of} {totalItems} {a.filteredProducts}
           </p>
           <button
             type="button"
@@ -376,7 +380,7 @@ export default function AdminProducts() {
               setPage(1);
             }}
           >
-            Reset filters
+            {a.resetFilters}
           </button>
         </div>
 

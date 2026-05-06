@@ -1,4 +1,5 @@
 import StatusPill from "@/pages/account/StatusPill";
+import useLanguage from "@/context/useLanguage";
 import { getDeliveryLabel } from "@/pages/admin/helpers/orderHelpers";
 import Loader from "@/components/ui/Loader";
 import ProductImage from "@/components/ui/ProductCard/ProductImage";
@@ -15,21 +16,23 @@ export default function AdminOrderDetailsModal({
   savingId,
 }) {
   if (!order) return null;
+  const { t } = useLanguage();
+  const a = t.admin;
 
   // Format delivery type labels
   const deliveryTypeLabel =
     order.delivery_type === "pickup"
-      ? "Pickup"
+      ? a.pickupLabel
       : order.delivery_type === "ship"
-        ? "Shipping"
+        ? a.shippingLabel
         : "-";
 
   // Format pickup location labels
   const pickupLocationLabel =
     order.delivery_method === "vilnius"
-      ? "Vilnius salon"
+      ? a.vilniusSalon
       : order.delivery_method === "kaunas"
-        ? "Kaunas salon"
+        ? a.kaunasSalon
         : "-";
 
   const currentStatus = order.status || "Pending";
@@ -62,7 +65,7 @@ export default function AdminOrderDetailsModal({
             className="border border-black bg-white px-3 py-2 hover:bg-black hover:text-white transition-colors"
             onClick={onClose}
           >
-            Close
+            {a.close}
           </button>
         </div>
 
@@ -71,7 +74,7 @@ export default function AdminOrderDetailsModal({
           {/* Customer Details */}
           <div>
             <p className="font-semibold uppercase text-[11px] tracking-wider text-black/40">
-              Customer
+              {a.customer}
             </p>
             <div className="mt-2 space-y-1 text-black/70">
               <p className="font-medium text-black">
@@ -100,31 +103,31 @@ export default function AdminOrderDetailsModal({
           {/* Delivery & Payment Details */}
           <div>
             <p className="font-semibold uppercase text-[11px] tracking-wider text-black/40">
-              Delivery
+              {a.delivery}
             </p>
             <div className="mt-2 space-y-1 text-black/70">
-              <p>Type: {deliveryTypeLabel}</p>
+              <p>{a.type} {deliveryTypeLabel}</p>
 
               {order.delivery_type === "pickup" ? (
-                <p>Location: {pickupLocationLabel}</p>
+                <p>{a.location} {pickupLocationLabel}</p>
               ) : (
-                <p>Method: {getDeliveryLabel(order)}</p>
+                <p>{a.method} {getDeliveryLabel(order)}</p>
               )}
 
               <p>
-                Payment:{" "}
+                {a.payment}{" "}
                 {order.payment_type === "bank"
                   ? `Bank (${order.payment_bank || "-"})`
                   : order.payment_type === "card"
-                    ? "Card"
+                    ? a.card
                     : "-"}
               </p>
 
               <p>
-                Fee: €{(Number(order.delivery_fee_cents || 0) / 100).toFixed(2)}
+                {a.fee} €{(Number(order.delivery_fee_cents || 0) / 100).toFixed(2)}
               </p>
               <p className="font-medium text-black">
-                Total: €{(Number(order.total_cents || 0) / 100).toFixed(2)}
+                {a.totalLabel} €{(Number(order.total_cents || 0) / 100).toFixed(2)}
               </p>
             </div>
           </div>
@@ -132,7 +135,7 @@ export default function AdminOrderDetailsModal({
           {/* Order Status Control */}
           <div>
             <p className="font-semibold uppercase text-[11px] tracking-wider text-black/40">
-              Status Control
+              {a.statusControl}
             </p>
             <div className="mt-2 space-y-3">
               <StatusPill status={currentStatus} />
@@ -162,8 +165,7 @@ export default function AdminOrderDetailsModal({
 
               {currentStatus === "Canceled" && (
                 <p className="text-[11px] leading-tight text-red-600">
-                  This order is canceled. Stock has already been restored and
-                  cannot be reopened.
+                  {a.canceledNote}
                 </p>
               )}
             </div>
@@ -173,7 +175,7 @@ export default function AdminOrderDetailsModal({
         {/* Purchased Items List */}
         <div className="border-t border-black px-4 py-4 md:px-6 md:py-6">
           <p className="font-semibold uppercase text-[11px] tracking-wider text-black/40">
-            Order Items
+            {a.orderItems}
           </p>
 
           <div className="mt-4 grid gap-3">
@@ -205,29 +207,29 @@ export default function AdminOrderDetailsModal({
 
                     <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-[13px] text-black/70">
                       <p>
-                        Quantity:{" "}
+                        {a.quantity}{" "}
                         <span className="text-black">{item.quantity || 1}</span>
                       </p>
                       <p>
-                        Color:{" "}
+                        {a.color}{" "}
                         <span className="text-black capitalize">
                           {item.color || "-"}
                         </span>
                       </p>
                       <p>
-                        Size:{" "}
+                        {a.size}{" "}
                         <span className="text-black uppercase">
                           {item.size || "-"}
                         </span>
                       </p>
                       <p>
-                        Service:{" "}
+                        {a.service}{" "}
                         <span className="text-black">
                           {item.service_option === "shipping"
-                            ? "Shipping kit (+15€)"
+                            ? a.shippingKitService
                             : item.service_option === "in_store"
-                              ? "In-store"
-                              : "Standard"}
+                              ? a.inStoreService
+                              : a.standardService}
                         </span>
                       </p>
                     </div>
