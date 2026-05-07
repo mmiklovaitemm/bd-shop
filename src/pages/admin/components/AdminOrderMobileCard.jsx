@@ -10,6 +10,7 @@ export default function AdminOrderMobileCard({
   statusOptions,
   onStatusChange,
   onViewDetails,
+  onDelete,
 }) {
   return (
     <div className="border border-black bg-white p-4">
@@ -84,6 +85,14 @@ export default function AdminOrderMobileCard({
           onClick={() => onViewDetails(order)}
         >
           View details
+        </button>
+
+        <button
+          type="button"
+          className="border border-red-600 bg-white px-3 py-3 font-ui text-sm text-red-600 hover:bg-red-600 hover:text-white transition-colors sm:col-span-2"
+          onClick={() => onDelete(order.id)}
+        >
+          Delete order
         </button>
       </div>
     </div>

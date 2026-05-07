@@ -136,6 +136,29 @@ export default function AdminOrders() {
     fetchOrders,
   });
 
+  const handleDeleteOrder = async (orderId) => {
+    if (!window.confirm(`Delete order #${orderId}? This cannot be undone.`))
+      return;
+    try {
+      const BASE_URL = (
+        import.meta.env.VITE_API_URL || "https://bd-shop-gfva.onrender.com"
+      )
+        .replace(/\/api\/?$/, "")
+        .replace(/\/+$/, "");
+      const res = await fetch(`${BASE_URL}/api/orders/${orderId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d?.message || `Error ${res.status}`);
+      }
+      setOrders((prev) => prev.filter((o) => o.id !== orderId));
+    } catch (err) {
+      alert(err?.message || "Failed to delete order.");
+    }
+  };
+
   const handleResetFilters = () => {
     setSearchEmail("");
     setStatusFilter("all");
@@ -217,6 +240,7 @@ export default function AdminOrders() {
               statusOptions={STATUS_OPTIONS}
               onStatusChange={handleStatusChange}
               onViewDetails={setSelectedOrder}
+              onDelete={handleDeleteOrder}
             />
 
             <AdminOrdersTable
@@ -225,6 +249,7 @@ export default function AdminOrders() {
               statusOptions={STATUS_OPTIONS}
               onStatusChange={handleStatusChange}
               onViewDetails={setSelectedOrder}
+              onDelete={handleDeleteOrder}
             />
           </>
         )}

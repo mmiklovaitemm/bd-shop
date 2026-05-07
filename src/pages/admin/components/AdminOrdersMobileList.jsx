@@ -6,6 +6,7 @@ export default function AdminOrdersMobileList({
   statusOptions,
   onStatusChange,
   onViewDetails,
+  onDelete,
 }) {
   return (
     <div className="mt-6 grid gap-4 lg:hidden">
@@ -17,6 +18,7 @@ export default function AdminOrdersMobileList({
           statusOptions={statusOptions}
           onStatusChange={onStatusChange}
           onViewDetails={onViewDetails}
+          onDelete={onDelete}
         />
       ))}
     </div>

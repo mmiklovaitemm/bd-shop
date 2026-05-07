@@ -7,6 +7,7 @@ export default function AdminOrdersTable({
   statusOptions,
   onStatusChange,
   onViewDetails,
+  onDelete,
 }) {
   const { t } = useLanguage();
   const a = t.admin;
@@ -36,6 +37,7 @@ export default function AdminOrdersTable({
               statusOptions={statusOptions}
               onStatusChange={onStatusChange}
               onViewDetails={onViewDetails}
+              onDelete={onDelete}
             />
           ))}
         </tbody>

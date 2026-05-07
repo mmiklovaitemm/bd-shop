@@ -11,6 +11,7 @@ export default function AdminOrderTableRow({
   statusOptions,
   onStatusChange,
   onViewDetails,
+  onDelete,
 }) {
   const currentStatus = order.status || "Pending";
 
@@ -79,13 +80,22 @@ export default function AdminOrderTableRow({
       </td>
 
       <td className="px-4 py-3 text-right">
-        <button
-          type="button"
-          className="border border-black bg-white px-3 py-2 hover:bg-black hover:text-white transition-colors whitespace-nowrap"
-          onClick={() => onViewDetails(order)}
-        >
-          View details
-        </button>
+        <div className="flex items-center justify-end gap-2">
+          <button
+            type="button"
+            className="border border-black bg-white px-3 py-2 hover:bg-black hover:text-white transition-colors whitespace-nowrap"
+            onClick={() => onViewDetails(order)}
+          >
+            View details
+          </button>
+          <button
+            type="button"
+            className="border border-red-600 bg-white px-3 py-2 text-red-600 hover:bg-red-600 hover:text-white transition-colors whitespace-nowrap"
+            onClick={() => onDelete(order.id)}
+          >
+            Delete
+          </button>
+        </div>
       </td>
     </tr>
   );

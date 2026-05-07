@@ -266,4 +266,16 @@ router.post("/", requireAuth, async (req, res) => {
   }
 });
 
+/** DELETE ORDER (ADMIN) */
+router.delete("/:id", requireAdmin, async (req, res) => {
+  try {
+    const orderId = Number(req.params.id);
+    await db.query("DELETE FROM order_items WHERE order_id = ?", [orderId]);
+    await db.query("DELETE FROM orders WHERE id = ?", [orderId]);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 export default router;
