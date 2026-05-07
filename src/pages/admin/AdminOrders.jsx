@@ -8,6 +8,7 @@ import AdminOrdersFilters from "@/pages/admin/components/AdminOrdersFilters";
 import AdminOrderDetailsModal from "@/pages/admin/components/AdminOrderDetailsModal";
 import AdminOrdersTable from "@/pages/admin/components/AdminOrdersTable";
 import AdminOrdersMobileList from "@/pages/admin/components/AdminOrdersMobileList";
+import AdminOrderDeleteModal from "@/pages/admin/components/AdminOrderDeleteModal";
 import Loader from "@/components/ui/Loader";
 import useAdminOrders from "@/pages/admin/hooks/useAdminOrders";
 import useOrderStatusUpdate from "@/pages/admin/hooks/useOrderStatusUpdate";
@@ -49,6 +50,8 @@ export default function AdminOrders() {
   const pageSize = 10;
 
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [orderToDelete, setOrderToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
   const [deliveryFilter, setDeliveryFilter] = useState("all");
   const [sortOrder, setSortOrder] = useState("newest");
   const [searchEmail, setSearchEmail] = useState("");
@@ -136,10 +139,14 @@ export default function AdminOrders() {
     fetchOrders,
   });
 
-  const handleDeleteOrder = async (orderId) => {
-    if (!window.confirm(`Delete order #${orderId}? This cannot be undone.`))
-      return;
+  const handleDeleteOrder = (orderId) => {
+    const order = orders.find((o) => o.id === orderId);
+    setOrderToDelete(order || { id: orderId });
+  };
+
+  const confirmDeleteOrder = async (orderId) => {
     try {
+      setDeleting(true);
       const BASE_URL = (
         import.meta.env.VITE_API_URL || "https://bd-shop-gfva.onrender.com"
       )
@@ -154,8 +161,11 @@ export default function AdminOrders() {
         throw new Error(d?.message || `Error ${res.status}`);
       }
       setOrders((prev) => prev.filter((o) => o.id !== orderId));
+      setOrderToDelete(null);
     } catch (err) {
       alert(err?.message || "Failed to delete order.");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -278,6 +288,15 @@ export default function AdminOrders() {
             onStatusChange={handleStatusChange}
             onSelectedOrderChange={setSelectedOrder}
             savingId={savingId}
+          />
+        ) : null}
+
+        {orderToDelete ? (
+          <AdminOrderDeleteModal
+            order={orderToDelete}
+            onClose={() => setOrderToDelete(null)}
+            onConfirm={confirmDeleteOrder}
+            deleting={deleting}
           />
         ) : null}
       </main>
