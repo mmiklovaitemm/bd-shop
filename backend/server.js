@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import "dotenv/config";
 
 import db from "./db.js";
+import { migrateProductVariants } from "./db/migrate.js";
 
 import uploadRoutes from "./routes/uploadRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -87,6 +88,11 @@ app.use((req, res) => {
 });
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
+  try {
+    await migrateProductVariants();
+  } catch (err) {
+    console.error("[migrate] Migration failed:", err.message);
+  }
 });

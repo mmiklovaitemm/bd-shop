@@ -6,9 +6,6 @@ const router = express.Router();
 
 // --- HELPER FUNCTIONS ---
 
-/**
- * Safely parses JSON strings with a fallback value.
- */
 function safeJsonParse(value, fallback) {
   if (value === null || value === undefined) return fallback;
   if (typeof value !== "string") return value;
@@ -26,98 +23,99 @@ const BACKEND_ORIGIN =
   process.env.API_ORIGIN ||
   "https://bd-shop-gfva.onrender.com";
 
-/**
- * Normalizes asset URLs. If it's a Cloudinary/external link, leaves it as is.
- * If it's a local upload, prepends the backend origin.
- */
 function normalizeFrontendAssetUrl(value) {
   if (!value) return "";
   const raw = String(value).trim();
   if (!raw) return "";
-
-  if (raw.startsWith("http://") || raw.startsWith("https://")) {
-    return raw;
-  }
-
+  if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
   if (raw.startsWith("/uploads/") || raw.startsWith("uploads/")) {
     const cleanPath = raw.startsWith("/") ? raw : `/${raw}`;
     return `${BACKEND_ORIGIN}${cleanPath}`;
   }
-
   return raw;
 }
 
 /**
- * Builds the structured variants object for the database.
+ * Builds variant rows from admin form input for inserting into product_variants.
+ * Returns array of { color, size, stock, images }.
  */
-function buildVariants({ variants = [], sizes = [], variantStock = {} }) {
+function buildVariantRows({ variants = [], sizes = [], variantStock = {} }) {
   const cleanSizes = sizes.length ? sizes : ["one size"];
-  const result = {};
+  const rows = [];
 
   for (const variant of variants) {
     const color = variant.name.toLowerCase();
-
-    // Ensure images are handled as an array and URLs are normalized
     const rawImages = Array.isArray(variant.images)
       ? variant.images
       : String(variant.images || "")
           .split("\n")
           .filter(Boolean);
-
     const normalizedImages = rawImages.map(normalizeFrontendAssetUrl);
 
-    result[color] = cleanSizes.map((size) => {
+    for (const size of cleanSizes) {
       let stock = 0;
-      if (variantStock[color] && variantStock[color][size] !== undefined) {
+      if (variantStock[color]?.[size] !== undefined) {
         stock = Number(variantStock[color][size]);
-      } else if (
-        variantStock[color] &&
-        variantStock[color]["default"] !== undefined
-      ) {
+      } else if (variantStock[color]?.["default"] !== undefined) {
         stock = Number(variantStock[color]["default"]);
-      } else {
-        // Default stock for new products/variants
-        stock = 0;
       }
-
-      return {
+      rows.push({
+        color,
         size: String(size),
         stock: Math.max(0, isNaN(stock) ? 0 : stock),
         images: normalizedImages,
-      };
-    });
+      });
+    }
   }
-  return result;
+  return rows;
 }
 
 /**
- * Calculates total stock quantity by summing up all variant stock levels.
+ * Reconstructs the variants object shape from product_variants DB rows.
+ * Returns { variants: {color: [{size, stock, images}]}, colors, sizes }
  */
-function getTotalStockFromVariants(variants = {}) {
-  return Object.values(variants).reduce((total, colorVariants) => {
-    if (!Array.isArray(colorVariants)) return total;
-    return (
-      total + colorVariants.reduce((sum, v) => sum + (Number(v?.stock) || 0), 0)
+function variantRowsToShape(rows = []) {
+  const variants = {};
+  const sizesSet = new Set();
+
+  for (const row of rows) {
+    const color = row.color;
+    const images = safeJsonParse(
+      typeof row.images === "string" ? row.images : JSON.stringify(row.images ?? []),
+      []
     );
-  }, 0);
+    if (!variants[color]) variants[color] = [];
+    variants[color].push({
+      size: row.size,
+      stock: Number(row.stock),
+      images: images.map(normalizeFrontendAssetUrl),
+    });
+    sizesSet.add(row.size);
+  }
+
+  return {
+    variants,
+    colors: Object.keys(variants),
+    sizes: [...sizesSet],
+  };
+}
+
+function getTotalStock(variantRows = []) {
+  return variantRows.reduce(
+    (sum, r) => sum + Math.max(0, Number(r.stock) || 0),
+    0
+  );
 }
 
 /**
- * Maps a raw database row to a clean product object for the frontend.
+ * Maps a raw DB row + its product_variants rows to a frontend product object.
  */
-function mapProductRow(row) {
+function mapProductRow(row, variantRows = []) {
   if (!row) return null;
-  const colors = safeJsonParse(row.colors, []);
-  const variants = safeJsonParse(row.variants, {});
-  const sizes = safeJsonParse(row.sizes, []);
   const details = safeJsonParse(row.details, {});
   const images = safeJsonParse(row.images, []);
-
-  const stockValueFromDb =
-    row.stock_quantity !== null ? Number(row.stock_quantity) : NaN;
-  const totalStockQuantity = !isNaN(stockValueFromDb)
-    ? stockValueFromDb
-    : getTotalStockFromVariants(variants);
+  const { variants, colors, sizes } = variantRowsToShape(variantRows);
+  const stockQuantity = getTotalStock(variantRows);
 
   return {
     id: row.id,
@@ -126,8 +124,8 @@ function mapProductRow(row) {
     priceValue: Number(row.price_value),
     price: `€${Number(row.price_value)}`,
     createdAt: row.created_at,
-    stockQuantity: totalStockQuantity,
-    isSoldOut: totalStockQuantity <= 0,
+    stockQuantity,
+    isSoldOut: stockQuantity <= 0,
     isBestSeller: Boolean(row.is_best_seller),
     thumbnail: normalizeFrontendAssetUrl(row.thumbnail),
     images: images.map(normalizeFrontendAssetUrl),
@@ -138,25 +136,64 @@ function mapProductRow(row) {
   };
 }
 
+/**
+ * Groups product_variants rows by product_id.
+ */
+function groupVariantsByProduct(variantRows) {
+  const map = {};
+  for (const v of variantRows) {
+    const pid = String(v.product_id);
+    if (!map[pid]) map[pid] = [];
+    map[pid].push(v);
+  }
+  return map;
+}
+
+/**
+ * Inserts product_variants rows for a given product id.
+ */
+async function insertVariantRows(productId, rows, conn = db) {
+  for (const row of rows) {
+    await conn.query(
+      `INSERT INTO product_variants (product_id, color, size, stock, images)
+       VALUES (?, ?, ?, ?, ?)`,
+      [
+        String(productId),
+        row.color,
+        row.size,
+        row.stock,
+        JSON.stringify(row.images),
+      ]
+    );
+  }
+}
+
 // --- ROUTES ---
 
-/** * GET /api/products
- * Fetch all products, sorted by newest first.
- */
+/** GET /api/products */
 router.get("/", async (req, res) => {
   try {
     const [rows] = await db.query(
-      "SELECT * FROM products ORDER BY created_at DESC",
+      "SELECT * FROM products ORDER BY created_at DESC"
     );
-    res.json(rows.map(mapProductRow));
+    if (!rows.length) return res.json([]);
+
+    const ids = rows.map((r) => String(r.id));
+    const [variantRows] = await db.query(
+      "SELECT * FROM product_variants WHERE product_id IN (?)",
+      [ids]
+    );
+    const variantMap = groupVariantsByProduct(variantRows);
+
+    res.json(
+      rows.map((r) => mapProductRow(r, variantMap[String(r.id)] || []))
+    );
   } catch {
     res.status(500).json({ message: "Failed to fetch products" });
   }
 });
 
-/** * GET /api/products/:id
- * Fetch a single product by its ID.
- */
+/** GET /api/products/:id */
 router.get("/:id", async (req, res) => {
   try {
     const [rows] = await db.query("SELECT * FROM products WHERE id = ?", [
@@ -164,15 +201,19 @@ router.get("/:id", async (req, res) => {
     ]);
     if (!rows.length)
       return res.status(404).json({ message: "Product not found" });
-    res.json(mapProductRow(rows[0]));
+
+    const [variantRows] = await db.query(
+      "SELECT * FROM product_variants WHERE product_id = ?",
+      [String(req.params.id)]
+    );
+
+    res.json(mapProductRow(rows[0], variantRows));
   } catch {
     res.status(500).json({ message: "Failed to fetch product" });
   }
 });
 
-/** * POST /api/products
- * Create a new product. Restricted to Admin.
- */
+/** POST /api/products — Admin only */
 router.post("/", requireAdmin, async (req, res) => {
   try {
     const {
@@ -188,25 +229,24 @@ router.post("/", requireAdmin, async (req, res) => {
       details,
     } = req.body;
 
-    const builtVariants = buildVariants({ variants, sizes });
+    const variantRows = buildVariantRows({ variants, sizes });
 
+    // Collect all images and derive thumbnail
     const allImages = [];
-    Object.values(builtVariants).forEach((colorArray) => {
-      colorArray.forEach((variant) => {
-        if (variant.images && Array.isArray(variant.images)) {
-          variant.images.forEach((img) => {
-            if (img && !allImages.includes(img)) allImages.push(img);
-          });
-        }
-      });
-    });
-
-    const thumbnail = allImages.length > 0 ? allImages[0] : "";
+    for (const vr of variantRows) {
+      for (const img of vr.images) {
+        if (img && !allImages.includes(img)) allImages.push(img);
+      }
+    }
+    const thumbnail = allImages[0] || "";
+    const colors = [...new Set(variantRows.map((v) => v.color))];
+    const uniqueSizes = [...new Set(variantRows.map((v) => v.size))];
+    const totalStock = variantRows.reduce((s, v) => s + v.stock, 0);
 
     await db.query(
       `INSERT INTO products (
-        id, name, category, price_value, created_at, 
-        is_best_seller, thumbnail, images, colors, 
+        id, name, category, price_value, created_at,
+        is_best_seller, thumbnail, images, colors,
         variants, sizes, stock_quantity, details
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
@@ -218,30 +258,33 @@ router.post("/", requireAdmin, async (req, res) => {
         isBestSeller ? 1 : 0,
         thumbnail,
         JSON.stringify(allImages),
-        JSON.stringify(Object.keys(builtVariants)),
-        JSON.stringify(builtVariants),
-        JSON.stringify(sizes),
-        Number(stockQuantity) || 0,
+        JSON.stringify(colors),
+        JSON.stringify({}), // legacy field — no longer the source of truth
+        JSON.stringify(uniqueSizes),
+        Number(stockQuantity) || totalStock,
         JSON.stringify(details || {}),
-      ],
+      ]
     );
 
-    const [rows] = await db.query("SELECT * FROM products WHERE id = ?", [id]);
-    res.status(201).json(mapProductRow(rows[0]));
+    await insertVariantRows(id, variantRows);
+
+    const [pRows] = await db.query("SELECT * FROM products WHERE id = ?", [id]);
+    const [vRows] = await db.query(
+      "SELECT * FROM product_variants WHERE product_id = ?",
+      [String(id)]
+    );
+    res.status(201).json(mapProductRow(pRows[0], vRows));
   } catch (err) {
     console.error("Create product error:", err);
-    if (err.code === "ER_DUP_ENTRY") {
+    if (err.code === "ER_DUP_ENTRY")
       return res
         .status(400)
         .json({ message: "Product with this ID already exists" });
-    }
     res.status(500).json({ message: err.message });
   }
 });
 
-/** * PUT /api/products/:id
- * Update an existing product. Restricted to Admin.
- */
+/** PUT /api/products/:id — Admin only */
 router.put("/:id", requireAdmin, async (req, res) => {
   try {
     const {
@@ -257,20 +300,24 @@ router.put("/:id", requireAdmin, async (req, res) => {
     } = req.body;
     const id = req.params.id;
 
-    const builtVariants = buildVariants({ variants, sizes, variantStock });
-    const colors = Object.keys(builtVariants);
-    const totalStock = getTotalStockFromVariants(builtVariants);
-    const allImages = Object.values(builtVariants).flatMap(
-      (v) => v[0]?.images || [],
-    );
+    const variantRows = buildVariantRows({ variants, sizes, variantStock });
+    const colors = [...new Set(variantRows.map((v) => v.color))];
+    const uniqueSizes = [...new Set(variantRows.map((v) => v.size))];
+    const totalStock = variantRows.reduce((s, v) => s + v.stock, 0);
+    const allImages = [];
+    for (const vr of variantRows) {
+      for (const img of vr.images) {
+        if (img && !allImages.includes(img)) allImages.push(img);
+      }
+    }
     const thumbnail = allImages[0] || "";
 
     await db.query(
-      `UPDATE products SET 
-        name = ?, category = ?, price_value = ?, created_at = ?, 
-        is_best_seller = ?, thumbnail = ?, images = ?, colors = ?, 
+      `UPDATE products SET
+        name = ?, category = ?, price_value = ?, created_at = ?,
+        is_best_seller = ?, thumbnail = ?, images = ?, colors = ?,
         variants = ?, sizes = ?, stock_quantity = ?, details = ?
-      WHERE id = ?`,
+       WHERE id = ?`,
       [
         name,
         category,
@@ -280,27 +327,41 @@ router.put("/:id", requireAdmin, async (req, res) => {
         thumbnail,
         JSON.stringify(allImages),
         JSON.stringify(colors),
-        JSON.stringify(builtVariants),
-        JSON.stringify(sizes),
+        JSON.stringify({}), // legacy field
+        JSON.stringify(uniqueSizes),
         totalStock,
         JSON.stringify(details || {}),
         id,
-      ],
+      ]
     );
 
-    const [rows] = await db.query("SELECT * FROM products WHERE id = ?", [id]);
-    res.json(mapProductRow(rows[0]));
+    // Replace all variants for this product
+    await db.query(
+      "DELETE FROM product_variants WHERE product_id = ?",
+      [String(id)]
+    );
+    await insertVariantRows(id, variantRows);
+
+    const [pRows] = await db.query("SELECT * FROM products WHERE id = ?", [id]);
+    const [vRows] = await db.query(
+      "SELECT * FROM product_variants WHERE product_id = ?",
+      [String(id)]
+    );
+    res.json(mapProductRow(pRows[0], vRows));
   } catch (err) {
     console.error("Update product error:", err);
     res.status(500).json({ message: err.message });
   }
 });
 
-/** * DELETE /api/products/:id
- * Delete a product by its ID. Restricted to Admin.
- */
+/** DELETE /api/products/:id — Admin only */
 router.delete("/:id", requireAdmin, async (req, res) => {
   try {
+    // Delete variants first (no CASCADE since no FK constraint)
+    await db.query(
+      "DELETE FROM product_variants WHERE product_id = ?",
+      [String(req.params.id)]
+    );
     await db.query("DELETE FROM products WHERE id = ?", [req.params.id]);
     res.json({ ok: true, message: "Product deleted successfully" });
   } catch (err) {

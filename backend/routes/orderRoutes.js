@@ -4,109 +4,19 @@ import { requireAuth, requireAdmin } from "../middleware/auth.js";
 
 const router = express.Router();
 
-function safeJsonParse(value, fallback) {
-  if (value === null || value === undefined) return fallback;
-  if (typeof value !== "string") return value;
-  const trimmed = value.trim();
-  if (!trimmed) return fallback;
-  try {
-    return JSON.parse(trimmed);
-  } catch {
-    return fallback;
-  }
-}
-
-function hasVariantLevelStockStructure(variants) {
-  return Object.values(variants || {}).some(
-    (value) =>
-      Array.isArray(value) && value.length > 0 && typeof value[0] === "object",
-  );
-}
-
-function getTotalStockFromVariantStructure(variants = {}) {
-  return Object.values(variants).reduce((total, colorVariants) => {
-    if (!Array.isArray(colorVariants)) return total;
-    return (
-      total +
-      colorVariants.reduce((sum, variant) => {
-        return sum + Math.max(0, Number(variant?.stock) || 0);
-      }, 0)
-    );
-  }, 0);
-}
-
-function increaseVariantStock(variants, color, size, qty) {
-  const nextVariants = structuredClone(variants || {});
-  const colorKey = String(color || "")
-    .trim()
-    .toLowerCase();
-  const sizeKey = String(size || "").trim();
-  const quantity = Math.max(0, Number(qty) || 0);
-
-  if (!colorKey || !sizeKey || quantity <= 0) return nextVariants;
-
-  const actualColorKey = Object.keys(nextVariants).find(
-    (k) => k.toLowerCase() === colorKey,
-  );
-  if (!actualColorKey) return nextVariants;
-
-  const colorVariants = nextVariants[actualColorKey];
-  if (!Array.isArray(colorVariants)) return nextVariants;
-
-  const target = colorVariants.find(
-    (variant) => String(variant?.size || "").trim() === sizeKey,
-  );
-
-  if (!target) return nextVariants;
-
-  target.stock = Math.max(0, Number(target.stock) || 0) + quantity;
-  return nextVariants;
-}
-
-function decreaseVariantStock(variants, color, size, qty) {
-  const nextVariants = structuredClone(variants || {});
-  const colorKey = String(color || "")
-    .trim()
-    .toLowerCase();
-  const sizeKey = String(size || "").trim();
-  const quantity = Math.max(0, Number(qty) || 0);
-
-  if (!colorKey || !sizeKey || quantity <= 0)
-    throw new Error("Invalid variant selection.");
-
-  const actualColorKey = Object.keys(nextVariants).find(
-    (k) => k.toLowerCase() === colorKey,
-  );
-  if (!actualColorKey) throw new Error("Variant color not found.");
-
-  const colorVariants = nextVariants[actualColorKey];
-  if (!Array.isArray(colorVariants)) throw new Error("Invalid variants data.");
-
-  const target = colorVariants.find(
-    (variant) => String(variant?.size || "").trim() === sizeKey,
-  );
-
-  if (!target) throw new Error("Variant size not found.");
-  const currentStock = Math.max(0, Number(target.stock) || 0);
-  if (currentStock < quantity) throw new Error("Not enough stock.");
-
-  target.stock = currentStock - quantity;
-  return nextVariants;
-}
-
 // --- ROUTES ---
 
 /** GET ALL ORDERS (ADMIN) */
 router.get("/all", requireAdmin, async (req, res) => {
   try {
     const [orders] = await db.query(
-      `SELECT * FROM orders ORDER BY created_at DESC`,
+      "SELECT * FROM orders ORDER BY created_at DESC"
     );
     if (!orders.length) return res.json({ orders: [] });
 
     const [items] = await db.query(
-      `SELECT * FROM order_items WHERE order_id IN (?)`,
-      [orders.map((o) => o.id)],
+      "SELECT * FROM order_items WHERE order_id IN (?)",
+      [orders.map((o) => o.id)]
     );
     const itemsByOrderId = items.reduce((acc, it) => {
       (acc[it.order_id] ||= []).push(it);
@@ -125,14 +35,14 @@ router.get("/all", requireAdmin, async (req, res) => {
 router.get("/", requireAuth, async (req, res) => {
   try {
     const [orders] = await db.query(
-      `SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC`,
-      [req.user.userId],
+      "SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC",
+      [req.user.userId]
     );
     if (!orders.length) return res.json({ orders: [] });
 
     const [items] = await db.query(
-      `SELECT * FROM order_items WHERE order_id IN (?)`,
-      [orders.map((o) => o.id)],
+      "SELECT * FROM order_items WHERE order_id IN (?)",
+      [orders.map((o) => o.id)]
     );
     const itemsByOrderId = items.reduce((acc, it) => {
       (acc[it.order_id] ||= []).push(it);
@@ -147,7 +57,7 @@ router.get("/", requireAuth, async (req, res) => {
   }
 });
 
-/** UPDATE STATUS (ADMIN) */
+/** UPDATE ORDER STATUS (ADMIN) */
 router.patch("/:id/status", requireAdmin, async (req, res) => {
   let connection;
   try {
@@ -169,7 +79,7 @@ router.patch("/:id/status", requireAdmin, async (req, res) => {
 
     const [orderRows] = await connection.query(
       "SELECT id, status FROM orders WHERE id = ? FOR UPDATE",
-      [orderId],
+      [orderId]
     );
     if (!orderRows.length) {
       await connection.rollback();
@@ -178,44 +88,30 @@ router.patch("/:id/status", requireAdmin, async (req, res) => {
 
     const previousStatus = orderRows[0].status;
 
-    // Jei atšaukiame užsakymą, grąžiname prekes į likutį
+    // Restore stock when canceling a non-canceled order
     if (previousStatus !== "Canceled" && nextStatus === "Canceled") {
       const [items] = await connection.query(
         "SELECT * FROM order_items WHERE order_id = ?",
-        [orderId],
+        [orderId]
       );
+
       for (const item of items) {
-        const [productRows] = await connection.query(
-          "SELECT id, variants, stock_quantity FROM products WHERE id = ? FOR UPDATE",
-          [item.product_id],
+        const color = String(item.color || "").trim().toLowerCase();
+        const size = String(item.size || "one size").trim();
+
+        // Restore stock in product_variants
+        await connection.query(
+          `UPDATE product_variants
+           SET stock = stock + ?
+           WHERE product_id = ? AND color = ? AND size = ?`,
+          [item.quantity, String(item.product_id), color, size]
         );
-        if (!productRows.length) continue;
 
-        const product = productRows[0];
-        const variants = safeJsonParse(product.variants, {});
-
-        if (
-          hasVariantLevelStockStructure(variants) &&
-          item.color &&
-          item.size
-        ) {
-          const nextVariants = increaseVariantStock(
-            variants,
-            item.color,
-            item.size,
-            item.quantity,
-          );
-          const nextTotal = getTotalStockFromVariantStructure(nextVariants);
-          await connection.query(
-            "UPDATE products SET variants = ?, stock_quantity = ? WHERE id = ?",
-            [JSON.stringify(nextVariants), nextTotal, product.id],
-          );
-        } else {
-          await connection.query(
-            "UPDATE products SET stock_quantity = stock_quantity + ? WHERE id = ?",
-            [item.quantity, product.id],
-          );
-        }
+        // Keep products.stock_quantity in sync
+        await connection.query(
+          "UPDATE products SET stock_quantity = stock_quantity + ? WHERE id = ?",
+          [item.quantity, item.product_id]
+        );
       }
     }
 
@@ -257,35 +153,49 @@ router.post("/", requireAuth, async (req, res) => {
     const paymentBank = payment?.bank || null;
 
     const normalized = [];
+
     for (const it of items) {
       const productId = it.productId || it.id;
+      const qty = Math.max(1, Number(it.quantity || it.qty || 1));
+      const color = String(it.color || "").trim().toLowerCase();
+      const size = String(it.size || "one size").trim();
+
+      // Lock the product row
       const [pRows] = await connection.query(
-        "SELECT id, name, price_value, stock_quantity, variants FROM products WHERE id = ? FOR UPDATE",
-        [productId],
+        "SELECT id, name, price_value FROM products WHERE id = ? FOR UPDATE",
+        [productId]
       );
       if (!pRows.length) throw new Error(`Product ${productId} not found.`);
-
       const p = pRows[0];
-      const qty = Math.max(1, Number(it.quantity || it.qty || 1));
-      const color = String(it.color || "").trim();
-      const size = String(it.size || "").trim();
-      const variants = safeJsonParse(p.variants, {});
 
-      if (hasVariantLevelStockStructure(variants)) {
-        const nextVariants = decreaseVariantStock(variants, color, size, qty);
-        const nextTotal = getTotalStockFromVariantStructure(nextVariants);
-        await connection.query(
-          "UPDATE products SET variants = ?, stock_quantity = ? WHERE id = ?",
-          [JSON.stringify(nextVariants), nextTotal, p.id],
-        );
-      } else {
-        if (p.stock_quantity < qty)
-          throw new Error(`Not enough stock for ${p.name}`);
-        await connection.query(
-          "UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?",
-          [qty, p.id],
+      // Lock the specific variant row in product_variants
+      const [vRows] = await connection.query(
+        `SELECT id, stock FROM product_variants
+         WHERE product_id = ? AND color = ? AND size = ?
+         FOR UPDATE`,
+        [String(productId), color, size]
+      );
+
+      if (!vRows.length) {
+        throw new Error(
+          `Variant not found for "${p.name}" (${color} / ${size}).`
         );
       }
+      if (vRows[0].stock < qty) {
+        throw new Error(`Not enough stock for "${p.name}" (${color} / ${size}).`);
+      }
+
+      // Deduct stock from product_variants
+      await connection.query(
+        "UPDATE product_variants SET stock = stock - ? WHERE id = ?",
+        [qty, vRows[0].id]
+      );
+
+      // Keep products.stock_quantity in sync
+      await connection.query(
+        "UPDATE products SET stock_quantity = GREATEST(0, stock_quantity - ?) WHERE id = ?",
+        [qty, productId]
+      );
 
       normalized.push({
         productId: p.id,
@@ -294,20 +204,23 @@ router.post("/", requireAuth, async (req, res) => {
         qty,
         color: color || null,
         size: size || null,
-        imageUrl: it.image || p.thumbnail,
+        imageUrl: it.image || null,
       });
     }
 
     const itemsTotal = normalized.reduce(
       (sum, i) => sum + i.priceCents * i.qty,
-      0,
+      0
     );
     const deliveryFee = deliveryType === "pickup" ? 0 : 300;
 
     const [orderRes] = await connection.query(
-      `INSERT INTO orders 
-      (user_id, status, total_cents, currency, contact_email, delivery_type, delivery_method, delivery_fee_cents, ship_first_name, ship_last_name, ship_address, ship_city, ship_postal_code, ship_phone, payment_type, payment_bank) 
-      VALUES (?, 'Pending', ?, 'EUR', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO orders
+       (user_id, status, total_cents, currency, contact_email,
+        delivery_type, delivery_method, delivery_fee_cents,
+        ship_first_name, ship_last_name, ship_address, ship_city,
+        ship_postal_code, ship_phone, payment_type, payment_bank)
+       VALUES (?, 'Pending', ?, 'EUR', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         userId,
         itemsTotal + deliveryFee,
@@ -323,7 +236,7 @@ router.post("/", requireAuth, async (req, res) => {
         shipping?.phone || null,
         paymentType,
         paymentBank,
-      ],
+      ]
     );
 
     const orderId = orderRes.insertId;
@@ -340,7 +253,7 @@ router.post("/", requireAuth, async (req, res) => {
 
     await connection.query(
       "INSERT INTO order_items (order_id, product_id, product_name, price_cents, quantity, color, size, image_url) VALUES ?",
-      [itemValues],
+      [itemValues]
     );
 
     await connection.commit();
