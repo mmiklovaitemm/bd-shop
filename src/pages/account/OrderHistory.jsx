@@ -162,6 +162,7 @@ export default function OrderHistory() {
                       name: it.product_name || t.product?.label || "Product",
                       quantity: Number(it.quantity || 1),
                       color: it.color || "",
+                      size: it.size || "one size",
                       image_url: it.image_url,
                     };
                   }
@@ -258,41 +259,43 @@ export default function OrderHistory() {
                               pickup:
                                 order?.delivery_type === "pickup"
                                   ? order?.delivery_method || t.pickup
-                                  : t.notAvailable,
-                              deliveryTo: {
-                                name:
-                                  [
-                                    order?.ship_first_name,
-                                    order?.ship_last_name,
-                                  ]
-                                    .filter(Boolean)
-                                    .join(" ") || "N/A",
-                                street:
-                                  [order?.ship_address, order?.ship_apartment]
-                                    .filter(Boolean)
-                                    .join(", ") || "N/A",
-                                zipCity:
-                                  [order?.ship_postal_code, order?.ship_city]
-                                    .filter(Boolean)
-                                    .join(" ") || "N/A",
-                              },
-                              billingAddress: {
-                                name:
-                                  [
-                                    order?.ship_first_name,
-                                    order?.ship_last_name,
-                                  ]
-                                    .filter(Boolean)
-                                    .join(" ") || "N/A",
-                                street:
-                                  [order?.ship_address, order?.ship_apartment]
-                                    .filter(Boolean)
-                                    .join(", ") || "N/A",
-                                zipCity:
-                                  [order?.ship_postal_code, order?.ship_city]
-                                    .filter(Boolean)
-                                    .join(" ") || "N/A",
-                              },
+                                  : "—",
+                              deliveryTo:
+                                order?.delivery_type === "pickup"
+                                  ? {
+                                      name: order?.delivery_method || t.pickup,
+                                      street: "",
+                                      zipCity: "",
+                                    }
+                                  : {
+                                      name: [order?.ship_first_name, order?.ship_last_name]
+                                        .filter(Boolean)
+                                        .join(" ") || "",
+                                      street: [order?.ship_address, order?.ship_apartment]
+                                        .filter(Boolean)
+                                        .join(", ") || "",
+                                      zipCity: [order?.ship_postal_code, order?.ship_city]
+                                        .filter(Boolean)
+                                        .join(" ") || "",
+                                    },
+                              billingAddress:
+                                order?.delivery_type === "pickup"
+                                  ? {
+                                      name: order?.delivery_method || t.pickup,
+                                      street: "",
+                                      zipCity: "",
+                                    }
+                                  : {
+                                      name: [order?.ship_first_name, order?.ship_last_name]
+                                        .filter(Boolean)
+                                        .join(" ") || "",
+                                      street: [order?.ship_address, order?.ship_apartment]
+                                        .filter(Boolean)
+                                        .join(", ") || "",
+                                      zipCity: [order?.ship_postal_code, order?.ship_city]
+                                        .filter(Boolean)
+                                        .join(" ") || "",
+                                    },
                               deliveryMethod: order?.delivery_method || "N/A",
                               deliveryPrice: money(
                                 totalCents - totalCentsFromItems,

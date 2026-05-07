@@ -30,13 +30,20 @@ function CellLabelValue({ label, value, valueClassName = "" }) {
  * Renders an address block with safety checks for missing fields
  */
 function AddressBlock({ label, name, street, zipCity }) {
+  const hasInfo = name || street || zipCity;
   return (
     <div className="font-ui text-sm">
       <div className="text-neutral-600">{label}</div>
       <div className="mt-2 leading-6">
-        <div className="font-semibold">{name || "N/A"}</div>
-        <div>{street || ""}</div>
-        <div>{zipCity || ""}</div>
+        {hasInfo ? (
+          <>
+            {name && <div className="font-semibold">{name}</div>}
+            {street && <div>{street}</div>}
+            {zipCity && <div>{zipCity}</div>}
+          </>
+        ) : (
+          <div className="text-neutral-400">—</div>
+        )}
       </div>
     </div>
   );
@@ -79,6 +86,9 @@ function ProductsBlock({ items = [] }) {
                     {t.color}: {item.color}
                   </div>
                 )}
+                <div>
+                  {t.size || "Size"}: {item?.size || "one size"}
+                </div>
                 {(item?.service_option || item?.service) && (
                   <div>
                     {t.service}:{" "}

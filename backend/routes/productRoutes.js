@@ -114,8 +114,19 @@ function mapProductRow(row, variantRows = []) {
   if (!row) return null;
   const details = safeJsonParse(row.details, {});
   const images = safeJsonParse(row.images, []);
-  const { variants, colors, sizes } = variantRowsToShape(variantRows);
+  const { variants, sizes } = variantRowsToShape(variantRows);
   const stockQuantity = getTotalStock(variantRows);
+
+  // Restore original color order from products.colors (stored when product was created)
+  const storedColors = safeJsonParse(row.colors, []);
+  const variantColorSet = new Set(Object.keys(variants));
+  const colors =
+    storedColors.length > 0
+      ? [
+          ...storedColors.filter((c) => variantColorSet.has(c)),
+          ...Object.keys(variants).filter((c) => !storedColors.includes(c)),
+        ]
+      : Object.keys(variants);
 
   return {
     id: row.id,
