@@ -16,6 +16,7 @@ import PaymentSection from "./components/PaymentSection";
 import PickupSection from "./components/PickupSection";
 
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
+import { getStoredToken } from "@/store/useAuth";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
@@ -186,11 +187,16 @@ function CheckoutForm() {
             : null,
       };
 
+      const authHeaders = {
+        "Content-Type": "application/json",
+        ...(getStoredToken() ? { Authorization: `Bearer ${getStoredToken()}` } : {}),
+      };
+
       // Card payment: confirm with Stripe first, then create order
       if (paymentType === "card") {
         const intentRes = await fetch(`${API_ORIGIN}/api/payments/create-intent`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders,
           credentials: "include",
           body: JSON.stringify({ amount: Math.round(total * 100) }),
         });
@@ -218,7 +224,7 @@ function CheckoutForm() {
 
       const res = await fetch(`${API_ORIGIN}/api/orders`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders,
         credentials: "include",
         body: JSON.stringify(orderPayload),
       });

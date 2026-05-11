@@ -16,14 +16,23 @@ const getUrl = (path) => {
   return `${base}${finalPath}`;
 };
 
+const TOKEN_KEY = "auth_token";
+export const getStoredToken = () => {
+  try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
+};
+const saveToken = (t) => { try { localStorage.setItem(TOKEN_KEY, t); } catch {} };
+const clearToken = () => { try { localStorage.removeItem(TOKEN_KEY); } catch {} };
+
 async function api(path, options = {}) {
   const url = getUrl(path);
+  const token = getStoredToken();
 
   const res = await fetch(url, {
     credentials: "include",
     ...options,
     headers: {
       "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(options.headers || {}),
     },
   });
@@ -57,6 +66,7 @@ const useAuth = create((set) => ({
       method: "POST",
       body: JSON.stringify({ email, password }),
     });
+    if (data.token) saveToken(data.token);
     set({ user: data.user });
     return data;
   },
@@ -66,6 +76,7 @@ const useAuth = create((set) => ({
       method: "POST",
       body: JSON.stringify({ email, password, firstName, lastName }),
     });
+    if (data.token) saveToken(data.token);
     set({ user: data.user });
     return data;
   },
@@ -74,6 +85,7 @@ const useAuth = create((set) => ({
     try {
       await api("/api/auth/logout", { method: "POST" });
     } finally {
+      clearToken();
       set({ user: null });
     }
   },
