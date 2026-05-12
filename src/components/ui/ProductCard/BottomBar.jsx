@@ -19,7 +19,7 @@ export default function BottomBar({ product, onAddToCart, isDesktop }) {
         )}
       >
         <div className="flex w-full items-center justify-center gap-4">
-          <p className="min-w-0 truncate font-display text-[14px] font-normal leading-none">
+          <p className="min-w-0 font-display text-[14px] font-normal leading-tight">
             {product.name}
           </p>
           <div className="h-px w-[25%] flex-none bg-white/90" />
