@@ -1,9 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import FavoritesContext from "./favoritesContextInstance";
-import useAuth from "@/store/useAuth";
+import useAuth, { getStoredToken } from "@/store/useAuth";
 
 const STORAGE_KEY = "bdshop:favorites";
 const API_BASE = "https://bd-shop-gfva.onrender.com/api";
+
+function authHeaders() {
+  const token = getStoredToken();
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+}
 
 function readLocalFavorites() {
   try {
@@ -23,7 +31,10 @@ export function FavoritesProvider({ children }) {
   // When user logs in — fetch from API; when logs out — restore from localStorage
   useEffect(() => {
     if (user) {
-      fetch(`${API_BASE}/favorites`, { credentials: "include" })
+      fetch(`${API_BASE}/favorites`, {
+        credentials: "include",
+        headers: authHeaders(),
+      })
         .then((r) => r.json())
         .then((data) => {
           if (Array.isArray(data.favoriteIds)) {
@@ -59,13 +70,14 @@ export function FavoritesProvider({ children }) {
         if (isAdding) {
           fetch(`${API_BASE}/favorites`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: authHeaders(),
             credentials: "include",
             body: JSON.stringify({ productId: id }),
           }).catch(() => {});
         } else {
           fetch(`${API_BASE}/favorites/${id}`, {
             method: "DELETE",
+            headers: authHeaders(),
             credentials: "include",
           }).catch(() => {});
         }
@@ -77,6 +89,7 @@ export function FavoritesProvider({ children }) {
       if (user) {
         fetch(`${API_BASE}/favorites/${id}`, {
           method: "DELETE",
+          headers: authHeaders(),
           credentials: "include",
         }).catch(() => {});
       }
