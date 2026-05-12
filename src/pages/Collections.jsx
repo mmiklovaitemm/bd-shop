@@ -148,6 +148,15 @@ export default function Collections() {
   const [selectedSize, setSelectedSize] = useState(null);
   const [customPriceRange, setCustomPriceRange] = useState(null);
 
+  // Reset all filters when category changes
+  useEffect(() => {
+    setSelectedMaterial(null);
+    setSelectedAppearance([]);
+    setSelectedGems([]);
+    setSelectedSize(null);
+    setCustomPriceRange(null);
+  }, [activeCategory]);
+
   const [pageSize, setPageSize] = useState(() => {
     if (typeof window === "undefined") return 12;
     return window.matchMedia("(max-width: 767px)").matches ? 8 : 12;

@@ -201,33 +201,36 @@ function FiltersContent({
         </div>
       </FilterAccordion>
 
-      <FilterAccordion title={t.gemstones}>
-        <div className="space-y-3">
-          {gemOptions.map((opt) => {
-            const checked = selectedGems.includes(opt.value);
+      {gemOptions.length > 0 && (
+        <FilterAccordion title={t.gemstones}>
+          <div className="space-y-3">
+            {gemOptions.map((opt) => {
+              const checked = selectedGems.includes(opt.value);
 
-            return (
-              <label
-                key={opt.value}
-                className="flex items-center gap-3 font-ui text-[14px]"
-              >
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={() =>
-                    onGemsChange?.(toggleInArray(selectedGems, opt.value))
-                  }
-                  className="h-5 w-5 accent-black"
-                />
-                <span>
-                  {opt.label} ({opt.count})
-                </span>
-              </label>
-            );
-          })}
-        </div>
-      </FilterAccordion>
+              return (
+                <label
+                  key={opt.value}
+                  className="flex items-center gap-3 font-ui text-[14px]"
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() =>
+                      onGemsChange?.(toggleInArray(selectedGems, opt.value))
+                    }
+                    className="h-5 w-5 accent-black"
+                  />
+                  <span>
+                    {opt.label} ({opt.count})
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </FilterAccordion>
+      )}
 
+      {sizeOptions.length > 0 && (
       <FilterAccordion title={t.size}>
         <div className="flex flex-wrap gap-3">
           {sizeOptions.map((opt) => {
@@ -259,6 +262,7 @@ function FiltersContent({
           })}
         </div>
       </FilterAccordion>
+      )}
     </>
   );
 }
