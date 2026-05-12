@@ -92,6 +92,7 @@ function LanguageToggle({ onDragStart }) {
 export default function Footer() {
   const { t } = useLanguage();
   const [showSuccess, setShowSuccess] = useState(false);
+  const [email, setEmail] = useState("");
 
   const preventDrag = useCallback((e) => {
     e.preventDefault();
@@ -105,6 +106,7 @@ export default function Footer() {
   const handleSubscribe = (e) => {
     e.preventDefault();
     setShowSuccess(true);
+    setEmail("");
   };
 
   return (
@@ -190,6 +192,8 @@ export default function Footer() {
                 <input
                   type="email"
                   required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder={t.emailPlaceholder}
                   className="h-11 w-full min-w-0 border border-black/50 px-4 text-[14px] outline-none placeholder:text-black/30"
                 />
