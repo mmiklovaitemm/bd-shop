@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { FiCheck, FiX } from "react-icons/fi";
+import { AnimatePresence, motion } from "framer-motion";
 
 import logoIcon from "@/assets/ui/logo.svg";
 import facebookIcon from "@/assets/ui/facebook.svg";
@@ -108,38 +109,64 @@ export default function Footer() {
 
   return (
     <>
-      {showSuccess && (
-        <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 px-4"
-          onClick={() => setShowSuccess(false)}
-        >
-          <div
-            className="relative w-full max-w-[400px] border border-black/20 bg-white shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
+      <AnimatePresence>
+        {showSuccess && (
+          <motion.div
+            key="footer-subscribe-modal"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 px-4"
+            onClick={() => setShowSuccess(false)}
           >
-            <button
-              type="button"
-              onClick={() => setShowSuccess(false)}
-              className="absolute right-4 top-4 z-10 text-black/60 transition hover:text-black"
+            <motion.div
+              initial={{ opacity: 0, y: 32, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 24, scale: 0.97 }}
+              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              className="relative w-full max-w-[400px] border border-black/20 bg-white shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
             >
-              <FiX size={22} />
-            </button>
+              <button
+                type="button"
+                onClick={() => setShowSuccess(false)}
+                className="absolute right-4 top-4 z-10 text-black/60 transition hover:text-black"
+              >
+                <FiX size={22} />
+              </button>
 
-            <div className="flex flex-col items-center px-10 py-14 text-center">
-              <img src={logoIcon} alt="Logo" className="mb-8 h-5 w-auto" />
-              <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-neutral-100 text-black">
-                <FiCheck size={32} />
+              <div className="flex flex-col items-center px-10 py-14 text-center">
+                <img src={logoIcon} alt="Logo" className="mb-8 h-5 w-auto" />
+                <motion.div
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.15, duration: 0.4, type: "spring", stiffness: 300, damping: 20 }}
+                  className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-neutral-100 text-black"
+                >
+                  <FiCheck size={32} />
+                </motion.div>
+                <motion.h2
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2, duration: 0.3 }}
+                  className="mb-3 font-display text-4xl leading-tight"
+                >
+                  {t.thankYou}
+                </motion.h2>
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.3, duration: 0.3 }}
+                  className="font-ui text-sm text-black/70"
+                >
+                  {t.subscriptionSuccess}
+                </motion.p>
               </div>
-              <h2 className="mb-3 font-display text-4xl leading-tight">
-                {t.thankYou}
-              </h2>
-              <p className="font-ui text-sm text-black/70">
-                {t.subscriptionSuccess}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     <footer
       className="bg-white select-none"
