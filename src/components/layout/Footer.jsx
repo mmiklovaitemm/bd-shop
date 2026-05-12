@@ -1,5 +1,6 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { NavLink } from "react-router-dom";
+import { FiCheck, FiX } from "react-icons/fi";
 
 import logoIcon from "@/assets/ui/logo.svg";
 import facebookIcon from "@/assets/ui/facebook.svg";
@@ -89,6 +90,7 @@ function LanguageToggle({ onDragStart }) {
 
 export default function Footer() {
   const { t } = useLanguage();
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const preventDrag = useCallback((e) => {
     e.preventDefault();
@@ -99,7 +101,46 @@ export default function Footer() {
     e.preventDefault();
   }, []);
 
+  const handleSubscribe = (e) => {
+    e.preventDefault();
+    setShowSuccess(true);
+  };
+
   return (
+    <>
+      {showSuccess && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 px-4"
+          onClick={() => setShowSuccess(false)}
+        >
+          <div
+            className="relative w-full max-w-[400px] border border-black/20 bg-white shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setShowSuccess(false)}
+              className="absolute right-4 top-4 z-10 text-black/60 transition hover:text-black"
+            >
+              <FiX size={22} />
+            </button>
+
+            <div className="flex flex-col items-center px-10 py-14 text-center">
+              <img src={logoIcon} alt="Logo" className="mb-8 h-5 w-auto" />
+              <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-neutral-100 text-black">
+                <FiCheck size={32} />
+              </div>
+              <h2 className="mb-3 font-display text-4xl leading-tight">
+                {t.thankYou}
+              </h2>
+              <p className="font-ui text-sm text-black/70">
+                {t.subscriptionSuccess}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
     <footer
       className="bg-white select-none"
       onDragStart={preventDrag}
@@ -118,9 +159,10 @@ export default function Footer() {
                 {t.subscribeText}
               </p>
 
-              <form className="mt-4 flex w-full">
+              <form className="mt-4 flex w-full" onSubmit={handleSubscribe}>
                 <input
                   type="email"
+                  required
                   placeholder={t.emailPlaceholder}
                   className="h-11 w-full min-w-0 border border-black/50 px-4 text-[14px] outline-none placeholder:text-black/30"
                 />
@@ -186,5 +228,6 @@ export default function Footer() {
         </div>
       </div>
     </footer>
+    </>
   );
 }
