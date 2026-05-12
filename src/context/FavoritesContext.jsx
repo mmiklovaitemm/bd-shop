@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import FavoritesContext from "./favoritesContextInstance";
 import useAuth, { getStoredToken } from "@/store/useAuth";
 
@@ -23,59 +23,73 @@ function readLocalFavorites() {
   }
 }
 
+function saveLocalFavorites(ids) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
+  } catch {}
+}
+
 export function FavoritesProvider({ children }) {
   const user = useAuth((s) => s.user);
-
   const [favoriteIds, setFavoriteIds] = useState(readLocalFavorites);
+  const prevUserRef = useRef(null);
 
-  // When user logs in — fetch from API; when logs out — restore from localStorage
+  // Always persist to localStorage (for both guests and logged-in users as backup)
   useEffect(() => {
-    if (user) {
+    saveLocalFavorites(favoriteIds);
+  }, [favoriteIds]);
+
+  // When user logs in — merge localStorage with API; when logs out — keep localStorage
+  useEffect(() => {
+    const wasLoggedOut = !prevUserRef.current;
+    prevUserRef.current = user;
+
+    if (user && wasLoggedOut) {
+      // User just logged in — fetch from API and merge with local
       fetch(`${API_BASE}/favorites`, {
         credentials: "include",
         headers: authHeaders(),
       })
-        .then((r) => r.json())
+        .then((r) => (r.ok ? r.json() : null))
         .then((data) => {
-          if (Array.isArray(data.favoriteIds)) {
-            setFavoriteIds(data.favoriteIds);
+          if (data && Array.isArray(data.favoriteIds)) {
+            // Merge API favorites with any local ones
+            setFavoriteIds((local) => {
+              const merged = Array.from(
+                new Set([...local.map(String), ...data.favoriteIds.map(String)])
+              );
+              return merged;
+            });
           }
         })
         .catch(() => {});
-    } else {
-      setFavoriteIds(readLocalFavorites());
     }
   }, [user]);
 
-  // Persist to localStorage for guests
-  useEffect(() => {
-    if (!user) {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(favoriteIds));
-      } catch {
-        // ignore
-      }
-    }
-  }, [favoriteIds, user]);
-
   const value = useMemo(() => {
-    const has = (id) => favoriteIds.includes(id);
+    const has = (id) => favoriteIds.map(String).includes(String(id));
 
     const toggle = (id) => {
-      const isAdding = !favoriteIds.includes(id);
-      setFavoriteIds((prev) =>
-        prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-      );
+      const strId = String(id);
+      const isAdding = !favoriteIds.map(String).includes(strId);
+
+      setFavoriteIds((prev) => {
+        const strPrev = prev.map(String);
+        return isAdding
+          ? [...strPrev, strId]
+          : strPrev.filter((x) => x !== strId);
+      });
+
       if (user) {
         if (isAdding) {
           fetch(`${API_BASE}/favorites`, {
             method: "POST",
             headers: authHeaders(),
             credentials: "include",
-            body: JSON.stringify({ productId: id }),
+            body: JSON.stringify({ productId: strId }),
           }).catch(() => {});
         } else {
-          fetch(`${API_BASE}/favorites/${id}`, {
+          fetch(`${API_BASE}/favorites/${strId}`, {
             method: "DELETE",
             headers: authHeaders(),
             credentials: "include",
@@ -85,9 +99,10 @@ export function FavoritesProvider({ children }) {
     };
 
     const remove = (id) => {
-      setFavoriteIds((prev) => prev.filter((x) => x !== id));
+      const strId = String(id);
+      setFavoriteIds((prev) => prev.map(String).filter((x) => x !== strId));
       if (user) {
-        fetch(`${API_BASE}/favorites/${id}`, {
+        fetch(`${API_BASE}/favorites/${strId}`, {
           method: "DELETE",
           headers: authHeaders(),
           credentials: "include",
