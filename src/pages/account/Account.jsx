@@ -9,6 +9,7 @@ import shoppingBagIcon from "@/assets/ui/shopping-bag.svg";
 import userIcon from "@/assets/ui/user.svg";
 import logoutIcon from "@/assets/ui/log-out.svg";
 import AboutStudioSection from "@/components/ui/AboutStudioSection";
+import PageTitle from "@/components/ui/PageTitle";
 
 function ActionButton({ icon, label, onClick, invertIcon = false }) {
   return (
@@ -59,13 +60,10 @@ export default function Account() {
 
   return (
     <>
-      <main className="px-2 pt-3">
-        <section className="mx-auto w-full max-w-6xl">
-          <h1 className="py-1 font-display text-4xl leading-none">
-            {t.account}
-          </h1>
+      <PageTitle title={t.account} />
 
-          <FullWidthDivider className="my-4" />
+      <main className="px-6 pt-6">
+        <section className="mx-auto w-full max-w-6xl">
 
           <div className="mx-auto w-full max-w-md space-y-4 font-ui">
             <ActionButton
@@ -89,7 +87,7 @@ export default function Account() {
             />
           </div>
 
-          <FullWidthDivider className="my-6" />
+          <FullWidthDivider className="mt-6" />
         </section>
       </main>
 
