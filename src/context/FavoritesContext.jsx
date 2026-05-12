@@ -39,13 +39,13 @@ export function FavoritesProvider({ children }) {
     saveLocalFavorites(favoriteIds);
   }, [favoriteIds]);
 
-  // When user logs in — merge localStorage with API; when logs out — keep localStorage
+  // When user logs in — fetch from API; when logs out — clear
   useEffect(() => {
-    const wasLoggedOut = !prevUserRef.current;
+    const prevUser = prevUserRef.current;
     prevUserRef.current = user;
 
-    if (user && wasLoggedOut) {
-      // User just logged in — fetch from API and merge with local
+    if (user && !prevUser) {
+      // User just logged in — load from API
       fetch(`${API_BASE}/favorites`, {
         credentials: "include",
         headers: authHeaders(),
@@ -53,16 +53,14 @@ export function FavoritesProvider({ children }) {
         .then((r) => (r.ok ? r.json() : null))
         .then((data) => {
           if (data && Array.isArray(data.favoriteIds)) {
-            // Merge API favorites with any local ones
-            setFavoriteIds((local) => {
-              const merged = Array.from(
-                new Set([...local.map(String), ...data.favoriteIds.map(String)])
-              );
-              return merged;
-            });
+            setFavoriteIds(data.favoriteIds.map(String));
           }
         })
         .catch(() => {});
+    } else if (!user && prevUser) {
+      // User just logged out — clear favorites and localStorage
+      setFavoriteIds([]);
+      saveLocalFavorites([]);
     }
   }, [user]);
 
