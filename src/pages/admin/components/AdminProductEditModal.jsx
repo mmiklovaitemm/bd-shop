@@ -69,6 +69,11 @@ export default function AdminProductEditModal({
     bandWidth: initialData?.details?.bandWidthMm || "",
     braceletLength: initialData?.details?.braceletLengthCm || "",
     personalType: initialData?.details?.personalType || "ring",
+    surface: initialData?.details?.surface || "",
+    hasGem: initialData?.details?.hasGem || false,
+    gemstones: Array.isArray(initialData?.details?.gemstones)
+      ? initialData.details.gemstones.join(", ")
+      : "",
   });
 
   const [error, setError] = useState("");
@@ -274,6 +279,11 @@ export default function AdminProductEditModal({
         braceletLengthCm: Number(form.braceletLength) || undefined,
         personalType:
           form.category === "personal" ? form.personalType : undefined,
+        surface: form.surface || undefined,
+        hasGem: form.hasGem || false,
+        gemstones: form.gemstones
+          ? form.gemstones.split(",").map((g) => g.trim()).filter(Boolean)
+          : [],
       },
     };
 
@@ -566,6 +576,49 @@ export default function AdminProductEditModal({
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Filter Properties */}
+          <div className="border border-black p-4 space-y-4 bg-blue-50">
+            <label className="block font-bold uppercase text-[10px] tracking-widest text-black/60">
+              Filter Properties
+            </label>
+
+            <div>
+              <label className="mb-1 block text-xs font-bold">Surface</label>
+              <select
+                value={form.surface}
+                onChange={(e) => handleChange("surface", e.target.value)}
+                className="h-10 w-full border border-black bg-white px-3"
+              >
+                <option value="">— None —</option>
+                <option value="smooth">Smooth</option>
+                <option value="rough">Rough</option>
+              </select>
+            </div>
+
+            <label className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={form.hasGem}
+                onChange={(e) => handleChange("hasGem", e.target.checked)}
+                className="h-4 w-4"
+              />
+              <span className="text-xs font-bold">Has Gemstone</span>
+            </label>
+
+            <div>
+              <label className="mb-1 block text-xs font-bold">
+                Gemstones (comma separated, e.g. kristolas, cirkonis)
+              </label>
+              <input
+                type="text"
+                value={form.gemstones}
+                placeholder="kristolas, cirkonis"
+                onChange={(e) => handleChange("gemstones", e.target.value)}
+                className="h-10 w-full border border-black px-3"
+              />
+            </div>
           </div>
 
           <div className="border-t border-black pt-4">

@@ -144,6 +144,9 @@ function mapProductRow(row, variantRows = []) {
     variants,
     sizes,
     details,
+    hasGem: Boolean(details.hasGem),
+    surface: details.surface || null,
+    gemstones: Array.isArray(details.gemstones) ? details.gemstones : [],
   };
 }
 
