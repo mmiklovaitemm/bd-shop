@@ -28,7 +28,7 @@ export default function Favorites() {
     <>
       <PageTitle title={t.myFavourites} />
 
-      <main className="mx-auto w-full select-none px-8 py-10">
+      <main className="mx-auto w-full max-w-[1200px] select-none px-4 py-8 md:px-6 md:py-10 lg:px-1">
         {loading ? (
           <div className="py-20 text-center font-ui text-black/60">
             {t.loading}

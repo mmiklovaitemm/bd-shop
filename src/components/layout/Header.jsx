@@ -84,7 +84,7 @@ const CartItem = memo(({ to, icon, label, count }) => (
       alt=""
       className={`h-4 w-auto select-none ${ICON_HOVER_CLASS}`}
     />
-    <span className="font-ui text-[12px] text-black/80 select-none lg:text-[14px]">
+    <span className="font-ui text-[12px] text-black/80 select-none lg:text-[14px] whitespace-nowrap">
       {label} <CountBadge count={count} />
     </span>
   </NavItem>
@@ -202,12 +202,15 @@ export default function Header() {
           </button>
 
           {user ? (
-            <NavItem to="/account" className="flex items-center after:hidden">
+            <NavItem to="/account" className="flex items-center gap-2 after:hidden">
               <img
                 src={userIcon}
                 alt="Account"
                 className={`h-4 w-auto ${ICON_HOVER_CLASS}`}
               />
+              <span className="font-ui text-[12px] text-black/80 lg:text-[14px]">
+                {t.profile}
+              </span>
             </NavItem>
           ) : (
             <NavItem to="/login">{t.logIn}</NavItem>
