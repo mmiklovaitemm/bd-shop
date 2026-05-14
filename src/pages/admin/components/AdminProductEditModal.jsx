@@ -15,7 +15,7 @@ export default function AdminProductEditModal({
     import.meta.env.VITE_API_URL || "https://bd-shop-gfva.onrender.com";
 
   /**
-   * HELPERS: Build state from initial product data
+   * HELPERS Build state from initial product data
    */
   function buildVariantStockState(variants = {}) {
     const result = {};
@@ -42,7 +42,7 @@ export default function AdminProductEditModal({
   }
 
   /**
-   * INITIAL STATE: Including category-specific fields
+   * Including category-specific fields
    */
   const [form, setForm] = useState({
     id: initialData?.id || "",
@@ -80,7 +80,7 @@ export default function AdminProductEditModal({
   const [uploadingVariantIndex, setUploadingVariantIndex] = useState(null);
 
   /**
-   * MEMOIZED VALUES: Sizes and Stock calculation
+   * Sizes and Stock calculation
    */
   const parsedSizes = useMemo(() => {
     return form.sizes
@@ -109,7 +109,6 @@ export default function AdminProductEditModal({
   const handleChange = (key, value) => {
     setForm((prev) => {
       const next = { ...prev, [key]: value };
-      // Logic to clear irrelevant fields when category changes
       if (key === "category") {
         if (value !== "necklaces") {
           next.length =
@@ -227,7 +226,7 @@ export default function AdminProductEditModal({
   };
 
   /**
-   * SUBMISSION: Packaging data into the expected details object
+   * Packaging data into the expected details object
    */
   const handleSubmit = () => {
     const normalizedVariants = form.variants
@@ -266,7 +265,6 @@ export default function AdminProductEditModal({
       sizes: normalizedSizes,
       variantStock: normalizedVariantStock,
       isBestSeller: form.isBestSeller,
-      // CRITICAL: Rebuilding the details object for the Dimensions & Details panel
       details: {
         detailsText: form.description.trim(),
         metal: form.metal,
@@ -282,7 +280,10 @@ export default function AdminProductEditModal({
         surface: form.surface || undefined,
         hasGem: form.hasGem || false,
         gemstones: form.gemstones
-          ? form.gemstones.split(",").map((g) => g.trim()).filter(Boolean)
+          ? form.gemstones
+              .split(",")
+              .map((g) => g.trim())
+              .filter(Boolean)
           : [],
       },
     };

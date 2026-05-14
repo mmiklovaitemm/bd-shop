@@ -1,4 +1,3 @@
-// src/pages/Account.jsx
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 import { useNavigate } from "react-router-dom";
 
@@ -64,7 +63,6 @@ export default function Account() {
 
       <main className="px-6 pt-6">
         <section className="mx-auto w-full max-w-6xl">
-
           <div className="mx-auto w-full max-w-md space-y-4 font-ui">
             <ActionButton
               icon={shoppingBagIcon}

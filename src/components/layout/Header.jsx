@@ -202,7 +202,10 @@ export default function Header() {
           </button>
 
           {user ? (
-            <NavItem to="/account" className="flex items-center gap-2 after:hidden">
+            <NavItem
+              to="/account"
+              className="flex items-center gap-2 after:hidden"
+            >
               <img
                 src={userIcon}
                 alt="Account"

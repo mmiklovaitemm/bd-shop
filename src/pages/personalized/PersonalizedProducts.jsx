@@ -1,4 +1,3 @@
-// src/pages/PersonalizedProducts.jsx
 import { motion } from "framer-motion";
 import useLanguage from "@/context/useLanguage";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";

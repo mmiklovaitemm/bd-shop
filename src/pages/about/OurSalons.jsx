@@ -27,7 +27,7 @@ function SalonCard({ image, city, address, phone, hours, index }) {
         className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
       />
 
-      {/* Modern Gradient Overlays */}
+      {/* Gradient */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-opacity duration-500 group-hover:opacity-90" />
 
       {/* Content Container */}
@@ -46,7 +46,7 @@ function SalonCard({ image, city, address, phone, hours, index }) {
           </div>
         </div>
 
-        {/* Aesthetic underline effect on hover */}
+        {/* underline effect on hover */}
         <motion.div className="mt-4 h-px w-0 bg-white/40 transition-all duration-500 group-hover:w-full" />
       </div>
     </motion.article>

@@ -1,4 +1,3 @@
-// src/pages/Product/components/YouMayAlsoLike.jsx
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 

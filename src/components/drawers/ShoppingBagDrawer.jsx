@@ -20,9 +20,6 @@ const fmtPrice = (n) =>
     minimumFractionDigits: 2,
   }).format(Number(n || 0));
 
-/**
- * Cleans legacy localhost URLs or formats relative paths for production.
- */
 const cleanImageUrl = (url) => {
   if (!url || typeof url !== "string") return "";
   if (url.includes("cloudinary.com")) return url;
@@ -36,7 +33,7 @@ const cleanImageUrl = (url) => {
 // --- LOGIC HELPERS ---
 
 /**
- * Returns colors that have at least one size in stock.
+ * Returns colors that have at least one size in stock
  */
 function getAvailableColors(product, item) {
   if (!product || !product.variants) return [item?.color || "silver"];
@@ -54,7 +51,7 @@ function getAvailableColors(product, item) {
 }
 
 /**
- * Returns sizes for a specific color that are currently in stock.
+ * Returns sizes for a specific color that are currently in stock
  */
 function getAvailableSizes(product, colorName, item) {
   if (!product || !product.variants)
@@ -76,7 +73,7 @@ function getAvailableSizes(product, colorName, item) {
 }
 
 /**
- * Gets the stock quantity for a specific variant.
+ * Gets the stock quantity for a specific variant
  */
 function getVariantStock(product, colorName, size) {
   if (!product || !product.variants) return 0;
@@ -161,7 +158,7 @@ export default function ShoppingBagDrawer() {
   );
 
   /**
-   * Handles color/size updates and ensures the correct image is selected.
+   * Handles color/size updates, correct image selection
    */
   const handleVariantUpdate = (item, product, newColor, newSize) => {
     const color = newColor || item.color;
@@ -178,7 +175,7 @@ export default function ShoppingBagDrawer() {
         : null;
 
       if (selectedVariantArray && Array.isArray(selectedVariantArray)) {
-        // If color changed, check if current size is available in new color, otherwise pick first available
+        // if color changed check if current size is available in new color otherwise pick first available
         if (newColor) {
           const availableSizes = selectedVariantArray.filter(
             (v) => Number(v.stock) > 0,

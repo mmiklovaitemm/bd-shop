@@ -1,9 +1,8 @@
-// src/components/account/OrderInfoPanel.jsx
 import useLanguage from "@/context/useLanguage";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 
 /**
- * Renders a simple row for monetary values (Delivery, Total, etc.)
+ * Renders a simple row for monetary values
  */
 function MoneyRow({ label, value, strong = false }) {
   return (

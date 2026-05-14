@@ -22,22 +22,21 @@ export default function AnnouncementBar() {
     [t],
   );
 
-  // Duplicating items multiple times to ensure the marquee never gaps on ultra-wide screens
   const marqueeItems = [...items, ...items, ...items, ...items];
 
   return (
     <div className="bg-black text-white overflow-hidden border-b border-white/5 h-[40px] flex items-center relative">
       {/* INFINITE MARQUEE CONTAINER */}
       <motion.div
-        className="flex whitespace-nowrap gap-12 md:gap-24" // Narrower gaps on mobile, wider on desktop
+        className="flex whitespace-nowrap gap-12 md:gap-24"
         animate={{
-          x: [0, -1000], // Smooth horizontal translation
+          x: [0, -1000],
         }}
         transition={{
           x: {
             repeat: Infinity,
             repeatType: "loop",
-            duration: 30, // Adjust speed: lower = faster, higher = slower
+            duration: 30,
             ease: "linear",
           },
         }}

@@ -71,8 +71,10 @@ function variantRowsToShape(rows = []) {
   for (const row of rows) {
     const color = row.color;
     const images = safeJsonParse(
-      typeof row.images === "string" ? row.images : JSON.stringify(row.images ?? []),
-      []
+      typeof row.images === "string"
+        ? row.images
+        : JSON.stringify(row.images ?? []),
+      [],
     );
     if (!variants[color]) variants[color] = [];
     variants[color].push({
@@ -93,7 +95,7 @@ function variantRowsToShape(rows = []) {
 function getTotalStock(variantRows = []) {
   return variantRows.reduce(
     (sum, r) => sum + Math.max(0, Number(r.stock) || 0),
-    0
+    0,
   );
 }
 
@@ -104,7 +106,7 @@ function mapProductRow(row, variantRows = []) {
   const { variants, sizes } = variantRowsToShape(variantRows);
   const stockQuantity = getTotalStock(variantRows);
 
-  // Restore original color order from products.colors (stored when product was created)
+  // Restore original color order from products.colors
   const storedColors = safeJsonParse(row.colors, []);
   const variantColorSet = new Set(Object.keys(variants));
   const colors =
@@ -158,7 +160,7 @@ async function insertVariantRows(productId, rows, conn = db) {
         row.size,
         row.stock,
         JSON.stringify(row.images),
-      ]
+      ],
     );
   }
 }
@@ -168,20 +170,18 @@ async function insertVariantRows(productId, rows, conn = db) {
 router.get("/", async (req, res) => {
   try {
     const [rows] = await db.query(
-      "SELECT * FROM products ORDER BY created_at DESC"
+      "SELECT * FROM products ORDER BY created_at DESC",
     );
     if (!rows.length) return res.json([]);
 
     const ids = rows.map((r) => String(r.id));
     const [variantRows] = await db.query(
       "SELECT * FROM product_variants WHERE product_id IN (?)",
-      [ids]
+      [ids],
     );
     const variantMap = groupVariantsByProduct(variantRows);
 
-    res.json(
-      rows.map((r) => mapProductRow(r, variantMap[String(r.id)] || []))
-    );
+    res.json(rows.map((r) => mapProductRow(r, variantMap[String(r.id)] || [])));
   } catch {
     res.status(500).json({ message: "Failed to fetch products" });
   }
@@ -197,7 +197,7 @@ router.get("/:id", async (req, res) => {
 
     const [variantRows] = await db.query(
       "SELECT * FROM product_variants WHERE product_id = ?",
-      [String(req.params.id)]
+      [String(req.params.id)],
     );
 
     res.json(mapProductRow(rows[0], variantRows));
@@ -251,11 +251,11 @@ router.post("/", requireAdmin, async (req, res) => {
         thumbnail,
         JSON.stringify(allImages),
         JSON.stringify(colors),
-        JSON.stringify({}), // legacy field — no longer the source of truth
+        JSON.stringify({}),
         JSON.stringify(uniqueSizes),
         Number(stockQuantity) || totalStock,
         JSON.stringify(details || {}),
-      ]
+      ],
     );
 
     await insertVariantRows(id, variantRows);
@@ -263,7 +263,7 @@ router.post("/", requireAdmin, async (req, res) => {
     const [pRows] = await db.query("SELECT * FROM products WHERE id = ?", [id]);
     const [vRows] = await db.query(
       "SELECT * FROM product_variants WHERE product_id = ?",
-      [String(id)]
+      [String(id)],
     );
     res.status(201).json(mapProductRow(pRows[0], vRows));
   } catch (err) {
@@ -323,20 +323,18 @@ router.put("/:id", requireAdmin, async (req, res) => {
         totalStock,
         JSON.stringify(details || {}),
         id,
-      ]
+      ],
     );
 
-    // Replace all variants for this product
-    await db.query(
-      "DELETE FROM product_variants WHERE product_id = ?",
-      [String(id)]
-    );
+    await db.query("DELETE FROM product_variants WHERE product_id = ?", [
+      String(id),
+    ]);
     await insertVariantRows(id, variantRows);
 
     const [pRows] = await db.query("SELECT * FROM products WHERE id = ?", [id]);
     const [vRows] = await db.query(
       "SELECT * FROM product_variants WHERE product_id = ?",
-      [String(id)]
+      [String(id)],
     );
     res.json(mapProductRow(pRows[0], vRows));
   } catch (err) {
@@ -347,11 +345,10 @@ router.put("/:id", requireAdmin, async (req, res) => {
 
 router.delete("/:id", requireAdmin, async (req, res) => {
   try {
-    // Delete variants first (no CASCADE since no FK constraint)
-    await db.query(
-      "DELETE FROM product_variants WHERE product_id = ?",
-      [String(req.params.id)]
-    );
+    // Delete variants
+    await db.query("DELETE FROM product_variants WHERE product_id = ?", [
+      String(req.params.id),
+    ]);
     await db.query("DELETE FROM products WHERE id = ?", [req.params.id]);
     res.json({ ok: true, message: "Product deleted successfully" });
   } catch (err) {

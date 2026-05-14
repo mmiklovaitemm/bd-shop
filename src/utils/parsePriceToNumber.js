@@ -1,4 +1,3 @@
-// src/utils/parsePriceToNumber.js
 export default function parsePriceToNumber(price) {
   if (typeof price === "number") return price;
 
@@ -6,14 +5,14 @@ export default function parsePriceToNumber(price) {
   const cleaned = str.replace(/[^\d.,-]/g, "").trim();
   if (!cleaned) return 0;
 
-  // "1,299.00" -> remove thousands commas
+  // "1,299.00" remove thousands commas
   if (cleaned.includes(",") && cleaned.includes(".")) {
     const noThousands = cleaned.replace(/,/g, "");
     const n = Number(noThousands);
     return Number.isFinite(n) ? n : 0;
   }
 
-  // "89,49" -> comma decimal
+  // "89,49" comma decimal
   if (cleaned.includes(",") && !cleaned.includes(".")) {
     const n = Number(cleaned.replace(",", "."));
     return Number.isFinite(n) ? n : 0;

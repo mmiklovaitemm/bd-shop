@@ -1,4 +1,3 @@
-// src/components/account/OrderCard.jsx
 import useLanguage from "@/context/useLanguage";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
 import StatusPill from "./StatusPill";

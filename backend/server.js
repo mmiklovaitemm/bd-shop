@@ -27,7 +27,7 @@ app.use(morgan("dev"));
 app.use(express.json());
 app.use(cookieParser());
 
-// 2. CORS - Užtikriname, kad visi metodai ir antraštės būtų leidžiami
+// 2. CORS
 const allowedOrigins = [
   process.env.FRONTEND_ORIGIN,
   "https://bd-shop-gray.vercel.app",

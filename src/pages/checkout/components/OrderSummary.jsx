@@ -79,7 +79,6 @@ export default function OrderSummary({
             <div className="space-y-4">
               {items.map((item) => (
                 <div key={item.key} className="grid grid-cols-[64px_1fr] gap-4">
-                  {/* Updated image container to use ProductImage for URL normalization */}
                   <div className="relative h-20 w-16 overflow-hidden border border-black/10 bg-black/5">
                     <ProductImage
                       src={item.image}

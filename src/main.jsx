@@ -8,7 +8,7 @@ import "./index.css";
 import { FavoritesProvider } from "./context/FavoritesContext.jsx";
 import { LanguageProvider } from "./context/LanguageContext.jsx";
 
-// Vercel Speed Insights import
+// Vercel Speed Insights
 import { SpeedInsights } from "@vercel/speed-insights/react";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
@@ -17,7 +17,6 @@ ReactDOM.createRoot(document.getElementById("root")).render(
       <LanguageProvider>
         <FavoritesProvider>
           <App />
-          {/* Vercel monitoring component */}
           <SpeedInsights />
         </FavoritesProvider>
       </LanguageProvider>

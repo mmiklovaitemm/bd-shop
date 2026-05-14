@@ -1,6 +1,5 @@
-// src/ui/SubscribeBanner.jsx
 import { useCallback, useEffect, useState } from "react";
-import { FiX, FiCheck } from "react-icons/fi"; // Added check icon for success
+import { FiX, FiCheck } from "react-icons/fi";
 
 import useLanguage from "@/context/useLanguage";
 import bannerImg from "@/assets/images/banner/banner-img.webp";
@@ -42,7 +41,7 @@ export default function SubscribeBanner({ delayMs = 3000 }) {
     return () => clearTimeout(tmr);
   }, [delayMs]);
 
-  // Accessibility: Close on Escape key
+  // Close on Escape key
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (e) => {
@@ -95,7 +94,7 @@ export default function SubscribeBanner({ delayMs = 3000 }) {
         </button>
 
         <div className="grid lg:grid-cols-2">
-          {/* Banner Image - Hidden on mobile to save space if success message is long */}
+          {/* Banner Image */}
           <div
             className={`${isSubscribed ? "hidden lg:block" : "block"} h-[200px] lg:h-[480px] w-full overflow-hidden`}
           >

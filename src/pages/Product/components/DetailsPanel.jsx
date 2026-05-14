@@ -4,7 +4,7 @@ import preventDragHandler from "@/utils/preventDrag";
 import arrowUpRightIcon from "@/assets/ui/arrow-up-right.svg";
 
 /**
- * UTILS: Selection helpers for flexible data structures
+Selection helpers for flexible data structures
  */
 const pickFirst = (...vals) =>
   vals.find((v) => v !== undefined && v !== null && String(v).trim() !== "");
@@ -20,7 +20,7 @@ const pickNumber = (...vals) => {
 };
 
 /**
- * Logic to identify product category based on various fields
+Logic to identify product category based on various fields
  */
 const detectCategory = (product) => {
   const raw =
@@ -42,7 +42,7 @@ const detectCategory = (product) => {
 };
 
 /**
- * Formatting helpers for labels and metals
+Formatting helpers for labels and metals
  */
 const toTitleCaseLabel = (value) =>
   String(value || "")
@@ -79,7 +79,7 @@ const getDefaultCategoryText = (category, t) => {
 };
 
 /**
- * UI Components for data rows
+UI Components for data rows
  */
 function Row({ label, value }) {
   if (!value && value !== 0) return null;
@@ -110,7 +110,6 @@ const DetailsContent = memo(function DetailsContent({
     if (!product) return null;
 
     const baseCategory = detectCategory(product);
-    // Support for multiple detail object naming conventions
     const detailsObj =
       product.details || product.dimensionsDetails || product.specs || {};
 
@@ -119,7 +118,7 @@ const DetailsContent = memo(function DetailsContent({
       product.personalType,
     );
 
-    // Resolve specific category (handle "Personal" category mappings)
+    // specific category
     const category =
       baseCategory === "personal"
         ? personalType === "necklace"
@@ -139,7 +138,7 @@ const DetailsContent = memo(function DetailsContent({
 
     // Description text resolution
     const text = pickFirst(
-      detailsObj.detailsText, // From new Admin Payload
+      detailsObj.detailsText,
       product.detailsText,
       detailsObj.text,
       detailsObj.description,
@@ -155,7 +154,6 @@ const DetailsContent = memo(function DetailsContent({
       Array.isArray(product.colors) ? product.colors[0] : null,
     );
 
-    // Build dimensions and specs from multiple possible sources
     return {
       category,
       text: text ? String(text).trim() : "",
@@ -248,7 +246,7 @@ const DetailsContent = memo(function DetailsContent({
     </div>
   );
 
-  // NECKLACES Display Block (Handles Adjustable lengths)
+  // NECKLACES Display Block
   const necklaceLengthValue = (() => {
     if (totalLengthCm == null && adjustableFromCm == null) return null;
     const total = totalLengthCm ? `${totalLengthCm} cm` : "";
@@ -404,7 +402,7 @@ const DetailsContent = memo(function DetailsContent({
 });
 
 /**
- * MAIN PANEL COMPONENT: Handles the slide-out sidebar logic
+MAIN PANEL COMPONENT Handles the slide-out sidebar logic
  */
 const DetailsPanel = memo(function DetailsPanel({
   isOpen,

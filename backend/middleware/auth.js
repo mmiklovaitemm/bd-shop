@@ -3,12 +3,12 @@ import jwt from "jsonwebtoken";
 const COOKIE_NAME = "access_token";
 
 function getToken(req) {
-  // Prefer Authorization header (works cross-site on Safari iOS)
+  // Prefer Authorization header
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith("Bearer ")) {
     return authHeader.slice(7);
   }
-  // Fallback to cookie (same-site or desktop browsers)
+  // Fallback to cookie
   if (req.cookies && req.cookies[COOKIE_NAME]) {
     return req.cookies[COOKIE_NAME];
   }

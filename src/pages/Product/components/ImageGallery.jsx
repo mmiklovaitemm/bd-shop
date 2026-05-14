@@ -14,7 +14,7 @@ const ImageGallery = memo(function ImageGallery({
   const safeImages = Array.isArray(images) ? images.filter(Boolean) : [];
   if (!safeImages.length) return null;
 
-  // Show only first 2 images in gallery — rest accessible via lightbox
+  // Show only first 2 images in gallery, rest via lightbox
   const visibleImages = safeImages.slice(0, MAX_VISIBLE);
   const hiddenCount = safeImages.length - MAX_VISIBLE;
 

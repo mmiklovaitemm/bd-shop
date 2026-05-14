@@ -9,7 +9,7 @@ const connectionUrl =
 
 const db = await mysql.createConnection(connectionUrl);
 
-console.log("--- VALOMI SENI PRODUKTAI ---");
+console.log("--- DATA IMPORT COMPLETED ---");
 await db.execute("DELETE FROM products");
 
 for (const p of PRODUCTS) {
@@ -62,4 +62,4 @@ for (const p of PRODUCTS) {
 }
 
 await db.end();
-console.log("--- A ŽINGSNIS BAIGTAS: DUOMENYS ATNAUJINTI ---");
+console.log("--- DATA IMPORT COMPLETED ---");

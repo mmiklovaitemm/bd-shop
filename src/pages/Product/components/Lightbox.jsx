@@ -6,13 +6,12 @@ import arrowLeftIcon from "@/assets/ui/arrow-left.svg";
 import arrowRightIcon from "@/assets/ui/arrow-right.svg";
 
 /**
- * URL Helper to ensure images load correctly in Lightbox.
- * Prevents ERR_CONNECTION_REFUSED by pointing relative paths to production.
+ URL Helper to ensure images load correctly in Lightbox
  */
 const getLightboxUrl = (rawPath) => {
   if (!rawPath || typeof rawPath !== "string") return "";
 
-  // 1. If it's already a full external URL (Cloudinary), return as-is
+  // 1. If its already a full external URL return as-is
   if (rawPath.startsWith("http") && !rawPath.includes("localhost")) {
     return rawPath;
   }
@@ -41,10 +40,6 @@ const Lightbox = memo(function Lightbox({
   setActiveImgIndex,
   product,
 }) {
-  /**
-   * MEMOIZED DATA: Fixes ESLint warnings and optimizes performance.
-   * safeImages ensures we always work with a valid array of strings.
-   */
   const safeImages = useMemo(
     () => (Array.isArray(images) ? images.filter(Boolean) : []),
     [images],
@@ -54,7 +49,7 @@ const Lightbox = memo(function Lightbox({
   const hasManyImages = imagesCount > 1;
 
   /**
-   * NAVIGATION LOGIC
+   NAVIGATION LOGIC
    */
   const goPrev = useCallback(() => {
     if (!imagesCount) return;
@@ -71,7 +66,7 @@ const Lightbox = memo(function Lightbox({
   }, [onClose]);
 
   /**
-   * KEYBOARD EVENTS: Escape to close, arrows to navigate
+   KEYBOARD EVENTS Escape to close, arrows to navigate
    */
   useEffect(() => {
     if (!isOpen) return;
@@ -89,7 +84,7 @@ const Lightbox = memo(function Lightbox({
   }, [isOpen, hasManyImages, requestClose, goPrev, goNext]);
 
   /**
-   * SCROLL LOCK: Prevents background scrolling when lightbox is open
+   * SCROLL LOCK Prevents background scrolling when lightbox is open
    */
   useEffect(() => {
     if (!isOpen) return;
@@ -101,7 +96,7 @@ const Lightbox = memo(function Lightbox({
   }, [isOpen]);
 
   /**
-   * IMAGE URL RESOLUTION: Normalizes the URL for the currently active image
+   * IMAGE URL RESOLUTION Normalizes the URL for the currently active image
    */
   const currentImageUrl = useMemo(() => {
     const raw = safeImages[activeImgIndex] || safeImages[0];
@@ -169,7 +164,7 @@ const Lightbox = memo(function Lightbox({
             </button>
           )}
 
-          {/* Actual Image: Scaled to fit screen while maintaining original proportions */}
+          {/* Actual Image */}
           <div
             className="flex items-center justify-center pointer-events-none"
             style={{ width: "100%", height: "100%" }}

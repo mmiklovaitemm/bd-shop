@@ -4,7 +4,6 @@ import { requireAuth } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// Create table if it doesn't exist (product_id is VARCHAR to support string IDs)
 await db.query(`
   CREATE TABLE IF NOT EXISTS favorites (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -15,14 +14,11 @@ await db.query(`
   )
 `);
 
-// Migrate existing INT column to VARCHAR if needed
 try {
   await db.query(`
     ALTER TABLE favorites MODIFY COLUMN product_id VARCHAR(100) NOT NULL
   `);
-} catch {
-  // already VARCHAR or table doesn't exist yet — ignore
-}
+} catch {}
 
 router.get("/", requireAuth, async (req, res) => {
   try {
@@ -39,7 +35,8 @@ router.get("/", requireAuth, async (req, res) => {
 router.post("/", requireAuth, async (req, res) => {
   try {
     const productId = String(req.body?.productId || "").trim();
-    if (!productId) return res.status(400).json({ message: "Invalid productId." });
+    if (!productId)
+      return res.status(400).json({ message: "Invalid productId." });
 
     await db.query(
       "INSERT IGNORE INTO favorites (user_id, product_id) VALUES (?, ?)",
@@ -54,7 +51,8 @@ router.post("/", requireAuth, async (req, res) => {
 router.delete("/:productId", requireAuth, async (req, res) => {
   try {
     const productId = String(req.params.productId || "").trim();
-    if (!productId) return res.status(400).json({ message: "Invalid productId." });
+    if (!productId)
+      return res.status(400).json({ message: "Invalid productId." });
 
     await db.query(
       "DELETE FROM favorites WHERE user_id = ? AND product_id = ?",

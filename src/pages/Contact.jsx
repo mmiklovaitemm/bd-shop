@@ -1,4 +1,3 @@
-// src/pages/Contact.jsx
 import { useRef, useState } from "react";
 import { motion } from "framer-motion";
 import useLanguage from "@/context/useLanguage";
@@ -83,10 +82,14 @@ export default function Contact() {
         setIsSent(true);
         setFormData({ name: "", email: "", phone: "", message: "" });
       } else {
-        setSubmitError(t.somethingWentWrong || "Something went wrong. Try again.");
+        setSubmitError(
+          t.somethingWentWrong || "Something went wrong. Try again.",
+        );
       }
     } catch {
-      setSubmitError(t.somethingWentWrong || "Something went wrong. Try again.");
+      setSubmitError(
+        t.somethingWentWrong || "Something went wrong. Try again.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -203,7 +206,7 @@ export default function Contact() {
                   disabled={isSubmitting}
                   className="w-full bg-black py-5 font-ui text-base tracking-widest text-white transition-all hover:bg-neutral-800 active:scale-[0.99] disabled:opacity-60"
                 >
-                  {isSubmitting ? "..." : (t.sendMessage || "Send message")}
+                  {isSubmitting ? "..." : t.sendMessage || "Send message"}
                 </button>
               ) : (
                 <motion.div

@@ -25,7 +25,6 @@ export default function NotFound() {
 
   const [isDragging, setIsDragging] = useState(false);
 
-  // Slow velocity
   const velocity = useRef({ x: 0.8, y: 0.8 });
 
   // Animation loop
@@ -42,7 +41,6 @@ export default function NotFound() {
     let nextX = x.get() + velocity.current.x;
     let nextY = y.get() + velocity.current.y;
 
-    // Boundary bounce logic
     if (nextX <= 0 || nextX + eRect.width >= cRect.width) {
       velocity.current.x *= -1;
       nextX = x.get() + velocity.current.x;

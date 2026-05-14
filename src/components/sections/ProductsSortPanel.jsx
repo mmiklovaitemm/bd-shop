@@ -1,4 +1,3 @@
-// src/components/sections/ProductsSortPanel.jsx
 import closeIcon from "@/assets/ui/arrow-up-right.svg";
 import useLanguage from "@/context/useLanguage";
 

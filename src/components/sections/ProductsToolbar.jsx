@@ -1,4 +1,3 @@
-// src/components/sections/ProductsToolbar.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { HiChevronDown } from "react-icons/hi";
 
@@ -81,10 +80,6 @@ export default function ProductsToolbar({
 
   return (
     <section className="w-full">
-      {/* PAŠALINTA: Senas h1 ir FullWidthDivider blokas, 
-         nes dabar naudojame PageTitle.jsx 
-      */}
-
       {/* Category row */}
       <div ref={categoryWrapRef} className="relative px-8 py-4">
         {/* MOBILE/TABLET dropdown */}

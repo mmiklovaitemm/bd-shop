@@ -1,4 +1,3 @@
-// src/components/HowItWorksSteps.jsx
 import { motion } from "framer-motion";
 import { Reveal } from "@/components/sections/Reveal";
 import useLanguage from "@/context/useLanguage";

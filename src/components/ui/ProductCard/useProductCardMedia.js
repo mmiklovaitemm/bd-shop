@@ -1,15 +1,12 @@
 import { useMemo } from "react";
 
-// PAGALBINĖ FUNKCIJA NUORODŲ VALYMUI
 const cleanUrl = (url) => {
   if (!url || typeof url !== "string") return url;
   if (url.includes("cloudinary.com")) return url;
-  // Jei nuoroda turi localhost, nukerpame viską iki /products/ dalies
   if (url.includes("localhost:")) {
     const parts = url.split("/products/");
     if (parts.length > 1) return "products/" + parts[1];
   }
-  // Pašalina bet kokią http://localhost:xxxx/ dalį
   return url.replace(/^https?:\/\/localhost:\d+\//, "");
 };
 

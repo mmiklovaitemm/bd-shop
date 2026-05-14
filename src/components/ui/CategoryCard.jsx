@@ -1,4 +1,3 @@
-// src/components/ui/CategoryCard.jsx
 import useMediaQuery from "@/hooks/useMediaQuery";
 import cn from "@/utils/cn";
 

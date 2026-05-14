@@ -18,7 +18,7 @@ const API_ORIGIN =
   import.meta.env.VITE_API_URL || "https://bd-shop-gfva.onrender.com";
 
 export default function AdminProducts() {
-  /** * Fetching products and status from custom hook
+  /** Fetching products and status from custom hook
    */
   const {
     products,
@@ -27,7 +27,7 @@ export default function AdminProducts() {
     fetchProducts,
   } = useAdminProducts();
 
-  /** * UI State Management
+  /** UI State Management
    */
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
@@ -35,20 +35,20 @@ export default function AdminProducts() {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  /** * Product Interaction State (Edit/Delete modals)
+  /** Product Interaction State (Edit/Delete modals)
    */
   const [deleteProduct, setDeleteProduct] = useState(null);
   const [editProduct, setEditProduct] = useState(null);
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
   const [selectedProductIds, setSelectedProductIds] = useState([]);
 
-  /** * Filtering & Sorting State
+  /** Filtering & Sorting State
    */
   const [searchValue, setSearchValue] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sortValue, setSortValue] = useState("newest");
 
-  /** * Pagination State
+  /** Pagination State
    */
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(() => {
@@ -57,8 +57,8 @@ export default function AdminProducts() {
   });
 
   /**
-   * Helper function to construct safe API URLs
-   * Ensures no double slashes and correct /api prefix
+   Helper function to construct safe API URLs
+   Ensures no double slashes and correct /api prefix
    */
   const getAdminApiUrl = (path) => {
     const base = API_ORIGIN.replace(/\/api$/, "").replace(/\/$/, "");
@@ -69,7 +69,7 @@ export default function AdminProducts() {
   };
 
   /**
-   * Automatically clear success message after 8 seconds
+   Automatically clear success message after 8 seconds
    */
   useEffect(() => {
     if (!successMessage) return;
@@ -78,7 +78,7 @@ export default function AdminProducts() {
   }, [successMessage]);
 
   /**
-   * Responsive PageSize: adjust number of items per page based on screen width
+   Responsive PageSize
    */
   useEffect(() => {
     const media = window.matchMedia("(max-width: 1023px)");
@@ -88,7 +88,7 @@ export default function AdminProducts() {
   }, []);
 
   /**
-   * Compute filtered and sorted product list
+   Compute filtered and sorted product list
    */
   const filteredProducts = useMemo(() => {
     return [...products]
@@ -122,7 +122,7 @@ export default function AdminProducts() {
   }, [products, searchValue, categoryFilter, sortValue]);
 
   /**
-   * Pagination logic helpers
+   Pagination logic helpers
    */
   const totalItems = filteredProducts.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
@@ -138,7 +138,7 @@ export default function AdminProducts() {
   useEffect(() => setPage(1), [searchValue, categoryFilter, sortValue]);
 
   /**
-   * Selection Logic for bulk actions
+   Selection Logic for bulk actions
    */
   const toggleSelectProduct = (productId) => {
     setSelectedProductIds((prev) =>
@@ -163,7 +163,7 @@ export default function AdminProducts() {
   };
 
   /**
-   * API Handler: Create New Product
+   Create New Product
    */
   const handleCreateProduct = async (newProduct) => {
     try {
@@ -196,7 +196,7 @@ export default function AdminProducts() {
   };
 
   /**
-   * API Handler: Update Existing Product
+   Update Existing Product
    */
   const handleUpdateProduct = async (updatedProduct) => {
     try {
@@ -227,7 +227,7 @@ export default function AdminProducts() {
   };
 
   /**
-   * API Handler: Bulk Delete
+   Delete
    */
   const handleDeleteSelectedProducts = async () => {
     if (selectedProductIds.length === 0) return;
@@ -255,7 +255,7 @@ export default function AdminProducts() {
   };
 
   /**
-   * Modal triggers
+   Modal triggers
    */
   const handleEditProduct = (product) => {
     setErrorMessage("");
@@ -270,7 +270,7 @@ export default function AdminProducts() {
   };
 
   /**
-   * API Handler: Single Delete Confirmation
+   Single Delete Confirmation
    */
   const confirmDeleteProduct = async (product) => {
     try {
@@ -300,7 +300,9 @@ export default function AdminProducts() {
       <main className="mx-auto w-full max-w-6xl px-4 py-8">
         {/* Page Header */}
         <div className="flex items-center justify-between gap-4">
-          <h1 className="font-display text-4xl leading-none">{a.productsTitle}</h1>
+          <h1 className="font-display text-4xl leading-none">
+            {a.productsTitle}
+          </h1>
           <button
             type="button"
             className="border border-black bg-black px-4 py-3 font-ui text-sm text-white"
@@ -485,7 +487,7 @@ export default function AdminProducts() {
               ))}
             </div>
 
-            {/* DESKTOP VIEW (Classic Table) */}
+            {/* DESKTOP VIEW */}
             <AdminProductsTable
               products={paginatedProducts}
               onDelete={handleDeleteProduct}

@@ -54,7 +54,7 @@ export default function Hero() {
     return () => window.removeEventListener("resize", debouncedUpdate);
   }, []);
 
-  // Memoize images array to prevent unnecessary effect re-runs
+  // Memoize images array
   const images = useMemo(() => IMAGES_DATA[mode] || [], [mode]);
 
   // Slideshow timer

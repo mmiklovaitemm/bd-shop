@@ -2,41 +2,33 @@ import { useMemo, useState } from "react";
 import cn from "@/utils/cn";
 import useLanguage from "@/context/useLanguage";
 
-/**
- * SMART FILTER:
- * Distinguishes between Cloudinary (external), database data (localhost remains),
- * and static imports
- */
 const getFinalUrl = (rawPath) => {
   if (!rawPath || typeof rawPath !== "string") return "";
 
   const RENDER_BACKEND = "https://bd-shop-gfva.onrender.com";
   const VERCEL_FRONTEND = "https://bd-shop-gray.vercel.app";
 
-  // 1. CLOUDINARY & EXTERNAL LINKS
-  // If the URL is already complete (Cloudinary, Google), return it immediately.
+  // 1. CLOUDINARY, EXTERNAL LINKS
   if (
     rawPath.startsWith("http") &&
     (rawPath.includes("cloudinary.com") || !rawPath.includes("localhost"))
   ) {
-    // Check if it's not a localhost URL that needs sanitizing
     if (!rawPath.includes("localhost")) {
       return rawPath;
     }
   }
 
-  // 2. Already a full Vercel URL (e.g., from static Vite imports)
+  // 2. full Vercel URL
   if (rawPath.startsWith("https://") && rawPath.includes("vercel.app")) {
     return rawPath;
   }
 
-  // 3. Sanitize localhost remains from database data
+  // 3. clean localhost remains from database data
   let cleanPath = rawPath.replace(/http:\/\/localhost:\d+/, "");
   const purePath = cleanPath.replace(/^\/+/, "");
 
   // 4. ROUTING LOGIC:
-
-  // A. Admin-uploaded images if still stored on Render server (non-Cloudinary)
+  // A. Admin-uploaded images if still stored on Render server
   if (purePath.includes("uploads/")) {
     return `${RENDER_BACKEND}/${purePath}`;
   }
@@ -46,7 +38,7 @@ const getFinalUrl = (rawPath) => {
     return `${VERCEL_FRONTEND}/${purePath}`;
   }
 
-  // C. Fallback: if only a filename is provided (e.g., "ring.webp")
+  // C. Fallback: if only a filename is provided
   const fileName = purePath.split("/").pop();
   if (fileName && fileName.includes(".")) {
     return `${VERCEL_FRONTEND}/products/rings/${fileName}`;

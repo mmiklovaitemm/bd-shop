@@ -143,7 +143,13 @@ export default function Footer() {
                 <motion.div
                   initial={{ scale: 0.5, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.15, duration: 0.4, type: "spring", stiffness: 300, damping: 20 }}
+                  transition={{
+                    delay: 0.15,
+                    duration: 0.4,
+                    type: "spring",
+                    stiffness: 300,
+                    damping: 20,
+                  }}
                   className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-neutral-100 text-black"
                 >
                   <FiCheck size={32} />
@@ -170,95 +176,98 @@ export default function Footer() {
         )}
       </AnimatePresence>
 
-    <footer
-      className="bg-white select-none"
-      onDragStart={preventDrag}
-      onMouseDown={preventSelect}
-    >
-      <div className="mx-auto w-full max-w-[1200px] px-6 py-10 md:py-10">
-        <div className="grid grid-cols-1 md:[grid-template-columns:190px_120px_minmax(360px,1fr)] md:gap-6 lg:grid-cols-3 lg:gap-0 md:items-center">
-          {/* RIGHT (subscribe) */}
-          <div className="order-1 flex md:order-3 md:justify-end">
-            <div className="min-w-0 w-full max-w-[360px] md:w-[360px] lg:w-[380px]">
-              <h3 className="font-display text-[18px] font-bold text-black">
-                {t.subscribeTitle}
-              </h3>
+      <footer
+        className="bg-white select-none"
+        onDragStart={preventDrag}
+        onMouseDown={preventSelect}
+      >
+        <div className="mx-auto w-full max-w-[1200px] px-6 py-10 md:py-10">
+          <div className="grid grid-cols-1 md:[grid-template-columns:190px_120px_minmax(360px,1fr)] md:gap-6 lg:grid-cols-3 lg:gap-0 md:items-center">
+            {/* RIGHT (subscribe) */}
+            <div className="order-1 flex md:order-3 md:justify-end">
+              <div className="min-w-0 w-full max-w-[360px] md:w-[360px] lg:w-[380px]">
+                <h3 className="font-display text-[18px] font-bold text-black">
+                  {t.subscribeTitle}
+                </h3>
 
-              <p className="mt-2 font-ui text-[14px] leading-[20px] text-black">
-                {t.subscribeText}
-              </p>
+                <p className="mt-2 font-ui text-[14px] leading-[20px] text-black">
+                  {t.subscribeText}
+                </p>
 
-              <form className="mt-4 flex w-full" onSubmit={handleSubscribe}>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder={t.emailPlaceholder}
-                  className="h-11 w-full min-w-0 border border-black/50 px-4 text-[14px] outline-none placeholder:text-black/30"
-                />
-                <button
-                  type="submit"
-                  draggable={false}
-                  onDragStart={preventDrag}
-                  className="ui-interact h-11 shrink-0 bg-black px-6 text-[14px] font-medium text-white active:bg-black/80 select-none"
-                >
-                  {t.subscribeButton}
-                </button>
-              </form>
-            </div>
-          </div>
-
-          {/* LEFT (logo + socials desktop) */}
-          <div className="order-2 mt-10 md:order-1 md:mt-0">
-            <img
-              src={logoIcon}
-              alt="umstudio logo"
-              draggable={false}
-              onDragStart={preventDrag}
-              className="h-10 w-auto select-none md:h-8"
-            />
-
-            <SocialButtons
-              className="mt-6 hidden md:flex md:mt-[4rem] lg:mt-[4rem]"
-              onDragStart={preventDrag}
-            />
-          </div>
-
-          {/* MIDDLE (links + mobile bottom row) */}
-          <div className="order-3 mt-10 md:order-2 md:mt-0">
-            <nav>
-              <ul className="space-y-6">
-                <li>
-                  <NavLink
-                    to="/collections"
-                    className={`${linkClass} select-none`}
+                <form className="mt-4 flex w-full" onSubmit={handleSubscribe}>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder={t.emailPlaceholder}
+                    className="h-11 w-full min-w-0 border border-black/50 px-4 text-[14px] outline-none placeholder:text-black/30"
+                  />
+                  <button
+                    type="submit"
+                    draggable={false}
+                    onDragStart={preventDrag}
+                    className="ui-interact h-11 shrink-0 bg-black px-6 text-[14px] font-medium text-white active:bg-black/80 select-none"
                   >
-                    {t.collections}
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink to="/about" className={`${linkClass} select-none`}>
-                    {t.aboutUs}
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink to="/contact" className={`${linkClass} select-none`}>
-                    {t.contacts}
-                  </NavLink>
-                </li>
-              </ul>
-            </nav>
+                    {t.subscribeButton}
+                  </button>
+                </form>
+              </div>
+            </div>
 
-            {/* MOBILE: socials left + language right */}
-            <div className="mt-10 flex items-center justify-between md:hidden">
-              <SocialButtons onDragStart={preventDrag} />
-              <LanguageToggle onDragStart={preventDrag} />
+            {/* LEFT (logo + socials desktop) */}
+            <div className="order-2 mt-10 md:order-1 md:mt-0">
+              <img
+                src={logoIcon}
+                alt="umstudio logo"
+                draggable={false}
+                onDragStart={preventDrag}
+                className="h-10 w-auto select-none md:h-8"
+              />
+
+              <SocialButtons
+                className="mt-6 hidden md:flex md:mt-[4rem] lg:mt-[4rem]"
+                onDragStart={preventDrag}
+              />
+            </div>
+
+            {/* MIDDLE (links + mobile bottom row) */}
+            <div className="order-3 mt-10 md:order-2 md:mt-0">
+              <nav>
+                <ul className="space-y-6">
+                  <li>
+                    <NavLink
+                      to="/collections"
+                      className={`${linkClass} select-none`}
+                    >
+                      {t.collections}
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink to="/about" className={`${linkClass} select-none`}>
+                      {t.aboutUs}
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
+                      to="/contact"
+                      className={`${linkClass} select-none`}
+                    >
+                      {t.contacts}
+                    </NavLink>
+                  </li>
+                </ul>
+              </nav>
+
+              {/* MOBILE: socials left + language right */}
+              <div className="mt-10 flex items-center justify-between md:hidden">
+                <SocialButtons onDragStart={preventDrag} />
+                <LanguageToggle onDragStart={preventDrag} />
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </footer>
+      </footer>
     </>
   );
 }

@@ -5,8 +5,8 @@ import Loader from "@/components/ui/Loader";
 import ProductImage from "@/components/ui/ProductCard/ProductImage";
 
 /**
- * Modal component for displaying detailed information about a specific order.
- * includes customer details, delivery info, and an itemized list with images.
+ * Modal component for displaying detailed information about a specific order
+ * includes customer details, delivery info, and an itemized list with images
  */
 export default function AdminOrderDetailsModal({
   order,
@@ -106,12 +106,18 @@ export default function AdminOrderDetailsModal({
               {a.delivery}
             </p>
             <div className="mt-2 space-y-1 text-black/70">
-              <p>{a.type} {deliveryTypeLabel}</p>
+              <p>
+                {a.type} {deliveryTypeLabel}
+              </p>
 
               {order.delivery_type === "pickup" ? (
-                <p>{a.location} {pickupLocationLabel}</p>
+                <p>
+                  {a.location} {pickupLocationLabel}
+                </p>
               ) : (
-                <p>{a.method} {getDeliveryLabel(order)}</p>
+                <p>
+                  {a.method} {getDeliveryLabel(order)}
+                </p>
               )}
 
               <p>
@@ -124,10 +130,12 @@ export default function AdminOrderDetailsModal({
               </p>
 
               <p>
-                {a.fee} €{(Number(order.delivery_fee_cents || 0) / 100).toFixed(2)}
+                {a.fee} €
+                {(Number(order.delivery_fee_cents || 0) / 100).toFixed(2)}
               </p>
               <p className="font-medium text-black">
-                {a.totalLabel} €{(Number(order.total_cents || 0) / 100).toFixed(2)}
+                {a.totalLabel} €
+                {(Number(order.total_cents || 0) / 100).toFixed(2)}
               </p>
             </div>
           </div>

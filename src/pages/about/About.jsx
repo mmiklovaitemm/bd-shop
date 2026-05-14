@@ -1,4 +1,3 @@
-// src/pages/about/About.jsx
 import useLanguage from "@/context/useLanguage";
 import AboutStudioSection from "@/components/ui/AboutStudioSection";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
@@ -10,7 +9,6 @@ import BestSellersIntro from "./BestSellersIntro";
 import TwoImageStrip from "./TwoImageStrip";
 import OurSalons from "./OurSalons";
 
-// Nuotraukų importai...
 import newColMobile from "@/assets/images/new-collection/hero-mobile.webp";
 import newColTablet from "@/assets/images/new-collection/hero-tablet.webp";
 import newColDesktop from "@/assets/images/new-collection/hero-desktop.webp";

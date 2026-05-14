@@ -58,10 +58,6 @@ export default create(
           const productId = getProductIdFromItem(item);
           if (!productId) return state;
 
-          /**
-           * SECURITY FIX: Clean the image URL before saving to cart storage.
-           * Removes any localhost references if the user is in dev mode.
-           */
           let cleanImage = item?.image || "";
           if (
             typeof cleanImage === "string" &&

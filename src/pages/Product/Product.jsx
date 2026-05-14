@@ -87,7 +87,7 @@ function ProductView({ product }) {
     [product, getSizesForColor],
   );
 
-  // 3. ACCURATE STOCK CALCULATION
+  // ACCURATE STOCK CALCULATION
   const currentStock = useMemo(() => {
     if (!product?.variants || Object.keys(product.variants).length === 0) {
       return Number(product?.stockQuantity ?? product?.stock_quantity ?? 0);
@@ -101,10 +101,9 @@ function ProductView({ product }) {
     return selectedV ? Number(selectedV.stock) : 0;
   }, [product, selectedColor, selectedSize]);
 
-  // CRITICAL: This determines if the button is disabled
   const isCurrentSelectionSoldOut = currentStock <= 0;
 
-  // 4. Image filtering
+  // Image filtering
   const images = useMemo(() => {
     if (!product) return [];
     const colorVariants = product?.variants?.[selectedColor];
