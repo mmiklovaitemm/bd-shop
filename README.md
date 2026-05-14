@@ -1,88 +1,135 @@
-# UM Studio - Timeless Elegance E-Commerce Store
+# UM Studio — Jewelry E-Commerce Store
 
-A full-stack modern e-commerce platform designed for a high-end jewelry brand. This project features a clean, minimalist aesthetic focused on high-quality visual representation and seamless user experience.
+A full-stack e-commerce web application built for a handmade jewelry brand. The project was developed as a bachelor's thesis at SMK University of Applied Sciences.
 
 ## Live Demo
-* **Frontend:** [bd-shop-gray.vercel.app](https://bd-shop-gray.vercel.app)
-* **Backend API:** [bd-shop-gfva.onrender.com](https://bd-shop-gfva.onrender.com)
+
+- **Frontend:** [bd-shop-gray.vercel.app](https://bd-shop-gray.vercel.app)
+- **Backend API:** [bd-shop-gfva.onrender.com](https://bd-shop-gfva.onrender.com)
 
 ---
 
 ## Features
 
 ### Customer Experience
-* **Product Collections:** Browse rings, necklaces, bracelets, and earrings with advanced filtering (material, price, gemstones).
-* **Dynamic Product Details:** Detailed specifications including adjustable lengths for necklaces, band widths for rings, and technical specs.
-* **Personalized Jewelry:** A specialized flow for custom-engraved pieces with a step-by-step guide.
-* **Smart Shopping Bag:** Persistent cart logic with automated shipping kit fee handling.
-* **Advanced Image Gallery:** High-resolution lightbox with original aspect ratio preservation and multi-image support.
-* **Multilingual Support:** Fully dynamic switching between **English (EN)** and **Lithuanian (LT)** including real-time error message translation.
-* **User Accounts:** Profile management, order history tracking, and secure password updates.
+
+- **Product Collections:** Browse rings, necklaces, bracelets, earrings and more with filtering by material, price, appearance, gemstones and size
+- **7 Categories:** Including best sellers and new collection
+- **Product Details:** Detailed specifications including adjustable lengths for necklaces, band widths for rings and surface type
+- **Personalized Jewelry:** A specialized flow for custom pieces with a step-by-step guide
+- **Shopping Cart:** Persistent cart with color and size variant selection
+- **Checkout:** Stripe card payments and bank transfer options with order confirmation
+- **Image Gallery:** High-resolution lightbox with multi-image support
+- **Multilingual Support:** Full switching between English and Lithuanian including real-time error message translation
+- **User Accounts:** Registration, login, profile management, order history and secure password updates
+- **Wishlist:** Save favorite products with account sync across sessions
 
 ### Admin Management
-* **Unified Admin Dashboard:** Comprehensive interface to manage inventory and view orders.
-* **Advanced Product Creator:** Support for multiple variants (colors/sizes), inventory levels per variant, and Cloudinary image hosting integration.
-* **Real-time Stock Tracking:** Automated calculations for total stock based on individual variant quantities.
-* **Secure Authentication:** Protected admin routes with middleware verification.
+
+- **Admin Dashboard:** Manage all products and orders from one place
+- **Product Editor:** Support for multiple color and size variants, stock per variant, surface type, gemstone properties and image uploads
+- **Order Management:** View all orders, update status and delete orders
+- **Secure Routes:** Protected admin pages with middleware authentication
 
 ---
 
 ## Tech Stack
 
 ### Frontend
-* **React + Vite** (Fast HMR and optimized builds)
-* **Tailwind CSS** (Utility-first styling for minimalist design)
-* **Zustand** (Global state management for cart and auth)
-* **React Router** (Client-side routing)
-* **Framer Motion** (Smooth UI transitions and animations)
+
+- React + Vite
+- Tailwind CSS
+- Zustand
+- React Router
+- Framer Motion
 
 ### Backend
-* **Node.js & Express**
-* **MySQL** (Structured relational database)
-* **Cloudinary API** (Professional image storage and optimization)
-* **JSON Web Tokens (JWT)** (Secure session handling)
 
----
+- Node.js and Express
+- MySQL
+- JSON Web Tokens (JWT)
+- Stripe API
 
-## Key Bug Fixes & Optimizations Implemented
-* **Image Normalization:** Developed a robust URL handler to manage local assets, Cloudinary links, and production environments seamlessly.
-* **Lightbox Scaling:** Optimized the high-res gallery to prevent image cropping and maintain original proportions across all devices.
-* **Live Error Translation:** Refactored the checkout and profile validation logic to ensure error messages translate instantly without requiring page reloads.
-* **Database Sync:** Fixed API route handling for the Admin panel to support deep JSON objects for product technical details.
+### Hosting
+
+- Vercel — frontend
+- Render — backend
 
 ---
 
 ## Getting Started
 
 ### Prerequisites
-* Node.js (v16+)
-* MySQL Database
+
+- Node.js v16 or higher
+- MySQL database
 
 ### Installation
 
-1.  **Clone the repository**
-    ```bash
-    git clone [https://github.com/mmiklovaitemm/bd-shop.git](https://github.com/mmiklovaitemm/bd-shop.git)
-    cd bd-shop
-    ```
+1. Clone the repository
 
-2.  **Install Frontend Dependencies**
-    ```bash
-    npm install
-    ```
+```bash
+git clone https://github.com/mmiklovaitemm/bd-shop.git
+cd bd-shop
+```
 
-3.  **Setup Environment Variables**
-    Create a `.env` file in the root and add your configuration:
-    ```env
-    VITE_API_URL=[https://your-api-url.com](https://your-api-url.com)
-    ```
+2. Install frontend dependencies
 
-4.  **Run Development Server**
-    ```bash
-    npm run dev
-    ```
+```bash
+npm install
+```
+
+3. Install backend dependencies
+
+```bash
+cd backend
+npm install
+```
+
+4. Set up environment variables
+
+Create a `.env` file in the backend folder:
+
+```env
+DB_HOST=your_database_host
+DB_USER=your_database_user
+DB_PASSWORD=your_database_password
+DB_NAME=your_database_name
+JWT_SECRET=your_jwt_secret
+STRIPE_SECRET_KEY=your_stripe_secret_key
+```
+
+Create a `.env` file in the root folder:
+
+```env
+VITE_API_URL=http://localhost:4000/api
+VITE_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
+```
+
+5. Run the backend
+
+```bash
+cd backend
+node server.js
+```
+
+6. Run the frontend
+
+```bash
+npm run dev
+```
 
 ---
 
-## 📄 License
-This project is for portfolio purposes. All jewelry designs and branding assets belong to UM Studio.
+## Author
+
+Ugnė Miklovaitė
+SMK University of Applied Sciences
+Multimedia and Programming Study Programme
+2026
+
+---
+
+## License
+
+This project is for portfolio and academic purposes. All jewelry designs and branding assets belong to UM Studio.
