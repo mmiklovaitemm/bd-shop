@@ -25,7 +25,6 @@ const STATUS_OPTIONS = [
   "Canceled",
 ];
 
-// --- IMAGE CLEANUP LOGIC ---
 const getCleanUrl = (rawPath) => {
   if (!rawPath || typeof rawPath !== "string") return "";
   const VERCEL_FRONTEND = "https://bd-shop-gray.vercel.app";
@@ -59,8 +58,6 @@ export default function AdminOrders() {
 
   const { orders, setOrders, loading, error, fetchOrders } = useAdminOrders();
 
-  // --- CLEAN ORDERS DATA ---
-  // We sanitize image URLs inside order items to prevent localhost errors
   const sanitizedOrders = useMemo(() => {
     return (orders || []).map((order) => ({
       ...order,
@@ -108,7 +105,7 @@ export default function AdminOrders() {
 
   const { filteredOrders, totalItems, safePage, pageItems } =
     getFilteredOrdersData({
-      orders: sanitizedOrders, // Use sanitized data here
+      orders: sanitizedOrders,
       searchEmail,
       statusFilter,
       deliveryFilter,
@@ -132,7 +129,7 @@ export default function AdminOrders() {
     completedCount,
     canceledCount,
     totalRevenue,
-  } = getOrderStats(sanitizedOrders); // Use sanitized data here
+  } = getOrderStats(sanitizedOrders);
 
   const { savingId, handleStatusChange } = useOrderStatusUpdate({
     setOrders,

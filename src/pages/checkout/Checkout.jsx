@@ -44,7 +44,6 @@ function CheckoutForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [payStatus, setPayStatus] = useState("idle");
 
-  // Form State
   const [email, setEmail] = useState(() => getEmailFromLocalStorage());
   const [deliveryType, setDeliveryType] = useState("ship");
   const [shippingMethod, setShippingMethod] = useState("lp");
@@ -64,7 +63,6 @@ function CheckoutForm() {
 
   const SHIPPING_KIT_FEE = 15;
 
-  // Logic to clear specific error when user starts typing
   const clearError = (key) => {
     setErrors((prev) => {
       if (!prev[key]) return prev;
@@ -74,7 +72,6 @@ function CheckoutForm() {
     });
   };
 
-  // Price calculations
   const subtotal = useMemo(() => {
     return items.reduce((sum, item) => {
       const base = Number(item.price?.toString().replace("€", "")) || 0;
@@ -106,11 +103,6 @@ function CheckoutForm() {
     return (base + fee) * qty;
   };
 
-  /**
-   * UPDATED: Dynamic validation logic.
-   * Stores 'true' in errors state to indicate a field is invalid.
-   * The actual text is retrieved during render based on current language 't'.
-   */
   const validate = () => {
     const next = {};
 
@@ -129,9 +121,6 @@ function CheckoutForm() {
     return Object.keys(next).length === 0;
   };
 
-  /**
-   * Translation Helper: Maps internal error keys to current language strings.
-   */
   const getErrorMessage = (field) => {
     if (!errors[field]) return null;
     const errText = t?.checkoutPage?.errors || {};
@@ -149,7 +138,6 @@ function CheckoutForm() {
     return fieldMapping[field] || "Error";
   };
 
-  // Form submission
   const handlePay = async (e) => {
     if (e) e.preventDefault();
     if (payStatus === "success" || isSubmitting) return;
@@ -192,7 +180,6 @@ function CheckoutForm() {
         ...(getStoredToken() ? { Authorization: `Bearer ${getStoredToken()}` } : {}),
       };
 
-      // Card payment: confirm with Stripe first, then create order
       if (paymentType === "card") {
         const intentRes = await fetch(`${API_ORIGIN}/api/payments/create-intent`, {
           method: "POST",
@@ -312,7 +299,6 @@ function CheckoutForm() {
                     setPostalCode={setPostalCode}
                     phone={phone}
                     setPhone={setPhone}
-                    // Passing translated errors object
                     errors={{
                       firstName: getErrorMessage("firstName"),
                       lastName: getErrorMessage("lastName"),

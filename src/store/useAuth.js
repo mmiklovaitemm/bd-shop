@@ -8,7 +8,6 @@ const getUrl = (path) => {
   const cleanPath = path.startsWith("/") ? path : `/${path}`;
 
   let finalPath = cleanPath;
-  // Prevent double "/api/api" if API_BASE already includes "/api"
   if (base.endsWith("/api") && cleanPath.startsWith("/api/")) {
     finalPath = cleanPath.replace("/api", "");
   }
@@ -37,7 +36,6 @@ async function api(path, options = {}) {
     },
   });
 
-  // Try to parse JSON, if it fails return empty object
   const data = await res.json().catch(() => ({}));
 
   if (!res.ok) {

@@ -24,7 +24,6 @@ try {
   // already VARCHAR or table doesn't exist yet — ignore
 }
 
-/** GET user favorites */
 router.get("/", requireAuth, async (req, res) => {
   try {
     const [rows] = await db.query(
@@ -37,7 +36,6 @@ router.get("/", requireAuth, async (req, res) => {
   }
 });
 
-/** ADD favorite */
 router.post("/", requireAuth, async (req, res) => {
   try {
     const productId = String(req.body?.productId || "").trim();
@@ -53,7 +51,6 @@ router.post("/", requireAuth, async (req, res) => {
   }
 });
 
-/** REMOVE favorite */
 router.delete("/:productId", requireAuth, async (req, res) => {
   try {
     const productId = String(req.params.productId || "").trim();

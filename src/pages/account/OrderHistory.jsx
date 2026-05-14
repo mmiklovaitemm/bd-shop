@@ -11,27 +11,21 @@ import OrderInfoPanel from "@/pages/account/OrderInfoPanel";
 import useAuth from "@/store/useAuth";
 import { apiGet } from "@/lib/api";
 
-// --- NEW CLEANUP HELPER ---
-// This matches the logic from ProductImage.jsx to fix paths for Vercel
 const getCleanUrl = (rawPath) => {
   if (!rawPath || typeof rawPath !== "string") return "";
   const VERCEL_FRONTEND = "https://bd-shop-gray.vercel.app";
   const RENDER_BACKEND = "https://bd-shop-gfva.onrender.com";
 
-  // If it's already a correct Vercel URL, return as is
   if (rawPath.startsWith("https://") && rawPath.includes("vercel.app"))
     return rawPath;
 
-  // Sanitize localhost
   let cleanPath = rawPath.replace(/http:\/\/localhost:\d+/, "");
   const purePath = cleanPath.replace(/^\/+/, "");
 
-  // Routing logic
   if (purePath.includes("uploads/")) return `${RENDER_BACKEND}/${purePath}`;
   if (purePath.startsWith("products/") || purePath.startsWith("assets/"))
     return `${VERCEL_FRONTEND}/${purePath}`;
 
-  // Fallback: extract filename and point to Vercel products
   const fileName = purePath.split(/[\\/]/).pop();
   return `${VERCEL_FRONTEND}/products/rings/${fileName}`;
 };
@@ -217,7 +211,6 @@ export default function OrderHistory() {
                     .filter(Boolean);
                 }
 
-                // Apply getCleanUrl to all images before passing to OrderCard
                 const cleanedImages = rawImages.map((img) => getCleanUrl(img));
 
                 return (

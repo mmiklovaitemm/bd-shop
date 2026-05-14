@@ -40,9 +40,7 @@ router.post("/register", async (req, res) => {
       return res.status(409).json({ message: "Email already in use." });
     }
 
-    const passwordHash = await bcrypt.hash(String(password), 10);
-    // Naudojame first_name ir last_name kaip DB
-    const [result] = await db.query(
+    const passwordHash = await bcrypt.hash(String(password), 10);    const [result] = await db.query(
       "INSERT INTO users (email, password_hash, first_name, last_name) VALUES (?, ?, ?, ?)",
       [cleanEmail, passwordHash, firstName || null, lastName || null],
     );
@@ -130,7 +128,7 @@ router.get("/me", requireAuth, async (req, res) => {
       user: {
         id: user.id,
         email: user.email,
-        firstName: user.first_name, // Mapinam rankiniu būdu, kad būtų saugu
+        firstName: user.first_name,
         lastName: user.last_name,
         role: user.role || "user",
       },

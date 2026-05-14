@@ -12,7 +12,7 @@ import FullWidthDivider from "@/components/ui/FullWidthDivider";
 import ProductsToolbar from "@/components/sections/ProductsToolbar";
 import ProductsFilterPanel from "@/components/sections/ProductsFilterPanel";
 import PageTitle from "@/components/ui/PageTitle";
-import Loader from "@/components/ui/Loader"; // IMPORTUOJAME NAUJĄ LOADERĮ
+import Loader from "@/components/ui/Loader";
 import { Reveal } from "@/components/sections/Reveal";
 import { useProducts } from "@/hooks/useProducts";
 

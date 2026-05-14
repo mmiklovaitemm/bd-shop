@@ -34,18 +34,15 @@ export function FavoritesProvider({ children }) {
   const [favoriteIds, setFavoriteIds] = useState(readLocalFavorites);
   const prevUserRef = useRef(null);
 
-  // Always persist to localStorage (for both guests and logged-in users as backup)
   useEffect(() => {
     saveLocalFavorites(favoriteIds);
   }, [favoriteIds]);
 
-  // When user logs in — fetch from API; when logs out — clear
   useEffect(() => {
     const prevUser = prevUserRef.current;
     prevUserRef.current = user;
 
     if (user && !prevUser) {
-      // User just logged in — load from API
       fetch(`${API_BASE}/favorites`, {
         credentials: "include",
         headers: authHeaders(),
@@ -58,7 +55,6 @@ export function FavoritesProvider({ children }) {
         })
         .catch(() => {});
     } else if (!user && prevUser) {
-      // User just logged out — clear favorites and localStorage
       setFavoriteIds([]);
       saveLocalFavorites([]);
     }

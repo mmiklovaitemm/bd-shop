@@ -6,7 +6,6 @@ const router = express.Router();
 
 // --- ROUTES ---
 
-/** GET ALL ORDERS (ADMIN) */
 router.get("/all", requireAdmin, async (req, res) => {
   try {
     const [orders] = await db.query(
@@ -31,7 +30,6 @@ router.get("/all", requireAdmin, async (req, res) => {
   }
 });
 
-/** GET USER ORDERS */
 router.get("/", requireAuth, async (req, res) => {
   try {
     const [orders] = await db.query(
@@ -57,7 +55,6 @@ router.get("/", requireAuth, async (req, res) => {
   }
 });
 
-/** UPDATE ORDER STATUS (ADMIN) */
 router.patch("/:id/status", requireAdmin, async (req, res) => {
   let connection;
   try {
@@ -130,7 +127,6 @@ router.patch("/:id/status", requireAdmin, async (req, res) => {
   }
 });
 
-/** CREATE ORDER */
 router.post("/", requireAuth, async (req, res) => {
   let connection;
   try {
@@ -266,7 +262,6 @@ router.post("/", requireAuth, async (req, res) => {
   }
 });
 
-/** DELETE ORDER (ADMIN) */
 router.delete("/:id", requireAdmin, async (req, res) => {
   try {
     const orderId = Number(req.params.id);

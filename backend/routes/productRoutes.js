@@ -4,8 +4,6 @@ import { requireAdmin } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// --- HELPER FUNCTIONS ---
-
 function safeJsonParse(value, fallback) {
   if (value === null || value === undefined) return fallback;
   if (typeof value !== "string") return value;
@@ -35,10 +33,6 @@ function normalizeFrontendAssetUrl(value) {
   return raw;
 }
 
-/**
- * Builds variant rows from admin form input for inserting into product_variants.
- * Returns array of { color, size, stock, images }.
- */
 function buildVariantRows({ variants = [], sizes = [], variantStock = {} }) {
   const cleanSizes = sizes.length ? sizes : ["one size"];
   const rows = [];
@@ -70,10 +64,6 @@ function buildVariantRows({ variants = [], sizes = [], variantStock = {} }) {
   return rows;
 }
 
-/**
- * Reconstructs the variants object shape from product_variants DB rows.
- * Returns { variants: {color: [{size, stock, images}]}, colors, sizes }
- */
 function variantRowsToShape(rows = []) {
   const variants = {};
   const sizesSet = new Set();
@@ -107,9 +97,6 @@ function getTotalStock(variantRows = []) {
   );
 }
 
-/**
- * Maps a raw DB row + its product_variants rows to a frontend product object.
- */
 function mapProductRow(row, variantRows = []) {
   if (!row) return null;
   const details = safeJsonParse(row.details, {});
@@ -150,9 +137,6 @@ function mapProductRow(row, variantRows = []) {
   };
 }
 
-/**
- * Groups product_variants rows by product_id.
- */
 function groupVariantsByProduct(variantRows) {
   const map = {};
   for (const v of variantRows) {
@@ -163,9 +147,6 @@ function groupVariantsByProduct(variantRows) {
   return map;
 }
 
-/**
- * Inserts product_variants rows for a given product id.
- */
 async function insertVariantRows(productId, rows, conn = db) {
   for (const row of rows) {
     await conn.query(
@@ -184,7 +165,6 @@ async function insertVariantRows(productId, rows, conn = db) {
 
 // --- ROUTES ---
 
-/** GET /api/products */
 router.get("/", async (req, res) => {
   try {
     const [rows] = await db.query(
@@ -207,7 +187,6 @@ router.get("/", async (req, res) => {
   }
 });
 
-/** GET /api/products/:id */
 router.get("/:id", async (req, res) => {
   try {
     const [rows] = await db.query("SELECT * FROM products WHERE id = ?", [
@@ -227,7 +206,6 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-/** POST /api/products — Admin only */
 router.post("/", requireAdmin, async (req, res) => {
   try {
     const {
@@ -298,7 +276,6 @@ router.post("/", requireAdmin, async (req, res) => {
   }
 });
 
-/** PUT /api/products/:id — Admin only */
 router.put("/:id", requireAdmin, async (req, res) => {
   try {
     const {
@@ -368,7 +345,6 @@ router.put("/:id", requireAdmin, async (req, res) => {
   }
 });
 
-/** DELETE /api/products/:id — Admin only */
 router.delete("/:id", requireAdmin, async (req, res) => {
   try {
     // Delete variants first (no CASCADE since no FK constraint)
