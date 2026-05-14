@@ -124,12 +124,9 @@ npm run dev
 ## Author
 
 Ugnė Miklovaitė
-SMK University of Applied Sciences
-Multimedia and Programming Study Programme
-2026
 
 ---
 
 ## License
 
-This project is for portfolio and academic purposes. All jewelry designs and branding assets belong to UM Studio.
+This project is for portfolio and academic purposes. All jewelry designs and branding are made with AI.
