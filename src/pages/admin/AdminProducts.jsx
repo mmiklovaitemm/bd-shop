@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import useLanguage from "@/context/useLanguage";
 
 import AdminProductCreateModal from "@/pages/admin/components/AdminProductCreateModal";
@@ -293,16 +294,24 @@ export default function AdminProducts() {
   };
 
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const a = t.admin;
 
   return (
     <>
       <main className="mx-auto w-full max-w-6xl px-4 py-8">
-        {/* Page Header */}
         <div className="flex items-center justify-between gap-4">
           <h1 className="font-display text-4xl leading-none">
             {a.productsTitle}
           </h1>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => navigate("/admin/orders")}
+              className="border border-black bg-white px-4 py-2 font-ui text-sm hover:bg-black hover:text-white transition-colors"
+            >
+              Orders
+            </button>
           <button
             type="button"
             className="border border-black bg-black px-4 py-3 font-ui text-sm text-white"
@@ -314,6 +323,7 @@ export default function AdminProducts() {
           >
             {a.addProduct}
           </button>
+          </div>
         </div>
 
         {/* Bulk Actions Bar */}

@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import useLanguage from "@/context/useLanguage";
 
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
@@ -182,11 +183,21 @@ export default function AdminOrders() {
 
   const { t } = useLanguage();
   const a = t.admin;
+  const navigate = useNavigate();
 
   return (
     <>
       <main className="mx-auto w-full max-w-6xl px-4 py-8">
-        <h1 className="font-display text-4xl leading-none">{a.ordersTitle}</h1>
+        <div className="flex items-center justify-between gap-4">
+          <h1 className="font-display text-4xl leading-none">{a.ordersTitle}</h1>
+          <button
+            type="button"
+            onClick={() => navigate("/admin/products")}
+            className="border border-black bg-white px-4 py-2 font-ui text-sm hover:bg-black hover:text-white transition-colors"
+          >
+            Products
+          </button>
+        </div>
 
         <AdminOrdersStats
           statusFilter={statusFilter}
