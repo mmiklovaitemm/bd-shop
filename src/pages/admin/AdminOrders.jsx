@@ -193,7 +193,7 @@ export default function AdminOrders() {
           <button
             type="button"
             onClick={() => navigate("/admin/products")}
-            className="border border-black bg-white px-4 py-2 font-ui text-sm hover:bg-black hover:text-white transition-colors"
+            className="border border-black bg-white px-4 py-2 font-ui text-sm transition-all duration-200 lg:hover:-translate-y-[2px] lg:hover:bg-black lg:hover:text-white lg:hover:shadow-md"
           >
             Products
           </button>
