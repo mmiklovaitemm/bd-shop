@@ -167,7 +167,7 @@ export default function Header() {
 
       {/* DESKTOP */}
       <div
-        className={`hidden ${HEADER_HEIGHT} items-center bg-white lg:flex px-6 mx-auto ${MAX_WIDTH}`}
+        className={`hidden ${HEADER_HEIGHT} items-center bg-white lg:flex px-6 mx-auto ${MAX_WIDTH} relative`}
       >
         <NavItem to="/" className="flex items-center after:hidden">
           <img src={logoIcon} alt="um studio" className="h-[28px] w-auto" />
@@ -182,7 +182,7 @@ export default function Header() {
           <div className="h-px w-[220px] bg-black/30" />
         </nav>
 
-        <div className="flex items-center gap-5">
+        <div className="flex items-center gap-5 pr-20">
           <CartItem
             to="/favorites"
             icon={heartIcon}
@@ -218,17 +218,18 @@ export default function Header() {
           ) : (
             <NavItem to="/login">{t.logIn}</NavItem>
           )}
+        </div>
 
-          <div className="flex items-center gap-2">
-            {LANGUAGES.map(({ code, value }) => (
-              <LanguageButton
-                key={code}
-                code={code}
-                isActive={lang === value}
-                onClick={() => setLang(value)}
-              />
-            ))}
-          </div>
+        {/* Language buttons at far right */}
+        <div className="absolute right-6 flex items-center gap-2">
+          {LANGUAGES.map(({ code, value }) => (
+            <LanguageButton
+              key={code}
+              code={code}
+              isActive={lang === value}
+              onClick={() => setLang(value)}
+            />
+          ))}
         </div>
       </div>
 
