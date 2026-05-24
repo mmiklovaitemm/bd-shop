@@ -85,7 +85,7 @@ export default function YouMayAlsoLike({ currentProduct }) {
           {t.product.youMayAlsoLike.titleLine2}
         </>
       }
-      leftWidthPx={260}
+      leftWidthPx={340}
       leftBottomSlot={<div className="lg:mt-[3rem]">{SeeAllButton}</div>}
       mobileBottomSlot={
         <div className="mt-6 mb-[-0.5rem] flex justify-end px-1 lg:hidden">
