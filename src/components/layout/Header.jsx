@@ -182,7 +182,7 @@ export default function Header() {
           <div className="h-px w-[220px] bg-black/30" />
         </nav>
 
-        <div className="flex items-center gap-5 pr-20">
+        <div className="flex items-center gap-5 pr-32">
           <CartItem
             to="/favorites"
             icon={heartIcon}
