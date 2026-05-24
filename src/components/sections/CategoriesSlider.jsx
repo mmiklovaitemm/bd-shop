@@ -11,7 +11,7 @@ export default function CategoriesSlider({ items = CATEGORIES }) {
   const { t } = useLanguage();
 
   return (
-    <HorizontalSliderSection title={t.categories} leftWidthPx={260}>
+    <HorizontalSliderSection title={t.categories} leftWidthPx={340}>
       {items.map((category) => (
         <CategoryCard
           key={category.id}
