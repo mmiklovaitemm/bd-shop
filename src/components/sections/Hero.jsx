@@ -96,19 +96,25 @@ export default function Hero() {
             )}
           </AnimatePresence>
 
+          {/* Dark gradient overlay from left to right */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent pointer-events-none z-[5]" />
+
+          {/* Bottom gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent pointer-events-none z-[5]" />
+
           {/* Static UI Overlay */}
-          <div className="absolute inset-0 z-10 pointer-events-none flex flex-col justify-end">
-            <div className="mx-auto w-full max-w-[1320px] px-6 md:px-10 pb-10 lg:pb-12">
+          <div className="absolute inset-0 z-10 pointer-events-none flex flex-col justify-center lg:justify-end">
+            <div className="mx-auto w-full max-w-[1320px] px-6 md:px-10 pb-16 lg:pb-20">
               {/* Mobile/Tablet Text */}
               <div className="lg:hidden">
                 <motion.h1
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.3 }}
-                  className="font-display text-[60px] leading-[0.9] tracking-tight text-white"
+                  className="font-display text-[60px] leading-[1.1] tracking-[0.02em] text-white"
                 >
-                  <span className="block">{t.heroTitleLine1}</span>
-                  <span className="block">{t.heroTitleLine2}</span>
+                  <span className="block mb-1">{t.heroTitleLine1}</span>
+                  <span className="block mb-1">{t.heroTitleLine2}</span>
                   <span className="block">{t.heroTitleLine3}</span>
                 </motion.h1>
               </div>
@@ -119,10 +125,10 @@ export default function Hero() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-                  className="font-display text-white text-[72px] xl:text-[88px] leading-[0.92] tracking-wide shrink-0"
+                  className="font-display text-white text-[72px] xl:text-[88px] leading-[1.05] tracking-[0.03em] shrink-0"
                 >
-                  <span className="block">{t.heroTitleLine1}</span>
-                  <span className="block">{t.heroTitleLine2}</span>
+                  <span className="block mb-2">{t.heroTitleLine1}</span>
+                  <span className="block mb-2">{t.heroTitleLine2}</span>
                   <span className="block">{t.heroTitleLine3}</span>
                 </motion.h1>
 
@@ -140,8 +146,6 @@ export default function Hero() {
               </div>
             </div>
           </div>
-
-          <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent pointer-events-none z-[5]" />
         </div>
 
         <FullWidthDivider />
