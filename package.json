@@ -20,6 +20,7 @@
     "@stripe/react-stripe-js": "^6.3.0",
     "@stripe/stripe-js": "^9.4.0",
     "@vercel/speed-insights": "^2.0.0",
+    "docx": "^9.7.0",
     "framer-motion": "^12.38.0",
     "lucide-react": "^0.563.0",
     "multer": "^2.1.1",
