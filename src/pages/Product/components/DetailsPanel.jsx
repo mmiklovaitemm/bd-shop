@@ -136,16 +136,8 @@ const DetailsContent = memo(function DetailsContent({
       ? gemstonesArr.join(", ")
       : pickFirst(detailsObj.metal === "Pearl" ? "Pearl" : null);
 
-    // Description text resolution
-    const text = pickFirst(
-      detailsObj.detailsText,
-      product.detailsText,
-      detailsObj.text,
-      detailsObj.description,
-      product.longDescription,
-      product.description,
-      getDefaultCategoryText(category, t),
-    );
+    // Description text resolution - always use translation based on category
+    const text = getDefaultCategoryText(category, t);
 
     const metalRaw = pickFirst(
       detailsObj.metal,
