@@ -170,14 +170,14 @@ export default function Header() {
         className={`hidden ${HEADER_HEIGHT} items-center bg-white lg:flex mx-auto ${MAX_WIDTH} relative`}
       >
         {/* Logo - far left */}
-        <div className="absolute left-6">
+        <div className="absolute left-0">
           <NavItem to="/" className="flex items-center after:hidden">
             <img src={logoIcon} alt="um studio" className="h-[28px] w-auto" />
           </NavItem>
         </div>
 
-        {/* Nav items - center */}
-        <nav className="flex flex-1 items-center justify-center gap-10">
+        {/* Nav items - shifted to right */}
+        <nav className="flex flex-1 items-center justify-center gap-10 ml-[120px]">
           {NAV_ITEMS.map(({ to, label }) => (
             <NavItem key={to} to={to}>
               {label}
@@ -222,7 +222,7 @@ export default function Header() {
         </nav>
 
         {/* Language buttons - far right */}
-        <div className="absolute right-6 flex items-center gap-2">
+        <div className="absolute right-0 flex items-center gap-2">
           {LANGUAGES.map(({ code, value }) => (
             <LanguageButton
               key={code}
