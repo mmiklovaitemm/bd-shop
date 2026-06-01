@@ -53,7 +53,7 @@ export default function BestSellersSlider({ items = BEST_SELLERS }) {
     <HorizontalSliderSection
       title={t.bestSellers}
       leftWidthPx={340}
-      leftBottomSlot={<div className="lg:mt-auto lg:mb-0">{SeeAllButton}</div>}
+      leftBottomSlot={SeeAllButton}
       mobileBottomSlot={
         <div className="mb-[-0.5rem] mt-6 flex justify-end px-1 lg:hidden">
           {SeeAllButton}

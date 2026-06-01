@@ -243,35 +243,37 @@ export default function HorizontalSliderSection({
       <section className={sectionWrapClassName}>
         <div className={outerPxClass}>
           <div
-            className="relative z-0 lg:grid lg:items-start lg:gap-6"
+            className="relative z-0 lg:grid lg:items-end lg:gap-6"
             style={{ gridTemplateColumns: `${leftWidthPx}px minmax(0, 1fr)` }}
           >
             {/* LEFT (desktop) */}
-            <div className="relative z-20 hidden lg:flex lg:flex-col lg:items-start lg:gap-14">
-              <h2 className={titleDesktopClass}>{title}</h2>
+            <div className="relative z-20 hidden lg:flex lg:flex-col lg:items-start lg:justify-between lg:h-full">
+              <div className="flex flex-col gap-14">
+                <h2 className={titleDesktopClass}>{title}</h2>
 
-              {!hideNav && (
-                <div className="flex gap-3">
-                  <IconButton
-                    variant="nav"
-                    icon={arrowLeft}
-                    onClick={handlePrev}
-                    disabled={!canPrev}
-                    aria-label={t.previous}
-                    className={NAV_BUTTON_CLASS}
-                    iconClassName="h-4 w-4"
-                  />
-                  <IconButton
-                    variant="nav"
-                    icon={arrowRight}
-                    onClick={handleNext}
-                    disabled={!canNext}
-                    aria-label={t.next}
-                    className={NAV_BUTTON_CLASS}
-                    iconClassName="h-4 w-4"
-                  />
-                </div>
-              )}
+                {!hideNav && (
+                  <div className="flex gap-3">
+                    <IconButton
+                      variant="nav"
+                      icon={arrowLeft}
+                      onClick={handlePrev}
+                      disabled={!canPrev}
+                      aria-label={t.previous}
+                      className={NAV_BUTTON_CLASS}
+                      iconClassName="h-4 w-4"
+                    />
+                    <IconButton
+                      variant="nav"
+                      icon={arrowRight}
+                      onClick={handleNext}
+                      disabled={!canNext}
+                      aria-label={t.next}
+                      className={NAV_BUTTON_CLASS}
+                      iconClassName="h-4 w-4"
+                    />
+                  </div>
+                )}
+              </div>
 
               {leftBottomSlot}
             </div>
