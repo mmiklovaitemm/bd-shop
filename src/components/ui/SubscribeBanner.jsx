@@ -23,16 +23,8 @@ export default function SubscribeBanner({ delayMs = 3000 }) {
     setTimeout(() => setOpen(false), 300);
   }, []);
 
-  // Show banner logic with 7-day check
+  // Show banner logic - show every time page loads
   useEffect(() => {
-    const lastDismissed = localStorage.getItem(STORAGE_KEY);
-    const now = Date.now();
-
-    if (lastDismissed) {
-      const timePassed = now - parseInt(lastDismissed, 10);
-      if (timePassed < SEVEN_DAYS_IN_MS) return;
-    }
-
     const tmr = setTimeout(() => {
       setOpen(true);
       setTimeout(() => setIsVisible(true), 10);

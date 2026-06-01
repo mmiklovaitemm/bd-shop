@@ -167,22 +167,23 @@ export default function Header() {
 
       {/* DESKTOP */}
       <div
-        className={`hidden ${HEADER_HEIGHT} items-center bg-white lg:flex px-6 mx-auto ${MAX_WIDTH} relative`}
+        className={`hidden ${HEADER_HEIGHT} items-center bg-white lg:flex mx-auto ${MAX_WIDTH} relative`}
       >
-        <NavItem to="/" className="flex items-center after:hidden">
-          <img src={logoIcon} alt="um studio" className="h-[28px] w-auto" />
-        </NavItem>
+        {/* Logo - far left */}
+        <div className="absolute left-6">
+          <NavItem to="/" className="flex items-center after:hidden">
+            <img src={logoIcon} alt="um studio" className="h-[28px] w-auto" />
+          </NavItem>
+        </div>
 
-        <nav className="flex flex-1 items-center justify-end gap-10 pr-10">
+        {/* Nav items - center */}
+        <nav className="flex flex-1 items-center justify-center gap-10">
           {NAV_ITEMS.map(({ to, label }) => (
             <NavItem key={to} to={to}>
               {label}
             </NavItem>
           ))}
           <div className="h-px w-[220px] bg-black/30" />
-        </nav>
-
-        <div className="flex items-center gap-5 pr-32">
           <CartItem
             to="/favorites"
             icon={heartIcon}
@@ -218,9 +219,9 @@ export default function Header() {
           ) : (
             <NavItem to="/login">{t.logIn}</NavItem>
           )}
-        </div>
+        </nav>
 
-        {/* Language buttons at far right */}
+        {/* Language buttons - far right */}
         <div className="absolute right-6 flex items-center gap-2">
           {LANGUAGES.map(({ code, value }) => (
             <LanguageButton
