@@ -5,8 +5,7 @@ import useLanguage from "@/context/useLanguage";
 import bannerImg from "@/assets/images/banner/banner-img.webp";
 import logo from "@/assets/ui/logo.svg";
 
-const STORAGE_KEY = "um_studio_subscribe_timestamp";
-const SEVEN_DAYS_IN_MS = 7 * 24 * 60 * 60 * 1000;
+const STORAGE_KEY = "um_studio_subscribe_shown";
 
 export default function SubscribeBanner({ delayMs = 3000 }) {
   const { t } = useLanguage();
@@ -14,17 +13,22 @@ export default function SubscribeBanner({ delayMs = 3000 }) {
   const [isVisible, setIsVisible] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
 
-  // Close banner and store current timestamp to localStorage
+  // Close banner and mark as shown in sessionStorage
   const close = useCallback(() => {
     setIsVisible(false);
-    localStorage.setItem(STORAGE_KEY, Date.now().toString());
+    sessionStorage.setItem(STORAGE_KEY, "true");
 
     // Delay unmounting to allow fade-out animation
     setTimeout(() => setOpen(false), 300);
   }, []);
 
-  // Show banner logic - show every time page loads
+  // Show banner logic - only once per session
   useEffect(() => {
+    const hasShown = sessionStorage.getItem(STORAGE_KEY);
+
+    // If already shown in this session, don't show again
+    if (hasShown === "true") return;
+
     const tmr = setTimeout(() => {
       setOpen(true);
       setTimeout(() => setIsVisible(true), 10);
