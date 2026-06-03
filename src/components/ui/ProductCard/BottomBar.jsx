@@ -1,12 +1,14 @@
 import cn from "@/utils/cn";
 import AddToBagButton from "@/components/ui/AddToBagButton";
 import useLanguage from "@/context/useLanguage";
+import { getTranslatedProductName } from "@/utils/getTranslatedProductName";
 
 import bagIcon from "@/assets/ui/shopping-bag.svg";
 
 export default function BottomBar({ product, onAddToCart, isDesktop }) {
   const { t } = useLanguage();
   const isSoldOut = Boolean(product?.isSoldOut);
+  const translatedName = getTranslatedProductName(product.name, t);
 
   return (
     <div className="absolute bottom-0 left-0 right-0 z-10">
@@ -20,7 +22,7 @@ export default function BottomBar({ product, onAddToCart, isDesktop }) {
       >
         <div className="flex w-full items-center justify-center gap-4">
           <p className="min-w-0 font-display text-[14px] font-normal leading-tight">
-            {product.name}
+            {translatedName}
           </p>
           <div className="h-px w-[25%] flex-none bg-white/90" />
           <p className="flex-none whitespace-nowrap font-ui text-[14px] font-normal leading-none">
@@ -49,7 +51,7 @@ export default function BottomBar({ product, onAddToCart, isDesktop }) {
                     onAddToCart?.(e);
                   }}
                   icon={bagIcon}
-                  ariaLabel={`${t.add} ${product.name} ${t.toBag}`}
+                  ariaLabel={`${t.add} ${translatedName} ${t.toBag}`}
                 />
               )}
             </div>

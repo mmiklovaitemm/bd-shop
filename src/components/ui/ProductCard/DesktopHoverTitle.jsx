@@ -1,6 +1,10 @@
 import cn from "@/utils/cn";
+import useLanguage from "@/context/useLanguage";
+import { getTranslatedProductName } from "@/utils/getTranslatedProductName";
 
 export default function DesktopHoverTitle({ product }) {
+  const { t } = useLanguage();
+  const translatedName = getTranslatedProductName(product.name, t);
   const textStyle = {
     display: "-webkit-box",
     WebkitLineClamp: 3,
@@ -19,7 +23,7 @@ export default function DesktopHoverTitle({ product }) {
         )}
         style={textStyle}
       >
-        {product.name}
+        {translatedName}
       </p>
     </div>
   );
