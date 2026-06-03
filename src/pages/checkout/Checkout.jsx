@@ -5,6 +5,7 @@ import { Elements, useStripe, useElements, CardElement } from "@stripe/react-str
 
 import useLanguage from "@/context/useLanguage";
 import useCart from "@/store/useCart";
+import useAuth from "@/store/useAuth";
 import { getEmailFromLocalStorage } from "@/utils/checkout";
 
 import OrderSummary from "./components/OrderSummary";
@@ -26,7 +27,8 @@ function CheckoutForm() {
   const stripe = useStripe();
   const elements = useElements();
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const user = useAuth((s) => s.user);
   const items = useCart((s) => s.items);
   const clearCart = useCart((s) => s.clearCart);
 
@@ -238,6 +240,37 @@ function CheckoutForm() {
       setErrors((prev) => ({ ...prev, submit: err?.message || "Checkout failed" }));
     }
   };
+
+  if (!user) {
+    return (
+      <div className="mx-auto flex min-h-[60vh] max-w-[480px] flex-col items-center justify-center gap-6 px-6 py-20 text-center">
+        <p className="font-display text-[28px] leading-tight">
+          {lang === "lt"
+            ? "Prašome prisijungti prieš atliekant užsakymą"
+            : "Please log in before placing an order"}
+        </p>
+        <p className="font-ui text-[14px] text-black/60">
+          {lang === "lt"
+            ? "Norėdami tęsti ir užbaigti pirkimą, turite prisijungti prie savo paskyros."
+            : "You need to be logged in to complete your purchase."}
+        </p>
+        <div className="flex gap-4">
+          <button
+            onClick={() => navigate("/login")}
+            className="border border-black bg-black px-8 py-3 font-ui text-[14px] text-white hover:bg-white hover:text-black transition-colors"
+          >
+            {t.logIn}
+          </button>
+          <button
+            onClick={() => navigate("/register")}
+            className="border border-black bg-white px-8 py-3 font-ui text-[14px] text-black hover:bg-black hover:text-white transition-colors"
+          >
+            {t.createAccount}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

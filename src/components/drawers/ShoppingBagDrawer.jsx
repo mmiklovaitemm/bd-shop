@@ -6,6 +6,7 @@ import { apiGet } from "@/lib/api";
 import useBagDrawer from "@/store/useBagDrawer";
 import useCart from "@/store/useCart";
 import useLanguage from "@/context/useLanguage";
+import useAuth from "@/store/useAuth";
 import preventDragHandler from "@/utils/preventDrag";
 import { getTranslatedProductName } from "@/utils/getTranslatedProductName";
 
@@ -110,7 +111,9 @@ export default function ShoppingBagDrawer() {
   const removeItem = useCart((s) => s.removeItem);
   const updateVariant = useCart((s) => s.updateVariant);
 
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const user = useAuth((s) => s.user);
+  const [showLoginMsg, setShowLoginMsg] = useState(false);
   const [products, setProducts] = useState([]);
   const [isValidating, setIsValidating] = useState(false);
 
@@ -374,9 +377,34 @@ export default function ShoppingBagDrawer() {
               )}
             </div>
 
-            <div className="border-t border-black p-6 bg-white shrink-0">
+            <div className="border-t border-black p-6 bg-white shrink-0 space-y-3">
+              {showLoginMsg && (
+                <div className="flex items-center justify-between gap-3 border border-black bg-black/5 px-4 py-3">
+                  <p className="font-ui text-[13px] text-black">
+                    {lang === "lt"
+                      ? "Prašome prisijungti prieš atliekant užsakymą"
+                      : "Please log in before placing an order"}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      close();
+                      navigate("/login");
+                    }}
+                    className="shrink-0 border border-black bg-black px-4 py-2 font-ui text-[12px] text-white hover:bg-white hover:text-black transition-colors"
+                  >
+                    {t.logIn}
+                  </button>
+                </div>
+              )}
+
               <button
                 onClick={() => {
+                  if (!user) {
+                    setShowLoginMsg(true);
+                    return;
+                  }
+                  setShowLoginMsg(false);
                   close();
                   navigate("/checkout");
                 }}
