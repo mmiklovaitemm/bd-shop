@@ -12,21 +12,22 @@ export default function AdminOrdersTable({
   const { t } = useLanguage();
   const a = t.admin;
   return (
-    <div className="mt-6 hidden overflow-x-auto border border-black lg:block">
-      <table className="w-full border-collapse font-ui text-sm">
-        <thead>
-          <tr className="border-b border-black bg-black/5 text-left">
-            <th className="px-4 py-3">{a.orderId}</th>
-            <th className="px-4 py-3">{a.date}</th>
-            <th className="px-4 py-3">{a.image}</th>
-            <th className="px-4 py-3">{a.email}</th>
-            <th className="px-4 py-3">{a.items}</th>
-            <th className="px-4 py-3">{a.delivery}</th>
-            <th className="px-4 py-3">{a.total}</th>
-            <th className="px-4 py-3">{a.status}</th>
-            <th className="px-4 py-3">{a.details}</th>
-          </tr>
-        </thead>
+    <div className="mt-6 hidden border border-black lg:block">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[1200px] border-collapse font-ui text-sm">
+          <thead>
+            <tr className="border-b border-black bg-black/5 text-left">
+              <th className="px-3 py-2 w-[60px]">{a.orderId}</th>
+              <th className="px-3 py-2 w-[100px]">{a.date}</th>
+              <th className="px-3 py-2 w-[60px]">{a.image}</th>
+              <th className="px-3 py-2 w-[180px]">{a.email}</th>
+              <th className="px-3 py-2 w-[60px]">{a.items}</th>
+              <th className="px-3 py-2 w-[100px]">{a.delivery}</th>
+              <th className="px-3 py-2 w-[80px]">{a.total}</th>
+              <th className="px-3 py-2 w-[140px]">{a.status}</th>
+              <th className="px-3 py-2 w-[120px]">{a.details}</th>
+            </tr>
+          </thead>
 
         <tbody>
           {orders.map((order) => (
@@ -41,7 +42,8 @@ export default function AdminOrdersTable({
             />
           ))}
         </tbody>
-      </table>
+        </table>
+      </div>
     </div>
   );
 }
