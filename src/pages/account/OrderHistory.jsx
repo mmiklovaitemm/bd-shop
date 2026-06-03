@@ -242,6 +242,53 @@ export default function OrderHistory() {
                             const totalCents = Number(order?.total_cents || 0);
                             const money = (c) =>
                               `€${(Number(c || 0) / 100).toFixed(2)}`;
+
+                            const isPickup = order?.delivery_type === "pickup";
+                            const pickupMethod = String(order?.delivery_method || "").toLowerCase();
+
+                            // Salon pickup addresses
+                            const SALON_INFO = {
+                              vilnius: {
+                                name: t.checkoutPage?.pickupLocations?.vilnius || "Vilnius salon",
+                                street: t.checkoutPage?.pickupAddresses?.vilnius || "Kauno str. 24",
+                                zipCity: "Vilnius, Lietuva",
+                              },
+                              kaunas: {
+                                name: t.checkoutPage?.pickupLocations?.kaunas || "Kaunas salon",
+                                street: t.checkoutPage?.pickupAddresses?.kaunas || "Žemaičių str. 24",
+                                zipCity: "Kaunas, Lietuva",
+                              },
+                            };
+
+                            const salonInfo = isPickup
+                              ? SALON_INFO[pickupMethod] || {
+                                  name: order?.delivery_method || t.pickup,
+                                  street: "",
+                                  zipCity: "",
+                                }
+                              : null;
+
+                            const shippingAddress = {
+                              name: [order?.ship_first_name, order?.ship_last_name]
+                                .filter(Boolean)
+                                .join(" ") || "",
+                              street: [order?.ship_address, order?.ship_apartment]
+                                .filter(Boolean)
+                                .join(", ") || "",
+                              zipCity: [order?.ship_postal_code, order?.ship_city]
+                                .filter(Boolean)
+                                .join(" ") || "",
+                            };
+
+                            // Carrier label
+                            const carrierLabel = isPickup
+                              ? `${t.pickup} — ${salonInfo?.name}`
+                              : pickupMethod === "omniva"
+                              ? t.omniva
+                              : pickupMethod === "lp_express" || pickupMethod === "lpexpress"
+                              ? t.lpExpress
+                              : order?.delivery_method || "—";
+
                             return {
                               orderDate: order.created_at
                                 ? new Date(order.created_at)
@@ -249,50 +296,12 @@ export default function OrderHistory() {
                                     .slice(0, 10)
                                 : "",
                               orderNo: String(order.id),
-                              pickup:
-                                order?.delivery_type === "pickup"
-                                  ? order?.delivery_method || t.pickup
-                                  : "—",
-                              deliveryTo:
-                                order?.delivery_type === "pickup"
-                                  ? {
-                                      name: order?.delivery_method || t.pickup,
-                                      street: "",
-                                      zipCity: "",
-                                    }
-                                  : {
-                                      name: [order?.ship_first_name, order?.ship_last_name]
-                                        .filter(Boolean)
-                                        .join(" ") || "",
-                                      street: [order?.ship_address, order?.ship_apartment]
-                                        .filter(Boolean)
-                                        .join(", ") || "",
-                                      zipCity: [order?.ship_postal_code, order?.ship_city]
-                                        .filter(Boolean)
-                                        .join(" ") || "",
-                                    },
-                              billingAddress:
-                                order?.delivery_type === "pickup"
-                                  ? {
-                                      name: order?.delivery_method || t.pickup,
-                                      street: "",
-                                      zipCity: "",
-                                    }
-                                  : {
-                                      name: [order?.ship_first_name, order?.ship_last_name]
-                                        .filter(Boolean)
-                                        .join(" ") || "",
-                                      street: [order?.ship_address, order?.ship_apartment]
-                                        .filter(Boolean)
-                                        .join(", ") || "",
-                                      zipCity: [order?.ship_postal_code, order?.ship_city]
-                                        .filter(Boolean)
-                                        .join(" ") || "",
-                                    },
-                              deliveryMethod: order?.delivery_method || "N/A",
-                              deliveryPrice: money(
-                                totalCents - totalCentsFromItems,
-                              ),
+                              isPickup,
+                              pickup: isPickup ? salonInfo?.name : "—",
+                              deliveryTo: isPickup ? salonInfo : shippingAddress,
+                              billingAddress: isPickup ? salonInfo : shippingAddress,
+                              deliveryMethod: carrierLabel,
+                              deliveryPrice: money(totalCents - totalCentsFromItems),
                               orderValue: money(totalCentsFromItems),
                               total: money(totalCents),
                               productLines,

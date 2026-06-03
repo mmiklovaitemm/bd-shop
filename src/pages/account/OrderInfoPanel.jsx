@@ -118,8 +118,12 @@ function DeliveryInfoBlock({ info }) {
       <div className="text-neutral-600">{t.delivery}:</div>
       <div className="mt-3 space-y-3">
         <CellLabelValue
+          label={`${t.service}:`}
+          value={info?.isPickup ? t.pickup : t.delivery}
+        />
+        <CellLabelValue
           label={`${t.carrier}:`}
-          value={info?.deliveryMethod || "N/A"}
+          value={info?.deliveryMethod || "—"}
         />
         <CellLabelValue
           label={`${t.deliveryPrice}:`}
@@ -166,8 +170,8 @@ export default function OrderInfoPanel({ info }) {
           <FullWidthDivider />
 
           <div className="flex items-center justify-between py-4 font-ui text-sm">
-            <span className="text-neutral-600">{t.pickup}:</span>
-            <span className="text-right">{info?.pickup}</span>
+            <span className="text-neutral-600">{info?.isPickup ? t.checkoutPage?.pickupTitle || t.pickup : t.carrier}:</span>
+            <span className="text-right">{info?.isPickup ? info?.pickup : info?.deliveryMethod}</span>
           </div>
           <FullWidthDivider />
 
@@ -227,7 +231,7 @@ export default function OrderInfoPanel({ info }) {
 
             <div className="border-r border-neutral-600 p-4">
               <AddressBlock
-                label={`${t.deliveryTo}:`}
+                label={info?.isPickup ? `${t.checkoutPage?.pickupTitle || t.pickup}:` : `${t.deliveryTo}:`}
                 name={info?.deliveryTo?.name}
                 street={info?.deliveryTo?.street}
                 zipCity={info?.deliveryTo?.zipCity}
@@ -274,7 +278,7 @@ export default function OrderInfoPanel({ info }) {
 
             <div className="border-r border-neutral-600 p-4">
               <AddressBlock
-                label={`${t.deliveryTo}:`}
+                label={info?.isPickup ? `${t.checkoutPage?.pickupTitle || t.pickup}:` : `${t.deliveryTo}:`}
                 name={info?.deliveryTo?.name}
                 street={info?.deliveryTo?.street}
                 zipCity={info?.deliveryTo?.zipCity}
