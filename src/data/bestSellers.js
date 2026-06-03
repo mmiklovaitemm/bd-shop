@@ -20,7 +20,7 @@ export const BEST_SELLERS = [
   {
     id: "earth-ring",
     name: '"Earth" ring',
-    price: "€89.49",
+    price: "€95",
     image: earthRing1,
     variants: {
       silver: [earthRing1, earthRing2],
@@ -29,7 +29,7 @@ export const BEST_SELLERS = [
   {
     id: "cut-ring",
     name: '"Cut" ring',
-    price: "€89.49",
+    price: "€58",
     image: cutRing1,
     variants: {
       silver: [cutRing1, cutRing2],
@@ -38,7 +38,7 @@ export const BEST_SELLERS = [
   {
     id: "dot-necklace",
     name: '"Dot" necklace',
-    price: "€79.90",
+    price: "€95",
     image: dot1,
     variants: {
       silver: [dot1, dot2],
@@ -47,7 +47,7 @@ export const BEST_SELLERS = [
   {
     id: "echo-ring",
     name: '"Echo" rings',
-    price: "€84.90",
+    price: "€70",
     image: echoRing1,
     variants: {
       silver: [echoRing1, echoRing2],
@@ -56,7 +56,7 @@ export const BEST_SELLERS = [
   {
     id: "pure-earrings",
     name: '"Pure" earrings',
-    price: "€119.90",
+    price: "€90",
     image: pureEarrings1,
     variants: {
       silver: [pureEarrings1, pureEarrings2],
@@ -65,7 +65,7 @@ export const BEST_SELLERS = [
   {
     id: "still-ring",
     name: '"Still" ring',
-    price: "€89.90",
+    price: "€105",
     image: stillRing1,
     variants: {
       silver: [stillRing1, stillRing2],
