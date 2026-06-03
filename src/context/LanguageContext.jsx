@@ -86,6 +86,7 @@ const translations = {
       "monika-liu": "Subtle, aesthetic, and very pleasant. You can feel the handcrafted work and attention to detail.",
     },
     productNames: {
+      // Static data (bestSellers.js) - with quotes and lowercase
       '"Earth" ring': '„Žemė" žiedas',
       '"Cut" ring': '„Cut" žiedas',
       '"Dot" necklace': '„Dot" vėrinys',
@@ -96,6 +97,17 @@ const translations = {
       '"Um" ring': '„Um" žiedas',
       '"Pure" earrings': '„Pure" auskarai',
       '"Bond" bracelet': '„Bond" apyrankė',
+      // Database products - Title Case
+      "Fluid Ring": "„Fluid" žiedas",
+      "Still Ring": "„Still" žiedas",
+      "Fold Ring": "„Fold" žiedas",
+      "Um Ring": "„Um" žiedas",
+      "Earth Ring": "„Žemė" žiedas",
+      "Cut Ring": "„Cut" žiedas",
+      "Dot Necklace": "„Dot" vėrinys",
+      "Echo Rings": "„Echo" žiedai",
+      "Pure Earrings": "„Pure" auskarai",
+      "Bond Bracelet": "„Bond" apyrankė",
     },
     add: "Add",
     remove: "Remove",
@@ -606,6 +618,7 @@ const translations = {
       "monika-liu": "Subtilu, estetiška ir labai jauku. Jaučiasi rankų darbas ir dėmesys detalėms.",
     },
     productNames: {
+      // Static data (bestSellers.js) - with quotes and lowercase
       '"Earth" ring': '„Žemė" žiedas',
       '"Cut" ring': '„Cut" žiedas',
       '"Dot" necklace': '„Dot" vėrinys',
@@ -616,6 +629,17 @@ const translations = {
       '"Um" ring': '„Um" žiedas',
       '"Pure" earrings': '„Pure" auskarai',
       '"Bond" bracelet': '„Bond" apyrankė',
+      // Database products - Title Case
+      "Fluid Ring": "„Fluid" žiedas",
+      "Still Ring": "„Still" žiedas",
+      "Fold Ring": "„Fold" žiedas",
+      "Um Ring": "„Um" žiedas",
+      "Earth Ring": "„Žemė" žiedas",
+      "Cut Ring": "„Cut" žiedas",
+      "Dot Necklace": "„Dot" vėrinys",
+      "Echo Rings": "„Echo" žiedai",
+      "Pure Earrings": "„Pure" auskarai",
+      "Bond Bracelet": "„Bond" apyrankė",
     },
     add: "Pridėti",
     remove: "Pašalinti",
