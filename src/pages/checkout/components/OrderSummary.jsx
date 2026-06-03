@@ -1,6 +1,7 @@
 import useLanguage from "@/context/useLanguage";
 import { fmtPrice } from "@/utils/checkout";
-import ProductImage from "@/components/ui/ProductCard/ProductImage"; // Imported ProductImage component
+import ProductImage from "@/components/ui/ProductCard/ProductImage";
+import { getTranslatedProductName } from "@/utils/getTranslatedProductName";
 
 export default function OrderSummary({
   variant = "mobile",
@@ -91,7 +92,7 @@ export default function OrderSummary({
                   <div className="min-w-0">
                     <div className="flex items-start justify-between gap-3">
                       <p className="font-display text-[18px] leading-tight">
-                        {item.name}
+                        {getTranslatedProductName(item.name, t)}
                       </p>
                       <p className="whitespace-nowrap font-ui text-[14px]">
                         {fmtPrice(calcLineTotal(item))}

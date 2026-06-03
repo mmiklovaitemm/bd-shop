@@ -1,5 +1,6 @@
 import useLanguage from "@/context/useLanguage";
 import FullWidthDivider from "@/components/ui/FullWidthDivider";
+import { getTranslatedProductName } from "@/utils/getTranslatedProductName";
 
 /**
  * Renders a simple row for monetary values
@@ -73,7 +74,7 @@ function ProductsBlock({ items = [] }) {
         {items.map((item, index) => (
           <div key={index} className="space-y-1">
             <div className="flex items-start justify-between gap-4">
-              <div className="text-black">{item?.name || "Product"}</div>
+              <div className="text-black">{getTranslatedProductName(item?.name, t) || "Product"}</div>
               <div className="whitespace-nowrap text-black">
                 {item?.price || "—"}
               </div>

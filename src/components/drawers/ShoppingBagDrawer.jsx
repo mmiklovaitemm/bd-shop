@@ -7,6 +7,7 @@ import useBagDrawer from "@/store/useBagDrawer";
 import useCart from "@/store/useCart";
 import useLanguage from "@/context/useLanguage";
 import preventDragHandler from "@/utils/preventDrag";
+import { getTranslatedProductName } from "@/utils/getTranslatedProductName";
 
 import ProductImage from "@/components/ui/ProductCard/ProductImage";
 
@@ -270,7 +271,7 @@ export default function ShoppingBagDrawer() {
                           <div className="min-w-0">
                             <div className="flex justify-between items-start">
                               <p className="font-display text-[17px] leading-tight pr-2">
-                                {item.name}
+                                {getTranslatedProductName(item.name, t)}
                               </p>
                               <p className="font-ui text-[14px]">
                                 {fmtPrice(item.price)}

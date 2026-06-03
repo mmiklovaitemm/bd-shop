@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { FiHeart } from "react-icons/fi";
 import useLanguage from "@/context/useLanguage";
+import { getTranslatedProductName } from "@/utils/getTranslatedProductName";
 import useFavorites from "@/context/useFavorites";
 import cn from "@/utils/cn";
 import preventDragHandler from "@/utils/preventDrag";
@@ -66,7 +67,7 @@ const ProductInfo = memo(function ProductInfo({
     <div className="md:pt-1">
       <div className="mt-5 flex items-end justify-between gap-4 md:mt-0">
         <h1 className="font-display text-[28px] font-medium leading-none">
-          {product.name}
+          {getTranslatedProductName(product.name, t)}
         </h1>
         <p className="font-ui text-[16px] text-black/90">{product.price}</p>
       </div>
