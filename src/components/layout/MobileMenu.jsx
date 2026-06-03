@@ -77,7 +77,7 @@ export default function MobileMenu({ open, onClose }) {
             type="button"
             onClick={onClose}
             aria-label={closeLabel}
-            className="group inline-flex cursor-pointer items-center gap-2 font-ui text-[16px] text-black"
+            className="group inline-flex cursor-pointer items-center gap-2 font-ui text-[12px] text-black"
           >
             <span className="inline-flex items-center gap-2 transition-transform duration-300 ease-out will-change-transform group-hover:translate-x-[1px] group-hover:-translate-y-[1px]">
               <span className="inline-block">{closeLabel}</span>
