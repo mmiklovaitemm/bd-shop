@@ -384,8 +384,8 @@ export default function ShoppingBagDrawer() {
                 disabled={items.length === 0 || isValidating}
               >
                 {isValidating
-                  ? "Validating..."
-                  : `Check out — ${fmtPrice(subtotal)}`}
+                  ? t.pleaseWait
+                  : `${t.checkout} — ${fmtPrice(subtotal)}`}
               </button>
             </div>
           </motion.aside>
