@@ -1,10 +1,12 @@
 import useMediaQuery from "@/hooks/useMediaQuery";
+import useLanguage from "@/context/useLanguage";
 import cn from "@/utils/cn";
 
 const DESKTOP_BREAKPOINT = "1024px";
 
 export default function CategoryCard({ category, onClick, onMediaReady }) {
   const isDesktop = useMediaQuery(`(min-width: ${DESKTOP_BREAKPOINT})`);
+  const { t } = useLanguage();
 
   const preventImgDrag = (e) => {
     e.preventDefault();
@@ -46,7 +48,7 @@ export default function CategoryCard({ category, onClick, onMediaReady }) {
         <div className="absolute bottom-0 left-0 right-0 z-10">
           <div className="flex h-16 items-center justify-center bg-black/55 backdrop-blur-md">
             <p className="font-display text-[16px] text-white/95">
-              {category.title}
+              {t[category.id] || category.title}
             </p>
           </div>
         </div>
