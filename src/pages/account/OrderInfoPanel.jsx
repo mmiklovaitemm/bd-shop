@@ -121,10 +121,12 @@ function DeliveryInfoBlock({ info }) {
           label={`${t.service}:`}
           value={info?.isPickup ? t.pickup : t.delivery}
         />
-        <CellLabelValue
-          label={`${t.carrier}:`}
-          value={info?.deliveryMethod || "—"}
-        />
+        {!info?.isPickup && (
+          <CellLabelValue
+            label={`${t.carrier}:`}
+            value={info?.deliveryMethod || "—"}
+          />
+        )}
         <CellLabelValue
           label={`${t.deliveryPrice}:`}
           value={info?.deliveryPrice || "€0.00"}
