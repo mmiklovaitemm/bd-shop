@@ -334,9 +334,9 @@ export default function ProductsFilterPanel({
             className="absolute inset-0 bg-black/40"
           />
 
-          <aside className="absolute right-0 top-0 flex h-full w-[92%] max-w-[380px] flex-col border-l border-black bg-white">
-            <div className="flex h-12 shrink-0 items-center justify-between border-b border-black px-4">
-              <span className="font-ui text-[14px]">{t.filter}</span>
+          <aside className="absolute right-0 top-0 flex h-full w-[95%] max-w-[420px] flex-col border-l border-black bg-white shadow-xl">
+            <div className="flex h-14 shrink-0 items-center justify-between border-b border-black px-4">
+              <span className="font-ui text-[16px] font-medium">{t.filter}</span>
 
               <button
                 type="button"
@@ -353,10 +353,10 @@ export default function ProductsFilterPanel({
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-scroll overscroll-contain pb-4">
               <FiltersContent {...contentProps} />
 
-              <div className="p-4">
+              <div className="px-4 pt-4 pb-safe">
                 <ClearAllButton onClick={onClearAll} disabled={clearDisabled} />
               </div>
             </div>

@@ -31,9 +31,9 @@ export default function ProductsSortPanel({
             className="absolute inset-0 bg-black/40"
           />
 
-          <aside className="absolute right-0 top-0 flex h-full w-[92%] max-w-[380px] flex-col border-l border-black bg-white">
-            <div className="flex h-12 shrink-0 items-center justify-between border-b border-black px-4">
-              <span className="font-ui text-[14px]">{t.sortBy}</span>
+          <aside className="absolute right-0 top-0 flex h-full w-[95%] max-w-[420px] flex-col border-l border-black bg-white shadow-xl">
+            <div className="flex h-14 shrink-0 items-center justify-between border-b border-black px-4">
+              <span className="font-ui text-[16px] font-medium">{t.sortBy}</span>
 
               <button
                 type="button"
@@ -50,7 +50,7 @@ export default function ProductsSortPanel({
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto py-2">
+            <div className="flex-1 overflow-y-scroll overscroll-contain py-2">
               <ul role="listbox">
                 {options.map((opt) => {
                   const active = opt.value === sortValue;
@@ -60,9 +60,9 @@ export default function ProductsSortPanel({
                       <button
                         type="button"
                         className={[
-                          "w-full px-4 py-3 text-left font-ui text-[14px]",
-                          "hover:bg-black/5",
-                          active ? "font-medium" : "font-normal",
+                          "w-full px-6 py-4 text-left font-ui text-[15px]",
+                          "hover:bg-black/5 transition-colors",
+                          active ? "font-medium bg-black/5" : "font-normal",
                         ].join(" ")}
                         onClick={() => {
                           onSortChange?.(opt.value);
