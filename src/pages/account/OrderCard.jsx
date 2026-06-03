@@ -3,6 +3,7 @@ import FullWidthDivider from "@/components/ui/FullWidthDivider";
 import StatusPill from "./StatusPill";
 import arrowRightIcon from "@/assets/ui/arrow-right.svg";
 import cn from "@/utils/cn";
+import { getTranslatedProductName } from "@/utils/getTranslatedProductName";
 
 export default function OrderCard({ order, onOpen, isOpen }) {
   const { t } = useLanguage();
@@ -52,7 +53,7 @@ export default function OrderCard({ order, onOpen, isOpen }) {
             <div className="space-y-1">
               {(order.productLines || []).slice(0, 2).map((item, index) => (
                 <p key={index} className="font-display text-lg leading-none">
-                  {item.name}{" "}
+                  {getTranslatedProductName(item.name, t)}{" "}
                   <span className="align-middle font-ui text-sm opacity-60">
                     x{item.quantity}
                   </span>
@@ -98,7 +99,7 @@ export default function OrderCard({ order, onOpen, isOpen }) {
             <div className="space-y-1">
               {(order.productLines || []).slice(0, 2).map((item, index) => (
                 <p key={index} className="font-display text-sm leading-none">
-                  {item.name}{" "}
+                  {getTranslatedProductName(item.name, t)}{" "}
                   <span className="font-ui text-xs opacity-60">
                     x{item.quantity}
                   </span>
@@ -145,7 +146,7 @@ export default function OrderCard({ order, onOpen, isOpen }) {
             <div className="space-y-1">
               {(order.productLines || []).slice(0, 2).map((item, index) => (
                 <p key={index} className="font-display text-base leading-none">
-                  {item.name}{" "}
+                  {getTranslatedProductName(item.name, t)}{" "}
                   <span className="font-ui text-xs opacity-60">
                     x{item.quantity}
                   </span>
