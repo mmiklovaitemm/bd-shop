@@ -326,7 +326,7 @@ export default function ProductsFilterPanel({
   return (
     <>
       {(variant === "auto" || variant === "mobile") && (
-        <div className="fixed inset-0 z-[60] lg:hidden">
+        <div className="fixed inset-0 z-[110] lg:hidden">
           <button
             type="button"
             aria-label={t.closeFilter}
