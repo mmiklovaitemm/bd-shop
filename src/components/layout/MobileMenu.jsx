@@ -86,7 +86,7 @@ export default function MobileMenu({ open, onClose }) {
                 src={arrowUpRightIcon}
                 alt=""
                 aria-hidden="true"
-                className="h-3 w-3 transition-transform duration-300 ease-out"
+                className="h-2 w-2 transition-transform duration-300 ease-out"
               />
             </span>
           </button>
