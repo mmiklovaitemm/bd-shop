@@ -1,5 +1,9 @@
+import useLanguage from "@/context/useLanguage";
+
 export default function TestimonialCard({ testimonial, onClick }) {
-  const { name, quote, rating = 5, image } = testimonial;
+  const { t } = useLanguage();
+  const { id, name, rating = 5, image } = testimonial;
+  const quote = t.testimonials?.[id] || "";
 
   return (
     <article
