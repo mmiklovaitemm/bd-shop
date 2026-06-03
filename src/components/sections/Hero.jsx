@@ -103,20 +103,32 @@ export default function Hero() {
           <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent pointer-events-none z-[5]" />
 
           {/* Static UI Overlay */}
-          <div className="absolute inset-0 z-10 pointer-events-none flex flex-col justify-center lg:justify-end">
-            <div className="mx-auto w-full max-w-[1320px] px-6 md:px-10 pb-16 lg:pb-20">
+          <div className="absolute inset-0 z-10 pointer-events-none flex flex-col justify-end">
+            <div className="mx-auto w-full max-w-[1320px] px-6 md:px-10 pb-10 lg:pb-20">
               {/* Mobile/Tablet Text */}
               <div className="lg:hidden">
                 <motion.h1
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.3 }}
-                  className="font-display text-[60px] leading-[1.1] tracking-[0.02em] text-white"
+                  className="font-display text-[42px] sm:text-[52px] leading-[1.1] tracking-[0.02em] text-white"
                 >
                   <span className="block mb-1">{t.heroTitleLine1}</span>
                   <span className="block mb-1">{t.heroTitleLine2}</span>
-                  <span className="block">{t.heroTitleLine3}</span>
+                  <span className="block mb-3">{t.heroTitleLine3}</span>
                 </motion.h1>
+
+                {/* Mobile line - same as desktop */}
+                <motion.div
+                  initial={{ scaleX: 0, originX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{
+                    duration: 1.4,
+                    delay: 0.4,
+                    ease: [0.22, 1, 0.36, 1],
+                  }}
+                  className="h-[1px] w-full bg-gradient-to-r from-white/90 via-white/30 to-transparent"
+                />
               </div>
 
               {/* Desktop View with extended line */}
