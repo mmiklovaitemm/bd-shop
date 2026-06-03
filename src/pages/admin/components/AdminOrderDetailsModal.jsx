@@ -51,7 +51,7 @@ export default function AdminOrderDetailsModal({
       onClick={onClose}
     >
       <div
-        className="max-h-[90vh] w-full max-w-4xl overflow-y-auto border border-black bg-white"
+        className="max-h-[90vh] w-full max-w-6xl overflow-y-auto border border-black bg-white"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
