@@ -47,26 +47,16 @@ export default function OrderHistory() {
   const [productsById, setProductsById] = useState({});
 
   useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        setError("");
-        setLoadingOrders(true);
-        const data = await getOrders();
-        if (!alive) return;
-        setOrders(Array.isArray(data) ? data : []);
-      } catch (err) {
-        if (!alive) return;
-        setError(err?.message || t.failedToLoadOrders);
-        setOrders([]);
-      } finally {
-        if (alive) setLoadingOrders(false);
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, [getOrders, t.failedToLoadOrders]);
+    // Load orders from localStorage (demo mode)
+    try {
+      const stored = JSON.parse(localStorage.getItem("demo_orders") || "[]");
+      setOrders(stored);
+    } catch {
+      setOrders([]);
+    } finally {
+      setLoadingOrders(false);
+    }
+  }, []);
 
   useEffect(() => {
     const ctrl = new AbortController();

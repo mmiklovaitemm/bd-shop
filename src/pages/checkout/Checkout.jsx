@@ -148,9 +148,39 @@ function CheckoutForm() {
     setIsSubmitting(true);
     setStripeCardError(null);
 
-    // Demo mode: simulate order processing
+    // Demo mode: simulate order processing + save to localStorage
     try {
       await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      const orderId = "DEMO-" + Date.now();
+      const newOrder = {
+        id: orderId,
+        created_at: new Date().toISOString(),
+        status: "Confirmed",
+        total_cents: Math.round(total * 100),
+        contact_email: email,
+        delivery_type: deliveryType,
+        delivery_method: deliveryType === "pickup" ? pickupLocation : shippingMethod,
+        ship_first_name: firstName,
+        ship_last_name: lastName,
+        ship_address: address,
+        ship_city: city,
+        ship_postal_code: postalCode,
+        items: items.map((it) => ({
+          product_name: it.name,
+          product_id: it.productId ?? it.id,
+          color: it.color,
+          size: it.size,
+          quantity: it.quantity ?? 1,
+          price_cents: Math.round(Number(String(it.price).replace(/[^0-9.]/g, "")) * 100),
+          image_url: it.image,
+        })),
+      };
+
+      // Save to localStorage
+      const existing = JSON.parse(localStorage.getItem("demo_orders") || "[]");
+      existing.unshift(newOrder);
+      localStorage.setItem("demo_orders", JSON.stringify(existing));
 
       clearCart();
       setIsSubmitting(false);
@@ -158,7 +188,7 @@ function CheckoutForm() {
 
       navigate("/thank-you", {
         state: {
-          orderId: "DEMO-" + Date.now(),
+          orderId,
           deliveryType,
           pickupLocation: deliveryType === "pickup" ? pickupLocation : null,
           email,
