@@ -220,10 +220,12 @@ const PRODUCTS_RAW = [
   },
 ];
 
-// Apply BASE_URL, add priceValue as number, add createdAt for sorting
+// Apply BASE_URL, add priceValue, stockQuantity, createdAt
 export const PRODUCTS = PRODUCTS_RAW.map((p, i) => ({
   ...p,
   priceValue: Number(String(p.price).replace(/[^0-9.]/g, "")) || 0,
+  stockQuantity: 10,
+  stock_quantity: 10,
   createdAt: new Date(2025, 0, i + 1).toISOString(),
   thumbnail: p.thumbnail.startsWith("http") ? p.thumbnail : b(p.thumbnail),
   images: p.images.map((img) => (img.startsWith("http") ? img : b(img))),
