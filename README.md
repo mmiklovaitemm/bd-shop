@@ -1,6 +1,6 @@
 # UM Studio — Handmade Jewellery E-Commerce
 
-A full-featured e-commerce portfolio project for a handmade jewellery brand. Built with React and deployed on Vercel — no backend or database required.
+A full-featured e-commerce portfolio project for a handmade jewellery brand. Built with React and deployed on Vercel - no backend or database required.
 
 **Live demo:** [bd-shop-gray.vercel.app](https://bd-shop-gray.vercel.app)
 
@@ -16,7 +16,7 @@ A full-featured e-commerce portfolio project for a handmade jewellery brand. Bui
 - User registration and login (localStorage-based demo auth)
 - Wishlist / favourites
 - EN / LT bilingual support
-- Responsive design — mobile, tablet and desktop
+- Responsive design - mobile, tablet and desktop
 - Admin panel for order and product management (demo)
 
 ---
