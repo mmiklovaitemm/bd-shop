@@ -377,34 +377,9 @@ export default function ShoppingBagDrawer() {
               )}
             </div>
 
-            <div className="border-t border-black p-6 bg-white shrink-0 space-y-3">
-              {showLoginMsg && (
-                <div className="flex items-center justify-between gap-3 border border-black bg-black/5 px-4 py-3">
-                  <p className="font-ui text-[13px] text-black">
-                    {lang === "lt"
-                      ? "Prašome prisijungti prieš atliekant užsakymą"
-                      : "Please log in before placing an order"}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      close();
-                      navigate("/login");
-                    }}
-                    className="shrink-0 border border-black bg-black px-4 py-2 font-ui text-[12px] text-white hover:bg-white hover:text-black transition-colors"
-                  >
-                    {t.logIn}
-                  </button>
-                </div>
-              )}
-
+            <div className="border-t border-black p-6 bg-white shrink-0">
               <button
                 onClick={() => {
-                  if (!user) {
-                    setShowLoginMsg(true);
-                    return;
-                  }
-                  setShowLoginMsg(false);
                   close();
                   navigate("/checkout");
                 }}
