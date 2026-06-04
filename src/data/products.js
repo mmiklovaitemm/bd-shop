@@ -220,15 +220,49 @@ const PRODUCTS_RAW = [
   },
 ];
 
-// Apply BASE_URL, add priceValue, stockQuantity, createdAt
-export const PRODUCTS = PRODUCTS_RAW.map((p, i) => ({
-  ...p,
-  priceValue: Number(String(p.price).replace(/[^0-9.]/g, "")) || 0,
-  stockQuantity: 10,
-  stock_quantity: 10,
-  createdAt: new Date(2025, 0, i + 1).toISOString(),
-  thumbnail: p.thumbnail.startsWith("http") ? p.thumbnail : b(p.thumbnail),
-  images: p.images.map((img) => (img.startsWith("http") ? img : b(img))),
-}));
+// Build variants structure from colors + sizes with stock
+function buildVariants(p, resolvedImages) {
+  const colors = p.colors || ["silver"];
+  const sizes = p.sizes || ["one size"];
+  const variants = {};
+
+  colors.forEach((color) => {
+    const colorImages = resolvedImages.filter((img) => {
+      const url = img.toLowerCase();
+      if (color === "silver") return !url.includes("gold") && !url.includes("pearl");
+      return url.includes(color.replace("-", "").replace(" ", ""));
+    });
+    const imgs = colorImages.length > 0 ? colorImages : resolvedImages.slice(0, 2);
+
+    variants[color] = sizes.map((size) => ({
+      size: String(size),
+      stock: 10,
+      images: imgs,
+    }));
+  });
+
+  return variants;
+}
+
+// Apply BASE_URL, add all required fields
+export const PRODUCTS = PRODUCTS_RAW.map((p, i) => {
+  const resolvedImages = p.images.map((img) =>
+    img.startsWith("http") ? img : b(img),
+  );
+  const resolvedThumb = p.thumbnail.startsWith("http")
+    ? p.thumbnail
+    : b(p.thumbnail);
+
+  return {
+    ...p,
+    priceValue: Number(String(p.price).replace(/[^0-9.]/g, "")) || 0,
+    stockQuantity: 10,
+    stock_quantity: 10,
+    createdAt: new Date(2025, 0, i + 1).toISOString(),
+    thumbnail: resolvedThumb,
+    images: resolvedImages,
+    variants: buildVariants(p, resolvedImages),
+  };
+});
 
 export default PRODUCTS;
