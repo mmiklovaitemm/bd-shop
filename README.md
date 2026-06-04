@@ -1,132 +1,82 @@
-# UM Studio — Jewelry E-Commerce Store
+# UM Studio — Handmade Jewellery E-Commerce
 
-A full-stack e-commerce web application built for a handmade jewelry brand. The project was developed as a bachelor's thesis at SMK University of Applied Sciences.
+A full-featured e-commerce portfolio project for a handmade jewellery brand. Built with React and deployed on Vercel — no backend or database required.
 
-## Live Demo
-
-- **Frontend:** [bd-shop-gray.vercel.app](https://bd-shop-gray.vercel.app)
-- **Backend API:** [bd-shop-gfva.onrender.com](https://bd-shop-gfva.onrender.com)
+**Live demo:** [bd-shop-gray.vercel.app](https://bd-shop-gray.vercel.app)
 
 ---
 
 ## Features
 
-### Customer Experience
-
-- **Product Collections:** Browse rings, necklaces, bracelets, earrings and more with filtering by material, price, appearance, gemstones and size
-- **7 Categories:** Including best sellers and new collection
-- **Product Details:** Detailed specifications including adjustable lengths for necklaces, band widths for rings and surface type
-- **Personalized Jewelry:** A specialized flow for custom pieces with a step-by-step guide
-- **Shopping Cart:** Persistent cart with color and size variant selection
-- **Checkout:** Stripe card payments and bank transfer options with order confirmation
-- **Image Gallery:** High-resolution lightbox with multi-image support
-- **Multilingual Support:** Full switching between English and Lithuanian including real-time error message translation
-- **User Accounts:** Registration, login, profile management, order history and secure password updates
-- **Wishlist:** Save favorite products with account sync across sessions
-
-### Admin Management
-
-- **Admin Dashboard:** Manage all products and orders from one place
-- **Product Editor:** Support for multiple color and size variants, stock per variant, surface type, gemstone properties and image uploads
-- **Order Management:** View all orders, update status and delete orders
-- **Secure Routes:** Protected admin pages with middleware authentication
+- Product catalogue with filtering, sorting and pagination
+- Product detail pages with size and colour selection
+- Shopping bag drawer with quantity management
+- Checkout flow with shipping and pickup options
+- Order history saved to browser localStorage
+- User registration and login (localStorage-based demo auth)
+- Wishlist / favourites
+- EN / LT bilingual support
+- Responsive design — mobile, tablet and desktop
+- Admin panel for order and product management (demo)
 
 ---
 
 ## Tech Stack
 
-### Frontend
-
-- React + Vite
-- Tailwind CSS
-- Zustand
-- React Router
-- Framer Motion
-
-### Backend
-
-- Node.js and Express
-- MySQL
-- JSON Web Tokens (JWT)
-- Stripe API
-
-### Hosting
-
-- Vercel — frontend
-- Render — backend
+| Layer | Technology |
+|---|---|
+| Frontend | React 18, Vite |
+| Styling | Tailwind CSS |
+| Animations | Framer Motion |
+| State management | Zustand |
+| Routing | React Router v6 |
+| Data storage | localStorage (orders, auth) |
+| Product data | Static JS file |
+| Hosting | Vercel (free tier) |
 
 ---
 
 ## Getting Started
 
-### Prerequisites
-
-- Node.js v16 or higher
-- MySQL database
-
-### Installation
-
-1. Clone the repository
-
 ```bash
-git clone https://github.com/mmiklovaitemm/bd-shop.git
-cd bd-shop
-```
-
-2. Install frontend dependencies
-
-```bash
+# Install dependencies
 npm install
-```
 
-3. Install backend dependencies
-
-```bash
-cd backend
-npm install
-```
-
-4. Set up environment variables
-
-Create a `.env` file in the backend folder:
-
-```env
-DB_HOST=your_database_host
-DB_USER=your_database_user
-DB_PASSWORD=your_database_password
-DB_NAME=your_database_name
-JWT_SECRET=your_jwt_secret
-STRIPE_SECRET_KEY=your_stripe_secret_key
-```
-
-Create a `.env` file in the root folder:
-
-```env
-VITE_API_URL=http://localhost:4000/api
-VITE_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
-```
-
-5. Run the backend
-
-```bash
-cd backend
-node server.js
-```
-
-6. Run the frontend
-
-```bash
+# Start development server
 npm run dev
+
+# Build for production
+npm run build
 ```
+
+---
+
+## Project Structure
+
+```
+src/
+├── components/       # Reusable UI and layout components
+├── context/          # Language context (EN/LT translations)
+├── data/             # Static product data
+├── hooks/            # Custom React hooks
+├── pages/            # Page components
+├── store/            # Zustand state stores (auth, cart, bag)
+└── utils/            # Helper utilities
+```
+
+---
+
+## Demo Notes
+
+This is a portfolio project. All data is stored locally in the browser:
+
+- **Auth** — register and log in with any email and password
+- **Orders** — saved to localStorage after checkout
+- **Favourites** — saved to localStorage
+- **Payments** — simulated (no real payment processing)
 
 ---
 
 ## Author
 
 Ugnė Miklovaitė
-
----
-
-## License
-
-This project is for portfolio and academic purposes. All jewelry designs and branding are made with AI.
