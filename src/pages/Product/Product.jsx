@@ -89,16 +89,16 @@ function ProductView({ product }) {
 
   // ACCURATE STOCK CALCULATION
   const currentStock = useMemo(() => {
+    const fallback = Number(product?.stockQuantity ?? product?.stock_quantity ?? 10);
     if (!product?.variants || Object.keys(product.variants).length === 0) {
-      return Number(product?.stockQuantity ?? product?.stock_quantity ?? 0);
+      return fallback;
     }
     const variantData = product.variants[selectedColor];
-    if (!Array.isArray(variantData)) return 0;
+    if (!Array.isArray(variantData)) return fallback;
     const selectedV = variantData.find(
       (v) => String(v.size) === String(selectedSize),
     );
-
-    return selectedV ? Number(selectedV.stock) : 0;
+    return selectedV ? Number(selectedV.stock) : fallback;
   }, [product, selectedColor, selectedSize]);
 
   const isCurrentSelectionSoldOut = currentStock <= 0;

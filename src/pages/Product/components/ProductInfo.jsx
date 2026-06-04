@@ -82,9 +82,9 @@ const ProductInfo = memo(function ProductInfo({
             const variantData = product.variants?.[selectedColor];
             const vStockRaw = Array.isArray(variantData)
               ? variantData.find((v) => String(v.size) === sText)?.stock
-              : product.stockQuantity;
+              : (product.stockQuantity ?? product.stock_quantity ?? 10);
 
-            const vStockNum = isNaN(Number(vStockRaw)) ? 0 : Number(vStockRaw);
+            const vStockNum = isNaN(Number(vStockRaw)) ? 10 : Number(vStockRaw);
             const isAvailable = vStockNum > 0;
 
             return (
