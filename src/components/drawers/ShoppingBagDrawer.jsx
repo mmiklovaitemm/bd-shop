@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { apiGet } from "@/lib/api";
+import { PRODUCTS } from "@/data/products";
 
 import useBagDrawer from "@/store/useBagDrawer";
 import useCart from "@/store/useCart";
@@ -114,30 +114,8 @@ export default function ShoppingBagDrawer() {
   const { t, lang } = useLanguage();
   const user = useAuth((s) => s.user);
   const [showLoginMsg, setShowLoginMsg] = useState(false);
-  const [products, setProducts] = useState([]);
-  const [isValidating, setIsValidating] = useState(false);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    let isMounted = true;
-    const fetchLatestStock = async () => {
-      try {
-        setIsValidating(true);
-        const data = await apiGet("/products");
-        if (isMounted) {
-          setProducts(Array.isArray(data) ? data : data?.products || []);
-        }
-      } catch (err) {
-        console.error("Drawer API Error:", err);
-      } finally {
-        if (isMounted) setIsValidating(false);
-      }
-    };
-    fetchLatestStock();
-    return () => {
-      isMounted = false;
-    };
-  }, [isOpen]);
+  const [products] = useState(PRODUCTS);
+  const isValidating = false;
 
   const findProduct = useCallback(
     (item) => {
@@ -256,7 +234,9 @@ export default function ShoppingBagDrawer() {
                     const colors = getAvailableColors(product, item);
                     const sizes = getAvailableSizes(product, item.color, item);
                     const stockLimit = product
-                      ? getVariantStock(product, item.color, item.size)
+                      ? product.variants
+                        ? getVariantStock(product, item.color, item.size)
+                        : Number(product.stockQuantity) || 99
                       : 99;
 
                     return (
