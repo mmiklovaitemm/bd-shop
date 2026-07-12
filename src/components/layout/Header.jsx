@@ -38,7 +38,12 @@ const LANGUAGES = [
 ];
 
 const CountBadge = ({ count }) => (
-  <AnimatePresence mode="popLayout">
+  // NB: default (sync) mode – NOT "popLayout". popLayout measures the exiting
+  // node via getSnapshotBeforeUpdate/getComputedStyle, and when the badge is
+  // remounted rapidly (count changing while browsing/shopping) that measurement
+  // path throws inside framer-motion, crashing the whole tree to a white screen.
+  // There is only ever one child here, so popLayout gives no visual benefit.
+  <AnimatePresence>
     {count > 0 && (
       <motion.span
         key={count}

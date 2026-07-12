@@ -38,7 +38,9 @@ export default function Favorites() {
           </div>
         ) : (
           <section>
-            <AnimatePresence mode="popLayout">
+            {/* default (sync) mode – NOT "popLayout"; see Header CountBadge note.
+                `layout` still animates remaining items when one is removed. */}
+            <AnimatePresence>
               <motion.div
                 layout
                 className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4"
